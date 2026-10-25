@@ -7,6 +7,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class EditDiaryActivity : AppCompatActivity() {
 
@@ -34,6 +37,10 @@ class EditDiaryActivity : AppCompatActivity() {
                 binding.editContent.setText(it.content)
             }
         }
+
+        binding.textEditorTitle.setText(if (existing == null) R.string.add_diary else R.string.edit_diary)
+        binding.textEditorDate.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA)
+            .format(Date(existing?.createdAt ?: System.currentTimeMillis()))
 
         binding.btnBack.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }

@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wu Diary</string>
-    <string name="empty_state">今天还没有日记，点右下角开始记录吧</string>
+    <string name="header_slogan">今天，也要好好生活</string>
+    <string name="greeting_morning">早上好</string>
+    <string name="greeting_afternoon">下午好</string>
+    <string name="greeting_evening">晚上好</string>
+    <string name="empty_title">还没有日记</string>
+    <string name="empty_subtitle">点右下角按钮，记录今天的心情吧</string>
     <string name="add_diary">新建日记</string>
     <string name="edit_diary">编辑日记</string>
     <string name="hint_title">标题</string>

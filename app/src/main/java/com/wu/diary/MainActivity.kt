@@ -9,6 +9,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.databinding.ActivityMainBinding
 import com.wu.diary.ui.DiaryAdapter
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,6 +24,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        bindHeader()
 
         store = DiaryStore(this)
         adapter = DiaryAdapter(
@@ -38,6 +43,18 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+    }
+
+    private fun bindHeader() {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        binding.textGreeting.setText(
+            when (hour) {
+                in 5..11 -> R.string.greeting_morning
+                in 12..17 -> R.string.greeting_afternoon
+                else -> R.string.greeting_evening
+            }
+        )
+        binding.textToday.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA).format(Date())
     }
 
     private fun refresh() {
