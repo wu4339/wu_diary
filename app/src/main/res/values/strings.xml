@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wu Diary</string>
-    <string name="empty_state">今天还没有日记，开始记录吧</string>
+    <string name="empty_state">今天还没有日记，点右下角开始记录吧</string>
+    <string name="add_diary">新建日记</string>
+    <string name="edit_diary">编辑日记</string>
+    <string name="hint_title">标题</string>
+    <string name="hint_content">写点什么吧…</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="delete_confirm">确定删除这篇日记吗？</string>
+    <string name="untitled">无标题</string>
 </resources>
