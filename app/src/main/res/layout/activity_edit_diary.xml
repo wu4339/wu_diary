@@ -8,7 +8,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="56dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp">
@@ -19,52 +19,53 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cancel"
+            android:scaleType="centerInside"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary" />
 
-        <TextView
-            android:id="@+id/textEditorTitle"
+        <Space
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:text="@string/edit_diary"
-            android:textColor="@color/text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
-            style="@style/Widget.Material3.Button"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/save"
             android:minWidth="72dp"
-            android:text="@string/save" />
+            android:text="@string/save"
+            android:textColor="@color/text_primary" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
 
     <TextView
         android:id="@+id/textEditorDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="16dp"
         android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+        android:textSize="15sp" />
 
     <EditText
         android:id="@+id/editTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="12dp"
         android:background="@null"
         android:hint="@string/hint_title"
         android:inputType="textCapSentences"
         android:maxLines="1"
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_secondary"
-        android:textSize="22sp"
+        android:textSize="26sp"
         android:textStyle="bold" />
 
     <EditText
@@ -79,9 +80,9 @@
         android:gravity="top"
         android:hint="@string/hint_content"
         android:inputType="textMultiLine|textCapSentences"
-        android:lineSpacingExtra="4dp"
-        android:textColor="@color/text_primary"
+        android:lineSpacingExtra="6dp"
+        android:textColor="@color/text_body"
         android:textColorHint="@color/text_secondary"
-        android:textSize="15sp" />
+        android:textSize="16sp" />
 
 </LinearLayout>

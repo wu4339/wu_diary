@@ -3,7 +3,6 @@ package com.wu.diary.ui
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.wu.diary.R
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import java.text.SimpleDateFormat
@@ -35,11 +34,11 @@ class DiaryAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val entry = items[position]
         with(holder.binding) {
-            textTitle.text = entry.title.ifBlank { root.context.getString(R.string.untitled) }
-            textDay.text = SimpleDateFormat("d", Locale.getDefault()).format(Date(entry.updatedAt))
-            textMonth.text = SimpleDateFormat("M月", Locale.CHINA).format(Date(entry.updatedAt))
-            textTime.text = SimpleDateFormat("yyyy年M月d日 HH:mm", Locale.CHINA).format(Date(entry.updatedAt))
-            textContent.text = entry.content
+            textDate.text = SimpleDateFormat("M/d", Locale.getDefault()).format(Date(entry.updatedAt))
+            textYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date(entry.updatedAt))
+            textBody.text = listOf(entry.title.trim(), entry.content.trim())
+                .filter { it.isNotEmpty() }
+                .joinToString("\n")
             root.setOnClickListener { onClick(entry) }
             root.setOnLongClickListener { onLongClick(entry); true }
         }

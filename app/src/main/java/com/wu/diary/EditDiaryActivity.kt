@@ -38,7 +38,6 @@ class EditDiaryActivity : AppCompatActivity() {
             }
         }
 
-        binding.textEditorTitle.setText(if (existing == null) R.string.add_diary else R.string.edit_diary)
         binding.textEditorDate.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA)
             .format(Date(existing?.createdAt ?: System.currentTimeMillis()))
 

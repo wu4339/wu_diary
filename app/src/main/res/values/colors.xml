@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF7E5F</color>
-    <color name="primary_dark">#F0643F</color>
-    <color name="gradient_start">#FF7E5F</color>
-    <color name="gradient_end">#FFB88C</color>
-    <color name="background">#FAF7F2</color>
+    <color name="primary">#1C1C1C</color>
+    <color name="primary_dark">#000000</color>
+    <color name="background">#FFFFFF</color>
     <color name="surface">#FFFFFF</color>
-    <color name="text_primary">#2D2A26</color>
-    <color name="text_secondary">#9A938C</color>
-    <color name="chip_bg">#FFF1EC</color>
+    <color name="text_primary">#1C1C1C</color>
+    <color name="text_body">#565656</color>
+    <color name="text_secondary">#BDBDBD</color>
+    <color name="divider">#EFEFEF</color>
+    <color name="fab_dark">#111111</color>
 </resources>
