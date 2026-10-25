@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wu Diary</string>
+    <string name="empty_state">今天还没有日记，开始记录吧</string>
+</resources>
