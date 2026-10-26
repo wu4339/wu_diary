@@ -71,4 +71,5 @@
     <string name="cut_paragraph">剪切当前段落</string>
     <string name="paragraph_cut">已剪切当前段落</string>
     <string name="paragraph_empty">当前段落没有内容</string>
+    <string name="save_action">Save</string>
 </resources>

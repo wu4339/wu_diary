@@ -155,11 +155,17 @@ class MainActivity : AppCompatActivity() {
             MotionEvent.ACTION_MOVE -> {
                 val dx = ev.x - swipeDownX
                 val dy = kotlin.math.abs(ev.y - swipeDownY)
-                if (dx > drawerThreshold && dx > dy * 1.5f &&
-                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel)
-                ) {
-                    binding.drawerRoot.openDrawer(binding.drawerPanel)
-                    swipeDownX = ev.x
+                if (dx > drawerThreshold && dx > dy * 1.5f) {
+                    if (binding.searchBar.isVisible) {
+                        // 搜索状态下向右滑动直接退出搜索，不再拉出侧栏。
+                        exitSearch()
+                        swipeDownX = ev.x
+                        return true
+                    }
+                    if (!binding.drawerRoot.isDrawerOpen(binding.drawerPanel)) {
+                        binding.drawerRoot.openDrawer(binding.drawerPanel)
+                        swipeDownX = ev.x
+                    }
                 }
                 if (pullAllowed && !pullTriggered) {
                     val pullDy = ev.y - pullStartY
@@ -329,7 +335,7 @@ class MainActivity : AppCompatActivity() {
             }
             else -> allEntries
         }
-        adapter.submit(entries)
+        adapter.submit(entries, searchQuery)
         displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()

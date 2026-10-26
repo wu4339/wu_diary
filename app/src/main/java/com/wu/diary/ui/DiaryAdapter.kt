@@ -1,12 +1,17 @@
 package com.wu.diary.ui
 
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.BackgroundColorSpan
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
+import com.wu.diary.R
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
@@ -33,8 +38,10 @@ class DiaryAdapter(
     private val dayFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val dayTextFormat = SimpleDateFormat("M/d", Locale.getDefault())
     private val yearTextFormat = SimpleDateFormat("yyyy", Locale.getDefault())
+    private var highlightQuery = ""
 
-    fun submit(entries: List<DiaryEntry>) {
+    fun submit(entries: List<DiaryEntry>, highlight: String = "") {
+        highlightQuery = highlight
         val built = mutableListOf<Row>()
         var currentDay: String? = null
         entries.sortedByDescending { it.createdAt }.forEach { entry ->
@@ -102,7 +109,7 @@ class DiaryAdapter(
         val body = listOf(entry.title.trim(), entry.content.trim())
             .filter { it.isNotEmpty() }
             .joinToString("\n")
-        binding.textBody.text = body
+        binding.textBody.text = highlightBody(body, binding)
         binding.textBody.isVisible = body.isNotEmpty()
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
@@ -136,6 +143,27 @@ class DiaryAdapter(
 
         binding.root.setOnClickListener { onClick(entry) }
         binding.root.setOnLongClickListener { onLongClick(entry); true }
+    }
+
+    /** 搜索状态下把命中的关键词加亮。 */
+    private fun highlightBody(body: String, binding: ItemDiaryBinding): CharSequence {
+        val query = highlightQuery
+        if (query.isEmpty() || body.isEmpty()) return body
+        val spannable = SpannableString(body)
+        val color = ContextCompat.getColor(binding.root.context, R.color.search_highlight)
+        val source = body.lowercase()
+        val target = query.lowercase()
+        var start = source.indexOf(target)
+        while (start >= 0) {
+            spannable.setSpan(
+                BackgroundColorSpan(color),
+                start,
+                start + target.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            start = source.indexOf(target, start + target.length)
+        }
+        return spannable
     }
 
     companion object {

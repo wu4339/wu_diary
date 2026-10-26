@@ -10,4 +10,5 @@
     <color name="divider">#EFEFEF</color>
     <color name="fab_dark">#111111</color>
     <color name="danger">#D93F3F</color>
+    <color name="search_highlight">#FFE58A</color>
 </resources>
