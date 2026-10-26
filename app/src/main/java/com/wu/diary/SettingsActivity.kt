@@ -21,7 +21,15 @@ class SettingsActivity : AppCompatActivity() {
         )
 
     private val previewLabels: Array<String>
-        get() = Settings.PREVIEW_LINES.map { getString(R.string.preview_value, it) }.toTypedArray()
+        get() = previewValues.map { lineLabel(it) }.toTypedArray()
+
+    /** 预览行数选项：3~10 行 + 全显。 */
+    private val previewValues: IntArray
+        get() = Settings.PREVIEW_LINES + Settings.PREVIEW_ALL
+
+    private fun lineLabel(value: Int): String =
+        if (value == Settings.PREVIEW_ALL) getString(R.string.preview_all)
+        else getString(R.string.preview_value, value)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +50,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updatePreviewValue() {
-        binding.textPreviewValue.text = getString(R.string.preview_value, settings.previewLines)
+        binding.textPreviewValue.text = lineLabel(settings.previewLines)
     }
 
     private fun showFontSizeDialog() {
@@ -60,8 +68,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showPreviewLinesDialog() {
-        val options = Settings.PREVIEW_LINES
-        val current = options.indexOfFirst { it == settings.previewLines }
+        val options = previewValues
+        val current = options.indexOf(settings.previewLines)
             .coerceAtLeast(Settings.DEFAULT_PREVIEW_INDEX)
         AlertDialog.Builder(this)
             .setTitle(R.string.preview_lines)

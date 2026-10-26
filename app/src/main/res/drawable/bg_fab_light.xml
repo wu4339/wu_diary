@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <solid android:color="@color/surface" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 柔和的投影：用径向渐变代替系统 elevation 阴影，避免边缘出现灰色硬边 -->
+    <item
+        android:bottom="0dp"
+        android:left="5dp"
+        android:right="5dp"
+        android:top="12dp">
+        <shape android:shape="oval">
+            <gradient
+                android:endColor="#00000000"
+                android:gradientRadius="30dp"
+                android:startColor="#33000000"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item
+        android:bottom="6dp"
+        android:left="6dp"
+        android:right="6dp"
+        android:top="6dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/surface" />
+        </shape>
+    </item>
+</layer-list>

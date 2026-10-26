@@ -13,7 +13,11 @@ class Settings(context: Context) {
         }
 
     var previewLines: Int
-        get() = prefs.getInt(KEY_PREVIEW_LINES, 4)
+        get() {
+            val stored = prefs.getInt(KEY_PREVIEW_LINES, DEFAULT_PREVIEW_LINES)
+            val valid = stored == PREVIEW_ALL || stored in PREVIEW_MIN..PREVIEW_MAX
+            return if (valid) stored else DEFAULT_PREVIEW_LINES
+        }
         set(value) {
             prefs.edit().putInt(KEY_PREVIEW_LINES, value).apply()
         }
@@ -27,9 +31,18 @@ class Settings(context: Context) {
         /** 默认字号档位在 FONT_SCALES 中的下标。 */
         const val DEFAULT_FONT_INDEX = 2
 
-        val PREVIEW_LINES = intArrayOf(1, 2, 3, 4, 5, 6)
+        /** 可选的预览行数（不含「全显」）。 */
+        val PREVIEW_LINES = intArrayOf(3, 4, 5, 6, 7, 8, 9, 10)
 
-        /** 默认预览行数在 PREVIEW_LINES 中的下标。 */
-        const val DEFAULT_PREVIEW_INDEX = 3
+        /** 预览行数取该值时表示全部显示。 */
+        const val PREVIEW_ALL = 0
+
+        const val PREVIEW_MIN = 3
+        const val PREVIEW_MAX = 10
+
+        const val DEFAULT_PREVIEW_LINES = 4
+
+        /** 默认预览行数在选项中的下标。 */
+        const val DEFAULT_PREVIEW_INDEX = 1
     }
 }

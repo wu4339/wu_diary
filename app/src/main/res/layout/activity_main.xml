@@ -228,18 +228,17 @@
             android:layout_gravity="bottom"
             android:gravity="bottom"
             android:orientation="horizontal"
-            android:paddingHorizontal="20dp"
+            android:paddingHorizontal="14dp"
             android:paddingTop="8dp"
-            android:paddingBottom="24dp">
+            android:paddingBottom="18dp">
 
             <ImageButton
                 android:id="@+id/fabWallet"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
                 android:background="@drawable/bg_fab_light"
                 android:contentDescription="@string/wallet"
-                android:elevation="8dp"
-                android:padding="13dp"
+                android:padding="19dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_wallet"
                 android:tint="@color/text_primary" />
@@ -251,12 +250,11 @@
 
             <ImageButton
                 android:id="@+id/fabAdd"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
                 android:background="@drawable/bg_fab_dark"
                 android:contentDescription="@string/add_diary"
-                android:elevation="8dp"
-                android:padding="13dp"
+                android:padding="19dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_add"
                 android:tint="@android:color/white" />

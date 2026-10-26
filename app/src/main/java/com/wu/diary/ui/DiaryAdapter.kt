@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
+import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
@@ -94,7 +95,8 @@ class DiaryAdapter(
             .joinToString("\n")
         binding.textBody.text = body
         binding.textBody.isVisible = body.isNotEmpty()
-        binding.textBody.maxLines = previewLines
+        binding.textBody.maxLines =
+            if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
 
         binding.imageStrip.removeAllViews()
