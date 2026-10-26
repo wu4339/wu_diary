@@ -20,6 +20,12 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowAnimationStyle">@style/WindowAnimationNone</item>
+        <item name="android:windowDisablePreview">true</item>
+        <!-- 分享接收页不显示界面，系统状态栏/导航栏同样保持透明，避免闪白。 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 
     <style name="WindowAnimationNone">
