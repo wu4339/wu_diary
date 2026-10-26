@@ -45,6 +45,21 @@ class SettingsActivity : AppCompatActivity() {
     private val previewLabels: Array<String>
         get() = previewValues.map { lineLabel(it) }.toTypedArray()
 
+    private val lineSpacingLabels: Array<String>
+        get() = arrayOf(
+            getString(R.string.line_spacing_none),
+            getString(R.string.line_spacing_small),
+            getString(R.string.line_spacing_default),
+            getString(R.string.line_spacing_large),
+            getString(R.string.line_spacing_huge)
+        )
+
+    private fun lineSpacingLabel(value: Float): String {
+        val index = Settings.LINE_SPACINGS.indexOfFirst { it == value }
+        val label = lineSpacingLabels[if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX]
+        return getString(R.string.line_spacing_value, label, value.toInt())
+    }
+
     /** 预览行数选项：3~10 行 + 全显。 */
     private val previewValues: IntArray
         get() = Settings.PREVIEW_LINES + Settings.PREVIEW_ALL
@@ -62,6 +77,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener { finish() }
         binding.rowFontSize.setOnClickListener { showFontSizeDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
+        binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
         binding.rowSound.setOnClickListener {
             settings.soundEnabled = !settings.soundEnabled
@@ -83,6 +99,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowStorage.setOnClickListener { showStorageDialog() }
         updateFontValue()
         updatePreviewValue()
+        updateLineSpacingValue()
         updateStorageValue()
     }
 
@@ -188,6 +205,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.textPreviewValue.text = lineLabel(settings.previewLines)
     }
 
+    private fun updateLineSpacingValue() {
+        binding.textLineSpacingValue.text = lineSpacingLabel(settings.lineSpacing)
+    }
+
     private fun showFontSizeDialog() {
         val scales = Settings.FONT_SCALES
         val current = scales.indexOfFirst { it == settings.fontScale }
@@ -212,6 +233,23 @@ class SettingsActivity : AppCompatActivity() {
                 dialog.dismiss()
                 settings.previewLines = options[which]
                 updatePreviewValue()
+            }
+            .show()
+    }
+
+    private fun showLineSpacingDialog() {
+        val values = Settings.LINE_SPACINGS
+        val current = values.indexOfFirst { it == settings.lineSpacing }
+            .coerceAtLeast(Settings.DEFAULT_LINE_SPACING_INDEX)
+        val labels = values.indices.map {
+            getString(R.string.line_spacing_value, lineSpacingLabels[it], values[it].toInt())
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.line_spacing)
+            .setSingleChoiceItems(labels, current) { dialog, which ->
+                dialog.dismiss()
+                settings.lineSpacing = values[which]
+                updateLineSpacingValue()
             }
             .show()
     }

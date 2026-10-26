@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var displayedEntries: List<DiaryEntry> = emptyList()
     private var appliedScale = 1f
     private var appliedLines = 0
+    private var appliedLineSpacing = 0f
     private var searchQuery = ""
     private var swipeDownX = 0f
     private var swipeDownY = 0f
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         settings = Settings(this)
         appliedScale = settings.fontScale
         appliedLines = settings.previewLines
+        appliedLineSpacing = settings.lineSpacing
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -82,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         adapter = DiaryAdapter(
             fontScale = settings.fontScale,
             previewLines = settings.previewLines,
+            lineSpacing = settings.lineSpacing,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -271,7 +274,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines) {
+        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines ||
+            appliedLineSpacing != settings.lineSpacing
+        ) {
             recreate()
             return
         }

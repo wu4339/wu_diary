@@ -25,6 +25,7 @@ import java.util.Locale
 class DiaryAdapter(
     private val fontScale: Float,
     private val previewLines: Int,
+    private val lineSpacing: Float,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -114,6 +115,10 @@ class DiaryAdapter(
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
+        binding.textBody.setLineSpacing(
+            lineSpacing * binding.root.resources.displayMetrics.density,
+            1f
+        )
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
         val dividerMargin = if (isGroupEnd) {

@@ -21,6 +21,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
     private var entries: List<DiaryEntry> = emptyList()
     private var appliedScale = 1f
     private var appliedLines = 0
+    private var appliedLineSpacing = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,10 +32,12 @@ class HiddenDiaryActivity : AppCompatActivity() {
         settings = Settings(this)
         appliedScale = settings.fontScale
         appliedLines = settings.previewLines
+        appliedLineSpacing = settings.lineSpacing
 
         adapter = DiaryAdapter(
             fontScale = settings.fontScale,
             previewLines = settings.previewLines,
+            lineSpacing = settings.lineSpacing,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -49,7 +52,9 @@ class HiddenDiaryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines) {
+        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines ||
+            appliedLineSpacing != settings.lineSpacing
+        ) {
             recreate()
             return
         }

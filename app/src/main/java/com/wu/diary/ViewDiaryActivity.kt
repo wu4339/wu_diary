@@ -1,7 +1,6 @@
 package com.wu.diary
 
 import android.app.Dialog
-import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -60,9 +59,6 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var index = 0
     private var entry: DiaryEntry? = null
     private var randomReview = false
-    private var headerCollapsed = false
-    private var headerFullHeight = 0
-    private var headerAnimator: ValueAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,11 +69,16 @@ class ViewDiaryActivity : AppCompatActivity() {
         ids = intent.getStringArrayListExtra(EXTRA_IDS) ?: emptyList()
         index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
 
-        val scale = Settings(this).fontScale
+        val settings = Settings(this)
+        val scale = settings.fontScale
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
+        binding.textContent.setLineSpacing(
+            settings.lineSpacing * resources.displayMetrics.density,
+            1f
+        )
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
 
         binding.btnClose.setOnClickListener { finish() }
@@ -94,38 +95,6 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textContent.setOnTouchListener { _, event ->
             doubleTapDetector.onTouchEvent(event)
             false
-        }
-        // 内容超过一屏后，上滑时顶部栏向上收起，回到顶部再显示。
-        val threshold = (2 * resources.displayMetrics.density).toInt()
-        binding.scrollContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            val atTop = scrollY <= threshold
-            if (atTop == headerCollapsed) {
-                headerCollapsed = !atTop
-                animateHeader(collapse = headerCollapsed)
-            }
-        }
-    }
-
-    private fun animateHeader(collapse: Boolean) {
-        val header = binding.headerTop
-        if (headerFullHeight <= 0 && header.height > 0) headerFullHeight = header.height
-        val full = headerFullHeight
-        if (full <= 0) return
-        headerAnimator?.cancel()
-        val current = header.layoutParams.height.let { if (it >= 0) it else header.height }
-        val from = 1f - current.toFloat() / full
-        val to = if (collapse) 1f else 0f
-        headerAnimator = ValueAnimator.ofFloat(from, to).apply {
-            duration = 160
-            addUpdateListener { animation ->
-                val progress = animation.animatedValue as Float
-                header.layoutParams = header.layoutParams.apply {
-                    height = (full * (1f - progress)).toInt().coerceAtLeast(0)
-                }
-                header.translationY = -full * progress * 0.4f
-                header.alpha = 1f - progress
-            }
-            start()
         }
     }
 
