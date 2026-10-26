@@ -92,11 +92,21 @@
                 android:textColor="@color/text_body"
                 android:textSize="17sp" />
 
-            <LinearLayout
-                android:id="@+id/imageContainer"
+            <HorizontalScrollView
+                android:id="@+id/imageScroll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:layout_marginTop="18dp"
+                android:clipToPadding="false"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/imageStrip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
         </LinearLayout>
     </ScrollView>
 

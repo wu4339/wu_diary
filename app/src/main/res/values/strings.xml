@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wu Diary</string>
-    <string name="empty_title">还没有日记</string>
-    <string name="empty_subtitle">点右下角按钮，记录今天的心情吧</string>
+    <string name="empty_title">这里还没有日记</string>
+    <string name="empty_subtitle">点击 + 记录你的日记</string>
     <string name="add_diary">新建日记</string>
     <string name="hint_content">今天过得怎么样？</string>
     <string name="save">保存</string>

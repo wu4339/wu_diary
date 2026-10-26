@@ -101,22 +101,19 @@ class ViewDiaryActivity : AppCompatActivity() {
     }
 
     private fun renderImages(current: DiaryEntry) {
-        binding.imageContainer.removeAllViews()
-        binding.imageContainer.isVisible = current.images.isNotEmpty()
-        val width = resources.displayMetrics.widthPixels - (48 * resources.displayMetrics.density).toInt()
-        val gap = (14 * resources.displayMetrics.density).toInt()
+        binding.imageStrip.removeAllViews()
+        binding.imageScroll.isVisible = current.images.isNotEmpty()
+        val density = resources.displayMetrics.density
+        val size = (84 * density).toInt()
+        val gap = (8 * density).toInt()
         current.images.forEach { path ->
             val image = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = gap }
-                adjustViewBounds = true
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setImageBitmap(ImageLoader.load(path, width))
+                layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = gap }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(ImageLoader.load(path, size))
             }
             image.setOnClickListener { openImage(path) }
-            binding.imageContainer.addView(image)
+            binding.imageStrip.addView(image)
         }
     }
 
