@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.text.method.LinkMovementMethod
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
@@ -69,6 +70,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
+        binding.textContent.movementMethod = LinkMovementMethod.getInstance()
 
         binding.btnClose.setOnClickListener { finish() }
         binding.btnMore.setOnClickListener { showMenu() }

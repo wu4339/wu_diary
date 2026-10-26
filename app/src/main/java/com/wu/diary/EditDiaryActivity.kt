@@ -30,12 +30,14 @@ class EditDiaryActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_ID = "entry_id"
         private const val EXTRA_DATE = "entry_date"
+        private const val EXTRA_TEXT = "entry_text"
         private const val MAX_IMAGES = 9
 
-        fun intent(context: Context, entryId: String?, date: Long? = null): Intent =
+        fun intent(context: Context, entryId: String?, date: Long? = null, initialText: String? = null): Intent =
             Intent(context, EditDiaryActivity::class.java)
                 .putExtra(EXTRA_ID, entryId)
                 .putExtra(EXTRA_DATE, date ?: 0L)
+                .putExtra(EXTRA_TEXT, initialText)
     }
 
     private lateinit var binding: ActivityEditDiaryBinding
@@ -71,6 +73,11 @@ class EditDiaryActivity : AppCompatActivity() {
                     listOf(it.title, it.content).filter { part -> part.isNotBlank() }
                         .joinToString("\n")
                 )
+            }
+        }
+        if (existing == null) {
+            intent.getStringExtra(EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let { text ->
+                binding.editContent.setText(text)
             }
         }
 

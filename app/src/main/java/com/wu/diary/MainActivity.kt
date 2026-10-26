@@ -1,5 +1,6 @@
 package com.wu.diary
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -48,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     private var searchQuery = ""
     private var swipeDownX = 0f
     private var swipeDownY = 0f
+    private var pullStartY = 0f
+    private var pullTriggered = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,6 +128,8 @@ class MainActivity : AppCompatActivity() {
             MotionEvent.ACTION_DOWN -> {
                 swipeDownX = ev.x
                 swipeDownY = ev.y
+                pullStartY = ev.y
+                pullTriggered = false
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = ev.x - swipeDownX
@@ -136,9 +141,44 @@ class MainActivity : AppCompatActivity() {
                     binding.drawerRoot.openDrawer(binding.drawerPanel)
                     swipeDownX = ev.x
                 }
+                val pullDy = ev.y - pullStartY
+                if (!pullTriggered && pullDy > threshold &&
+                    pullDy > kotlin.math.abs(dx) * 1.5f &&
+                    !calendarVisible &&
+                    !binding.searchBar.isVisible &&
+                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel) &&
+                    !binding.recycler.canScrollVertically(-1)
+                ) {
+                    pullTriggered = true
+                    checkClipboard()
+                }
             }
         }
         return super.dispatchTouchEvent(ev)
+    }
+
+    /** 顶部下拉：剪贴板有文字时，询问是否用它新建一篇笔记。 */
+    private fun checkClipboard() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+        val text = if (clip != null && clip.itemCount > 0) {
+            clip.getItemAt(0).coerceToText(this).toString().trim()
+        } else {
+            ""
+        }
+        if (text.isEmpty()) {
+            Toast.makeText(this, R.string.clipboard_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val preview = if (text.length > 120) text.take(120) + "…" else text
+        AlertDialog.Builder(this)
+            .setTitle(R.string.clipboard_title)
+            .setMessage(preview)
+            .setPositiveButton(R.string.clipboard_create) { _, _ ->
+                startActivity(EditDiaryActivity.intent(this, null, null, text))
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     override fun onResume() {
