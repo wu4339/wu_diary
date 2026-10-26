@@ -18,6 +18,7 @@ import java.util.Locale
 /** 按天分组的日记列表：同一天的记录共用一个日期头，记录之间用分割线隔开。 */
 class DiaryAdapter(
     private val fontScale: Float,
+    private val previewLines: Int,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -93,6 +94,7 @@ class DiaryAdapter(
             .joinToString("\n")
         binding.textBody.text = body
         binding.textBody.isVisible = body.isNotEmpty()
+        binding.textBody.maxLines = previewLines
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
 
         binding.imageStrip.removeAllViews()

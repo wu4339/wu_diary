@@ -14,6 +14,7 @@
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
     <string name="font_size">字体大小</string>
+    <string name="font_smaller">较小</string>
     <string name="font_small">小</string>
     <string name="font_default">标准</string>
     <string name="font_large">大</string>
@@ -29,4 +30,6 @@
     <string name="week_sat">Sat</string>
     <string name="settings">设置</string>
     <string name="back">返回</string>
+    <string name="preview_lines">预览行数</string>
+    <string name="preview_value">%1$d 行</string>
 </resources>

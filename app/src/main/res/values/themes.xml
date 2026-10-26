@@ -9,9 +9,4 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/background</item>
     </style>
-
-    <style name="ShapeAppearanceOverlay.App.FabCircle" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
 </resources>

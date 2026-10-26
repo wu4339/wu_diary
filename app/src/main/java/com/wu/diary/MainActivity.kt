@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedDay = 0
     private var allEntries: List<DiaryEntry> = emptyList()
     private var appliedScale = 1f
+    private var appliedLines = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         store = DiaryStore(this)
         settings = Settings(this)
         appliedScale = settings.fontScale
+        appliedLines = settings.previewLines
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         adapter = DiaryAdapter(
             fontScale = settings.fontScale,
+            previewLines = settings.previewLines,
             onClick = { entry ->
                 startActivity(EditDiaryActivity.intent(this, entry.id))
             },
@@ -83,7 +86,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (appliedScale != settings.fontScale) {
+        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines) {
             recreate()
             return
         }

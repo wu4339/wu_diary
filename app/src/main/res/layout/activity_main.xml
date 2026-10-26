@@ -232,36 +232,34 @@
             android:paddingTop="8dp"
             android:paddingBottom="24dp">
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <ImageButton
                 android:id="@+id/fabWallet"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_fab_light"
                 android:contentDescription="@string/wallet"
-                app:backgroundTint="@color/surface"
-                app:elevation="8dp"
-                app:fabCustomSize="48dp"
-                app:maxImageSize="22dp"
-                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabCircle"
-                app:srcCompat="@drawable/ic_wallet"
-                app:tint="@color/text_primary" />
+                android:elevation="8dp"
+                android:padding="13dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_wallet"
+                android:tint="@color/text_primary" />
 
             <Space
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <ImageButton
                 android:id="@+id/fabAdd"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_fab_dark"
                 android:contentDescription="@string/add_diary"
-                app:backgroundTint="@color/fab_dark"
-                app:elevation="8dp"
-                app:fabCustomSize="48dp"
-                app:maxImageSize="22dp"
-                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabCircle"
-                app:srcCompat="@drawable/ic_add"
-                app:tint="@android:color/white" />
+                android:elevation="8dp"
+                android:padding="13dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_add"
+                android:tint="@android:color/white" />
         </LinearLayout>
     </FrameLayout>
     </LinearLayout>
