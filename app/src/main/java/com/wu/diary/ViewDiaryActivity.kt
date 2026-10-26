@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -153,6 +154,13 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
         image.setOnClickListener { dialog.dismiss() }
         dialog.setContentView(image)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.BLACK))
+            statusBarColor = Color.BLACK
+            navigationBarColor = Color.BLACK
+            WindowInsetsControllerCompat(this, image).isAppearanceLightStatusBars = false
+            WindowInsetsControllerCompat(this, image).isAppearanceLightNavigationBars = false
+        }
         dialog.show()
     }
 

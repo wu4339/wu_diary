@@ -314,6 +314,8 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/surface"
+        android:clickable="true"
+        android:focusable="true"
         android:orientation="vertical"
         android:paddingTop="28dp">
 
