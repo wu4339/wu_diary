@@ -15,12 +15,12 @@ object Feedback {
     fun beep(context: Context) {
         if (!Settings(context).soundEnabled) return
         val generator = tone ?: runCatching {
-            ToneGenerator(AudioManager.STREAM_NOTIFICATION, 70)
+            ToneGenerator(AudioManager.STREAM_MUSIC, 100)
         }.getOrNull() ?: return
         tone = generator
-        runCatching { generator.startTone(ToneGenerator.TONE_PROP_BEEP, 120) }
+        runCatching { generator.startTone(ToneGenerator.TONE_PROP_ACK, 160) }
         Handler(Looper.getMainLooper()).postDelayed({
             runCatching { generator.stopTone() }
-        }, 200)
+        }, 260)
     }
 }

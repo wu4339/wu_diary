@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -83,6 +84,17 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnClose.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
+
+        if (existing == null) startTyping()
+    }
+
+    /** 新建日记时直接进入输入状态：聚焦文本框并弹出键盘。 */
+    private fun startTyping() {
+        binding.editContent.requestFocus()
+        binding.editContent.post {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 
     private fun renderImages() {

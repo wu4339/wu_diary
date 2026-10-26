@@ -9,4 +9,17 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/background</item>
     </style>
+
+    <style name="Theme.WuDiary.Editor" parent="Theme.WuDiary">
+        <item name="android:windowAnimationStyle">@style/WindowAnimation.None</item>
+    </style>
+
+    <style name="WindowAnimation.None">
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <item name="android:windowEnterAnimation">@null</item>
+        <item name="android:windowExitAnimation">@null</item>
+    </style>
 </resources>
