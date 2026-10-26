@@ -1,10 +1,18 @@
 package com.wu.diary
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.inputmethod.InputMethodManager
@@ -13,6 +21,7 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -49,6 +58,7 @@ class EditDiaryActivity : AppCompatActivity() {
     private var presetDate: Long = 0L
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
+    private var locationWaiting = false
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -58,6 +68,15 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
             }
             renderImages()
+        }
+
+    private val requestLocation =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            if (result.values.any { it }) {
+                fetchLocation()
+            } else {
+                Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,6 +113,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
         binding.btnTag.setOnClickListener { editTags() }
+        binding.btnLocation.setOnClickListener { fetchLocation() }
 
         if (existing != null) {
             binding.editContent.setSelection(binding.editContent.text.length)
@@ -197,6 +217,98 @@ class EditDiaryActivity : AppCompatActivity() {
             .filter { it.isNotEmpty() }
             .distinct()
             .take(10)
+
+    /** 获取当前位置坐标并插入到光标处。 */
+    @SuppressLint("MissingPermission")
+    private fun fetchLocation() {
+        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
+            requestLocation.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+            return
+        }
+
+        val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val providers = buildList {
+            if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                add(LocationManager.GPS_PROVIDER)
+            }
+            if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                add(LocationManager.NETWORK_PROVIDER)
+            }
+        }
+        if (providers.isEmpty()) {
+            Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        var lastKnown: Location? = null
+        providers.forEach { provider ->
+            val location = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
+                ?: return@forEach
+            val current = lastKnown
+            if (current == null || location.time > current.time) lastKnown = location
+        }
+        lastKnown?.let {
+            insertLocation(it)
+            return
+        }
+
+        if (locationWaiting) return
+        locationWaiting = true
+        Toast.makeText(this, R.string.location_fetching, Toast.LENGTH_SHORT).show()
+
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                if (!locationWaiting) return
+                locationWaiting = false
+                manager.removeUpdates(this)
+                insertLocation(location)
+            }
+
+            override fun onProviderEnabled(provider: String) {}
+
+            override fun onProviderDisabled(provider: String) {}
+
+            @Suppress("DEPRECATION")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+        }
+        runCatching {
+            manager.requestLocationUpdates(
+                providers.first(),
+                0L,
+                0f,
+                listener,
+                Looper.getMainLooper()
+            )
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (!locationWaiting) return@postDelayed
+                locationWaiting = false
+                manager.removeUpdates(listener)
+                Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            }, 15000L)
+        }.onFailure {
+            locationWaiting = false
+            Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun insertLocation(location: Location) {
+        val coordinates = String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
+        val edit = binding.editContent
+        val start = edit.selectionStart.coerceIn(0, edit.text.length)
+        val end = edit.selectionEnd.coerceIn(0, edit.text.length)
+        val from = minOf(start, end)
+        val to = maxOf(start, end)
+        edit.text.replace(from, to, coordinates)
+        edit.setSelection(from + coordinates.length)
+        Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+    }
 
     private fun save() {
         val content = binding.editContent.text.toString().trim()

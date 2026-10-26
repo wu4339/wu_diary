@@ -62,4 +62,8 @@
     <string name="note_hidden">已隐藏笔记</string>
     <string name="note_unhidden">已取消隐藏</string>
     <string name="hidden_empty">隐藏空间里还没有笔记</string>
+    <string name="add_location">获取坐标</string>
+    <string name="location_fetching">正在获取坐标…</string>
+    <string name="location_failed">无法获取当前位置</string>
+    <string name="location_inserted">已插入坐标</string>
 </resources>
