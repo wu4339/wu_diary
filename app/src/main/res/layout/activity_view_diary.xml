@@ -83,15 +83,6 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/textContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:lineSpacingExtra="6dp"
-                android:textColor="@color/text_body"
-                android:textSize="17sp" />
-
             <HorizontalScrollView
                 android:id="@+id/imageScroll"
                 android:layout_width="match_parent"
@@ -107,6 +98,15 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal" />
             </HorizontalScrollView>
+
+            <TextView
+                android:id="@+id/textContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:lineSpacingExtra="6dp"
+                android:textColor="@color/text_body"
+                android:textSize="17sp" />
         </LinearLayout>
     </ScrollView>
 
