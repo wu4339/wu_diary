@@ -42,6 +42,9 @@
     <string name="line_spacing_large">大</string>
     <string name="line_spacing_huge">特大</string>
     <string name="line_spacing_value">%1$s（%2$d dp）</string>
+    <string name="share_saved">已保存到今日笔记</string>
+    <string name="share_empty">没有可保存的内容</string>
+    <string name="share_failed">保存失败</string>
     <string name="note_menu">更多</string>
     <string name="edit">编辑</string>
     <string name="prev_note">上一篇</string>

@@ -14,6 +14,14 @@
         <item name="android:windowAnimationStyle">@style/WindowAnimationNone</item>
     </style>
 
+    <style name="Theme.WuDiary.Transparent" parent="Theme.WuDiary">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@style/WindowAnimationNone</item>
+    </style>
+
     <style name="WindowAnimationNone">
         <item name="android:activityOpenEnterAnimation">@null</item>
         <item name="android:activityOpenExitAnimation">@null</item>
