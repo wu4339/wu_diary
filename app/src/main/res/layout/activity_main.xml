@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:orientation="vertical">
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background"
+        android:orientation="vertical">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -232,6 +239,8 @@
                 android:contentDescription="@string/wallet"
                 app:backgroundTint="@color/surface"
                 app:elevation="4dp"
+                app:fabCustomSize="48dp"
+                app:maxImageSize="22dp"
                 app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabCircle"
                 app:srcCompat="@drawable/ic_wallet"
                 app:tint="@color/text_primary" />
@@ -248,10 +257,63 @@
                 android:contentDescription="@string/add_diary"
                 app:backgroundTint="@color/fab_dark"
                 app:elevation="6dp"
+                app:fabCustomSize="52dp"
+                app:maxImageSize="26dp"
                 app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.FabCircle"
                 app:srcCompat="@drawable/ic_add"
                 app:tint="@android:color/white" />
         </LinearLayout>
     </FrameLayout>
+    </LinearLayout>
 
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/drawerPanel"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/surface"
+        android:orientation="vertical"
+        android:paddingTop="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginBottom="20dp"
+            android:fontFamily="serif"
+            android:text="@string/app_name"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <LinearLayout
+            android:id="@+id/itemSettings"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>

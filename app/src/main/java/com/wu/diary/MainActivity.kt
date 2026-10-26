@@ -1,5 +1,6 @@
 package com.wu.diary
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedMonth = 0
     private var selectedDay = 0
     private var allEntries: List<DiaryEntry> = emptyList()
+    private var appliedScale = 1f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
 
         store = DiaryStore(this)
         settings = Settings(this)
+        appliedScale = settings.fontScale
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -62,7 +65,13 @@ class MainActivity : AppCompatActivity() {
         binding.fabAdd.setOnClickListener {
             startActivity(EditDiaryActivity.intent(this, null))
         }
-        binding.btnMenu.setOnClickListener { showFontSizeDialog() }
+        binding.btnMenu.setOnClickListener {
+            binding.drawerRoot.openDrawer(binding.drawerPanel)
+        }
+        binding.itemSettings.setOnClickListener {
+            binding.drawerRoot.closeDrawer(binding.drawerPanel)
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
@@ -73,6 +82,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (appliedScale != settings.fontScale) {
+            recreate()
+            return
+        }
         refresh()
     }
 
@@ -242,25 +255,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun dayKey(year: Int, month: Int, day: Int) = "$year-$month-$day"
-
-    private fun showFontSizeDialog() {
-        val labels = arrayOf(
-            getString(R.string.font_small),
-            getString(R.string.font_default),
-            getString(R.string.font_large),
-            getString(R.string.font_huge)
-        )
-        val scales = Settings.FONT_SCALES
-        val current = scales.indexOfFirst { it == settings.fontScale }.coerceAtLeast(1)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.font_size)
-            .setSingleChoiceItems(labels, current) { dialog, which ->
-                dialog.dismiss()
-                settings.fontScale = scales[which]
-                recreate()
-            }
-            .show()
-    }
 
     private fun confirmDelete(entry: DiaryEntry) {
         AlertDialog.Builder(this)

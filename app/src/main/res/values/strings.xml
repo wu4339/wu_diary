@@ -27,4 +27,6 @@
     <string name="week_thu">Thu</string>
     <string name="week_fri">Fri</string>
     <string name="week_sat">Sat</string>
+    <string name="settings">设置</string>
+    <string name="back">返回</string>
 </resources>
