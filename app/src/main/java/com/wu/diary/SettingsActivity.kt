@@ -65,7 +65,9 @@ class SettingsActivity : AppCompatActivity() {
             binding.switchDoubleTap.isChecked = settings.doubleTapEdit
         }
         binding.rowExport.setOnClickListener {
-            exportLauncher.launch("wu_diary_backup.zip")
+            val stamp = java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.US)
+                .format(java.util.Date())
+            exportLauncher.launch("wu_diary_backup_$stamp.zip")
         }
         binding.rowImport.setOnClickListener {
             importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))

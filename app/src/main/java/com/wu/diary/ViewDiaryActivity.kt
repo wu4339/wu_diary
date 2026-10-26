@@ -56,6 +56,7 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var ids: List<String> = emptyList()
     private var index = 0
     private var entry: DiaryEntry? = null
+    private var randomReview = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,8 +68,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
 
         val scale = Settings(this).fontScale
-        binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * scale)
-        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
+        binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
+        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
@@ -77,7 +78,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnMore.setOnClickListener { showMenu() }
         binding.btnPrev.setOnClickListener { step(-1) }
         binding.btnNext.setOnClickListener { step(1) }
-        binding.titleBox.isVisible = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
+        randomReview = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
+        binding.titleBox.isVisible = randomReview
         binding.scrollContent.setOnTouchListener { _, event ->
             doubleTapDetector.onTouchEvent(event)
             false
@@ -177,7 +179,13 @@ class ViewDiaryActivity : AppCompatActivity() {
 
     private fun step(delta: Int) {
         val target = index + delta
-        if (target !in ids.indices) return
+        if (target !in ids.indices) {
+            if (randomReview) {
+                val message = if (delta < 0) R.string.random_review_first else R.string.random_review_last
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
         index = target
         load()
         binding.scrollContent.scrollTo(0, 0)

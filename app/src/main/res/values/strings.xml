@@ -82,4 +82,6 @@
     <string name="importing">正在导入…</string>
     <string name="import_done">已导入 %1$d 篇笔记</string>
     <string name="import_failed">导入失败</string>
+    <string name="random_review_first">已经是第一篇了</string>
+    <string name="random_review_last">已经是最后一篇了</string>
 </resources>

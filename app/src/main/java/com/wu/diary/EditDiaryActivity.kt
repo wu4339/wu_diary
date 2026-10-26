@@ -105,8 +105,8 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.textEditorYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
 
         val scale = Settings(this).fontScale
-        binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * scale)
-        binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
+        binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
+        binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
 
         renderImages()
