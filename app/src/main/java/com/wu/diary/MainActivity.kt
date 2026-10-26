@@ -1,18 +1,22 @@
 package com.wu.diary
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -38,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var displayedEntries: List<DiaryEntry> = emptyList()
     private var appliedScale = 1f
     private var appliedLines = 0
+    private var searchQuery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +88,24 @@ class MainActivity : AppCompatActivity() {
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
 
+        binding.btnSearch.setOnClickListener { enterSearch() }
+        binding.btnSearchClose.setOnClickListener { exitSearch() }
+        binding.editSearch.doAfterTextChanged { text ->
+            searchQuery = text?.toString()?.trim().orEmpty()
+            applyList()
+        }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.searchBar.isVisible) {
+                    exitSearch()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
         applyScaledSizes()
         renderCalendar()
     }
@@ -103,20 +126,52 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyList() {
-        val entries = if (calendarVisible) {
-            allEntries.filter { entry ->
+        val entries = when {
+            searchQuery.isNotEmpty() -> allEntries.filter { entry ->
+                entry.content.contains(searchQuery, ignoreCase = true) ||
+                    entry.title.contains(searchQuery, ignoreCase = true)
+            }
+            calendarVisible -> allEntries.filter { entry ->
                 val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
                 day.get(Calendar.YEAR) == selectedYear &&
                     day.get(Calendar.MONTH) == selectedMonth &&
                     day.get(Calendar.DAY_OF_MONTH) == selectedDay
             }
-        } else {
-            allEntries
+            else -> allEntries
         }
         adapter.submit(entries)
         displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()
+        binding.emptySubtitle.text = getString(
+            if (searchQuery.isNotEmpty()) R.string.search_empty else R.string.empty_subtitle
+        )
+    }
+
+    private fun enterSearch() {
+        if (calendarVisible) toggleCalendar()
+        binding.drawerRoot.closeDrawer(binding.drawerPanel)
+        binding.searchBar.isVisible = true
+        binding.btnMenu.isVisible = false
+        binding.btnSearch.isVisible = false
+        binding.editSearch.setText("")
+        binding.editSearch.requestFocus()
+        binding.editSearch.post {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.editSearch, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun exitSearch() {
+        binding.searchBar.isVisible = false
+        binding.btnMenu.isVisible = true
+        binding.btnSearch.isVisible = true
+        binding.editSearch.setText("")
+        searchQuery = ""
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.editSearch.windowToken, 0)
+        binding.editSearch.clearFocus()
+        applyList()
     }
 
     private fun toggleCalendar() {
@@ -255,6 +310,7 @@ class MainActivity : AppCompatActivity() {
         val scale = settings.fontScale
         binding.textCalMonth.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
         binding.textCalYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
+        binding.editSearch.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         val header = binding.weekHeader
         for (index in 0 until header.childCount) {
             (header.getChildAt(index) as? TextView)

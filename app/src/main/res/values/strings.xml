@@ -11,6 +11,8 @@
     <string name="delete_confirm">确定删除这篇日记吗？</string>
     <string name="menu">菜单</string>
     <string name="search">搜索</string>
+    <string name="search_hint">搜索日记</string>
+    <string name="search_empty">没有找到相关日记</string>
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
     <string name="font_size">字体大小</string>
