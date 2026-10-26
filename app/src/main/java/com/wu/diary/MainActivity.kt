@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
 
         val entryDays = HashSet<String>()
         allEntries.forEach { entry ->
-            val day = Calendar.getInstance().apply { timeInMillis = entry.updatedAt }
+            val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
             entryDays.add(
                 dayKey(
                     day.get(Calendar.YEAR),
