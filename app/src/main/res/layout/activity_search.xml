@@ -38,6 +38,16 @@
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_secondary"
             android:textSize="17sp" />
+
+        <ImageButton
+            android:id="@+id/btnFilter"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/filter"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_tune" />
     </LinearLayout>
 
     <View

@@ -13,6 +13,12 @@
     <string name="search">搜索</string>
     <string name="search_hint">搜索日记</string>
     <string name="search_empty">没有找到相关日记</string>
+    <string name="filter">筛选</string>
+    <string name="advanced_search">高级搜索</string>
+    <string name="filter_has_image">包含图片</string>
+    <string name="filter_has_location">包含定位</string>
+    <string name="filter_has_tag">有标签</string>
+    <string name="filter_no_tag">无标签</string>
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
     <string name="font_size">字体大小</string>

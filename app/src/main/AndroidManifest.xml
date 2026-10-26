@@ -44,6 +44,11 @@
             android:windowSoftInputMode="stateVisible|adjustResize" />
 
         <activity
+            android:name=".SearchFilterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <activity
             android:name=".ShareReceiverActivity"
             android:excludeFromRecents="true"
             android:exported="true"
