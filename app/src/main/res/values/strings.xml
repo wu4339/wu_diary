@@ -73,7 +73,7 @@
     <string name="paragraph_empty">当前段落没有内容</string>
     <string name="save_action">Save</string>
     <string name="backup_export">导出笔记</string>
-    <string name="backup_export_desc">导出为 zip（Diary/年-月-日.md + file/images）</string>
+    <string name="backup_export_desc">导出为 zip（Diary/notes/年-月-日.md + Diary/files）</string>
     <string name="backup_import">导入笔记</string>
     <string name="backup_import_desc">从 zip 备份中恢复笔记与图片</string>
     <string name="exporting">正在导出…</string>
@@ -84,4 +84,14 @@
     <string name="import_failed">导入失败</string>
     <string name="random_review_first">已经是第一篇了</string>
     <string name="random_review_last">已经是最后一篇了</string>
+    <string name="storage_location">笔记存储位置</string>
+    <string name="storage_location_desc">笔记以 Markdown 保存到所选文件夹的 Diary/notes，图片存到 Diary/files</string>
+    <string name="storage_internal">App 内部存储</string>
+    <string name="storage_current">当前：%1$s</string>
+    <string name="storage_pick">选择文件夹</string>
+    <string name="storage_reset">恢复默认（App 内部存储）</string>
+    <string name="storage_migrating">正在迁移笔记…</string>
+    <string name="storage_updated">存储位置已更新</string>
+    <string name="storage_reset_done">已恢复默认存储</string>
+    <string name="storage_error">无法使用该文件夹</string>
 </resources>

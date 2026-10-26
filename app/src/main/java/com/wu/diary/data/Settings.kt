@@ -36,11 +36,19 @@ class Settings(context: Context) {
             prefs.edit().putBoolean(KEY_DOUBLE_TAP, value).apply()
         }
 
+    /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
+    var storageTreeUri: String?
+        get() = prefs.getString(KEY_STORAGE_URI, null)
+        set(value) {
+            prefs.edit().putString(KEY_STORAGE_URI, value).apply()
+        }
+
     companion object {
         private const val KEY_FONT_SCALE = "font_scale"
         private const val KEY_PREVIEW_LINES = "preview_lines"
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_DOUBLE_TAP = "double_tap_edit"
+        private const val KEY_STORAGE_URI = "storage_tree_uri"
 
         val FONT_SCALES = floatArrayOf(0.8f, 0.9f, 1f, 1.15f, 1.3f)
 

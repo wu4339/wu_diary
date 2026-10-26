@@ -1,11 +1,14 @@
 package com.wu.diary
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.wu.diary.data.DiaryStore
+import com.wu.diary.data.ExternalDiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySettingsBinding
 import com.wu.diary.util.BackupManager
@@ -14,6 +17,11 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var settings: Settings
+
+    private val storageLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri?.let { changeStorage(it) }
+        }
 
     private val exportLauncher =
         registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
@@ -72,8 +80,71 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowImport.setOnClickListener {
             importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
         }
+        binding.rowStorage.setOnClickListener { showStorageDialog() }
         updateFontValue()
         updatePreviewValue()
+        updateStorageValue()
+    }
+
+    private fun showStorageDialog() {
+        val options = if (settings.storageTreeUri == null) {
+            arrayOf(getString(R.string.storage_pick))
+        } else {
+            arrayOf(getString(R.string.storage_pick), getString(R.string.storage_reset))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.storage_location)
+            .setItems(options) { dialog, which ->
+                dialog.dismiss()
+                if (which == 0) storageLauncher.launch(null) else resetStorage()
+            }
+            .show()
+    }
+
+    /** 选择目录后：目录里已有笔记就直接接管，否则把当前笔记迁移过去。 */
+    private fun changeStorage(uri: Uri) {
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+        val current = DiaryStore(this).load()
+        Toast.makeText(this, R.string.storage_migrating, Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching {
+                val target = ExternalDiaryStore(this, uri)
+                if (!target.hasNotes() && current.isNotEmpty()) target.replaceAll(current)
+                settings.storageTreeUri = uri.toString()
+            }
+            runOnUiThread {
+                if (result.isSuccess) {
+                    updateStorageValue()
+                    Toast.makeText(this, R.string.storage_updated, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, R.string.storage_error, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
+    }
+
+    /** 恢复 App 内部存储，并把当前笔记写回内部。 */
+    private fun resetStorage() {
+        val current = DiaryStore(this).load()
+        settings.storageTreeUri = null
+        DiaryStore(this).replaceAll(current)
+        updateStorageValue()
+        Toast.makeText(this, R.string.storage_reset_done, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateStorageValue() {
+        val raw = settings.storageTreeUri
+        binding.textStorageValue.text = if (raw == null) {
+            getString(R.string.storage_internal)
+        } else {
+            val path = Uri.decode(raw).substringAfter(':').ifEmpty { raw }
+            getString(R.string.storage_current, path)
+        }
     }
 
     private fun exportNotes(uri: Uri) {

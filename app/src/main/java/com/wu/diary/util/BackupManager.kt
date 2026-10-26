@@ -121,6 +121,26 @@ object BackupManager {
         return count
     }
 
+    /** 生成某天笔记的 markdown（图片相对引用 Diary/files）。 */
+    fun markdownFor(day: String, entries: List<DiaryEntry>): String =
+        buildMarkdown(day, entries, SimpleDateFormat("HH:mm:ss", Locale.US))
+
+    /** 解析某天的 markdown；图片字段为文件名，由调用方到图片目录解析。 */
+    fun parse(day: String, markdown: String): List<DiaryEntry> {
+        val dayStart = dayStartMillis(day) ?: return emptyList()
+        return parseNotes(dayStart, markdown).map { note ->
+            DiaryEntry(
+                title = "",
+                content = note.content,
+                createdAt = note.createdAt,
+                updatedAt = note.createdAt,
+                images = note.images,
+                tags = note.tags,
+                hidden = note.hidden
+            )
+        }
+    }
+
     private fun buildMarkdown(
         day: String,
         entries: List<DiaryEntry>,
