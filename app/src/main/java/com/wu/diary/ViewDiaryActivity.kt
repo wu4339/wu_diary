@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
@@ -17,7 +18,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
-import android.text.method.LinkMovementMethod
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -60,6 +62,9 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var entry: DiaryEntry? = null
     private var randomReview = false
 
+    /** 翻书动画进行中，避免连续滑动打断。 */
+    private var flipping = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityViewDiaryBinding.inflate(layoutInflater)
@@ -87,15 +92,15 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnNext.setOnClickListener { step(1) }
         randomReview = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
         binding.titleBox.isVisible = randomReview
-        binding.scrollContent.setOnTouchListener { _, event ->
-            doubleTapDetector.onTouchEvent(event)
-            false
-        }
-        // 正文可点击链接后 TextView 会消费触摸事件，这里同样转发给双击识别。
-        binding.textContent.setOnTouchListener { _, event ->
-            doubleTapDetector.onTouchEvent(event)
-            false
-        }
+    }
+
+    /**
+     * 整页范围识别双击与左右滑动：正文 TextView（可点击链接）和 ScrollView 都会消费触摸事件，
+     * 在 Activity 层统一转发给手势识别，普通浏览页与随机回顾页都能左右滑动切换。
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        doubleTapDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
     /** 浏览页手势：双击进入编辑（可在设置中开启），左右滑动切换上/下一篇。 */
@@ -113,9 +118,11 @@ class ViewDiaryActivity : AppCompatActivity() {
                 if (e1 == null) return false
                 val dx = e2.x - e1.x
                 val dy = e2.y - e1.y
-                val threshold = 70 * resources.displayMetrics.density
+                val threshold = 56 * resources.displayMetrics.density
                 if (abs(dx) > threshold && abs(dx) > abs(dy) * 1.5f) {
-                    step(if (dx < 0) 1 else -1)
+                    // 图片横向列表里的滑动用于滚动图片，不切换笔记。
+                    if (isInImageStrip(e1)) return false
+                    step(if (dx < 0) 1 else -1, flip = true)
                     return true
                 }
                 return false
@@ -189,7 +196,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
     }
 
-    private fun step(delta: Int) {
+    private fun step(delta: Int, flip: Boolean = false) {
+        if (flipping) return
         val target = index + delta
         if (target !in ids.indices) {
             if (randomReview) {
@@ -198,9 +206,57 @@ class ViewDiaryActivity : AppCompatActivity() {
             }
             return
         }
+        // 随机回顾里左右滑动时用翻书效果切换，其他情况直接切换。
+        if (flip && randomReview) {
+            flipTo(target, delta)
+            return
+        }
         index = target
         load()
         binding.scrollContent.scrollTo(0, 0)
+    }
+
+    /** 随机回顾：以书脊为轴把当前页翻走，再翻入上一篇/下一篇。 */
+    private fun flipTo(target: Int, delta: Int) {
+        val page = binding.scrollContent
+        flipping = true
+        page.animate().cancel()
+        // 向后翻以左边缘为轴，向前翻以右边缘为轴，视觉上像沿书脊翻页。
+        page.pivotX = if (delta > 0) 0f else page.width.toFloat()
+        page.pivotY = page.height / 2f
+        page.animate()
+            .rotationY(if (delta > 0) 90f else -90f)
+            .setDuration(160L)
+            .setInterpolator(AccelerateInterpolator())
+            .withEndAction {
+                index = target
+                load()
+                if (isFinishing || isDestroyed) {
+                    flipping = false
+                    return@withEndAction
+                }
+                page.scrollTo(0, 0)
+                page.rotationY = if (delta > 0) -90f else 90f
+                page.animate()
+                    .rotationY(0f)
+                    .setDuration(180L)
+                    .setInterpolator(DecelerateInterpolator())
+                    .withEndAction { flipping = false }
+                    .start()
+            }
+            .start()
+    }
+
+    /** 触摸起点是否落在图片横向列表上。 */
+    private fun isInImageStrip(event: MotionEvent): Boolean {
+        val strip = binding.imageScroll
+        if (!strip.isVisible) return false
+        val location = IntArray(2)
+        strip.getLocationOnScreen(location)
+        val x = event.rawX
+        val y = event.rawY
+        return x >= location[0] && x <= location[0] + strip.width &&
+            y >= location[1] && y <= location[1] + strip.height
     }
 
     private fun openEditor() {
