@@ -29,31 +29,38 @@
         android:layout_height="1dp"
         android:background="@color/divider" />
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/headerDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="22dp"
-        android:orientation="horizontal">
+        android:clipChildren="true">
 
-        <TextView
-            android:id="@+id/textEditorDay"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="serif"
-            android:textColor="@color/text_primary"
-            android:textSize="26sp"
-            android:textStyle="bold" />
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="22dp"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/textEditorYear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="9dp"
-            android:fontFamily="serif"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
-    </LinearLayout>
+            <TextView
+                android:id="@+id/textEditorDay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="serif"
+                android:textColor="@color/text_primary"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textEditorYear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="9dp"
+                android:fontFamily="serif"
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </FrameLayout>
 
     <HorizontalScrollView
         android:id="@+id/imageScroll"
@@ -81,10 +88,14 @@
         android:layout_marginBottom="12dp"
         android:layout_weight="1"
         android:background="@null"
+        android:breakStrategy="simple"
         android:gravity="top"
         android:hint="@string/hint_content"
+        android:hyphenationFrequency="none"
         android:inputType="textMultiLine|textCapSentences"
         android:lineSpacingExtra="6dp"
+        android:overScrollMode="never"
+        android:scrollbars="none"
         android:paddingStart="0dp"
         android:paddingTop="0dp"
         android:paddingEnd="0dp"

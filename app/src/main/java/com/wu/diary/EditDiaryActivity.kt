@@ -1,6 +1,7 @@
 package com.wu.diary
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -28,6 +29,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -61,6 +64,10 @@ class EditDiaryActivity : AppCompatActivity() {
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
+    private var statusBarHidden = false
+    private var headerCollapsed = false
+    private var headerFullHeight = 0
+    private var headerAnimator: ValueAnimator? = null
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -110,6 +117,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
 
         renderImages()
+        setupScrollBehavior()
 
         binding.btnClose.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }
@@ -133,6 +141,60 @@ class EditDiaryActivity : AppCompatActivity() {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
         }
+    }
+
+    /** 内容超过一屏后，上滑时把日期一起向上收起，并把状态栏一并隐藏。 */
+    private fun setupScrollBehavior() {
+        val threshold = (4 * resources.displayMetrics.density).toInt()
+        binding.editContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            val atTop = scrollY <= 0
+            if (atTop == headerCollapsed) {
+                headerCollapsed = !atTop
+                animateHeader(collapse = headerCollapsed)
+            }
+            setStatusBarHidden(scrollY > threshold)
+        }
+    }
+
+    private fun animateHeader(collapse: Boolean) {
+        val header = binding.headerDate
+        if (headerFullHeight <= 0 && header.height > 0) headerFullHeight = header.height
+        val full = headerFullHeight
+        if (full <= 0) return
+        headerAnimator?.cancel()
+        val current = header.layoutParams.height.let { if (it >= 0) it else header.height }
+        val from = 1f - current.toFloat() / full
+        val to = if (collapse) 1f else 0f
+        headerAnimator = ValueAnimator.ofFloat(from, to).apply {
+            duration = 180
+            addUpdateListener { animation ->
+                val progress = animation.animatedValue as Float
+                header.layoutParams = header.layoutParams.apply {
+                    height = (full * (1f - progress)).toInt().coerceAtLeast(0)
+                }
+                header.translationY = -full * progress * 0.4f
+                header.alpha = 1f - progress
+            }
+            start()
+        }
+    }
+
+    private fun setStatusBarHidden(hidden: Boolean) {
+        if (statusBarHidden == hidden) return
+        statusBarHidden = hidden
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (hidden) {
+            controller.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.statusBars())
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        setStatusBarHidden(false)
     }
 
     private fun renderImages() {
