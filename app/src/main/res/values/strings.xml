@@ -18,4 +18,13 @@
     <string name="font_default">标准</string>
     <string name="font_large">大</string>
     <string name="font_huge">特大</string>
+    <string name="prev_month">上一月</string>
+    <string name="next_month">下一月</string>
+    <string name="week_sun">Sun</string>
+    <string name="week_mon">Mon</string>
+    <string name="week_tue">Tue</string>
+    <string name="week_wed">Wed</string>
+    <string name="week_thu">Thu</string>
+    <string name="week_fri">Fri</string>
+    <string name="week_sat">Sat</string>
 </resources>

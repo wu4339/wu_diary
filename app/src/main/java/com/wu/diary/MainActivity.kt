@@ -1,14 +1,24 @@
 package com.wu.diary
 
 import android.os.Bundle
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityMainBinding
+import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
+import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,6 +27,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settings: Settings
     private lateinit var adapter: DiaryAdapter
 
+    private var calendarVisible = false
+    private var displayYear = 0
+    private var displayMonth = 0
+    private var selectedYear = 0
+    private var selectedMonth = 0
+    private var selectedDay = 0
+    private var allEntries: List<DiaryEntry> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -24,6 +42,14 @@ class MainActivity : AppCompatActivity() {
 
         store = DiaryStore(this)
         settings = Settings(this)
+
+        val today = Calendar.getInstance()
+        displayYear = today.get(Calendar.YEAR)
+        displayMonth = today.get(Calendar.MONTH)
+        selectedYear = displayYear
+        selectedMonth = displayMonth
+        selectedDay = today.get(Calendar.DAY_OF_MONTH)
+
         adapter = DiaryAdapter(
             fontScale = settings.fontScale,
             onClick = { entry ->
@@ -37,6 +63,12 @@ class MainActivity : AppCompatActivity() {
             startActivity(EditDiaryActivity.intent(this, null))
         }
         binding.btnMenu.setOnClickListener { showFontSizeDialog() }
+        binding.fabWallet.setOnClickListener { toggleCalendar() }
+        binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
+        binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
+
+        applyScaledSizes()
+        renderCalendar()
     }
 
     override fun onResume() {
@@ -45,11 +77,171 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val entries = store.load()
+        allEntries = store.load()
+        if (calendarVisible) renderCalendar()
+        applyList()
+    }
+
+    private fun applyList() {
+        val entries = if (calendarVisible) {
+            allEntries.filter { entry ->
+                val day = Calendar.getInstance().apply { timeInMillis = entry.updatedAt }
+                day.get(Calendar.YEAR) == selectedYear &&
+                    day.get(Calendar.MONTH) == selectedMonth &&
+                    day.get(Calendar.DAY_OF_MONTH) == selectedDay
+            }
+        } else {
+            allEntries
+        }
         adapter.submit(entries)
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()
     }
+
+    private fun toggleCalendar() {
+        calendarVisible = !calendarVisible
+        binding.calendarPanel.isVisible = calendarVisible
+        binding.fabWallet.setImageResource(
+            if (calendarVisible) R.drawable.ic_stack else R.drawable.ic_wallet
+        )
+        if (calendarVisible) {
+            val today = Calendar.getInstance()
+            displayYear = today.get(Calendar.YEAR)
+            displayMonth = today.get(Calendar.MONTH)
+            selectedYear = displayYear
+            selectedMonth = displayMonth
+            selectedDay = today.get(Calendar.DAY_OF_MONTH)
+            renderCalendar()
+        }
+        applyList()
+    }
+
+    private fun shiftMonth(delta: Int) {
+        val calendar = Calendar.getInstance().apply {
+            clear()
+            set(displayYear, displayMonth, 1)
+        }
+        calendar.add(Calendar.MONTH, delta)
+        displayYear = calendar.get(Calendar.YEAR)
+        displayMonth = calendar.get(Calendar.MONTH)
+        renderCalendar()
+    }
+
+    private fun renderCalendar() {
+        binding.textCalMonth.text = (displayMonth + 1).toString()
+        binding.textCalYear.text = displayYear.toString()
+
+        val entryDays = HashSet<String>()
+        allEntries.forEach { entry ->
+            val day = Calendar.getInstance().apply { timeInMillis = entry.updatedAt }
+            entryDays.add(
+                dayKey(
+                    day.get(Calendar.YEAR),
+                    day.get(Calendar.MONTH),
+                    day.get(Calendar.DAY_OF_MONTH)
+                )
+            )
+        }
+
+        val first = Calendar.getInstance().apply {
+            clear()
+            set(displayYear, displayMonth, 1)
+        }
+        val leading = first.get(Calendar.DAY_OF_WEEK) - 1
+        val daysInMonth = first.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val rows = (leading + daysInMonth + 6) / 7
+
+        val cursor = Calendar.getInstance().apply {
+            clear()
+            set(displayYear, displayMonth, 1)
+            add(Calendar.DAY_OF_MONTH, -leading)
+        }
+
+        val density = resources.displayMetrics.density
+        binding.dayGrid.removeAllViews()
+        repeat(rows) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            binding.dayGrid.addView(
+                row,
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (44 * density).toInt())
+            )
+            repeat(7) {
+                val year = cursor.get(Calendar.YEAR)
+                val month = cursor.get(Calendar.MONTH)
+                val day = cursor.get(Calendar.DAY_OF_MONTH)
+                row.addView(buildDayCell(year, month, day, entryDays.contains(dayKey(year, month, day))))
+                cursor.add(Calendar.DAY_OF_MONTH, 1)
+            }
+        }
+    }
+
+    private fun buildDayCell(year: Int, month: Int, dayOfMonth: Int, hasEntry: Boolean): View {
+        val density = resources.displayMetrics.density
+        val inMonth = month == displayMonth
+        val isSelected = year == selectedYear && month == selectedMonth && dayOfMonth == selectedDay
+
+        val cell = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+        }
+        val inner = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            if (isSelected) setBackgroundResource(R.drawable.bg_day_selected)
+        }
+        val size = (44 * density).toInt()
+        cell.addView(inner, FrameLayout.LayoutParams(size, size, Gravity.CENTER))
+
+        val number = TextView(this).apply {
+            text = dayOfMonth.toString()
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            setTextColor(
+                ContextCompat.getColor(
+                    this@MainActivity,
+                    if (inMonth) R.color.text_primary else R.color.text_secondary
+                )
+            )
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * settings.fontScale)
+        }
+        inner.addView(number)
+
+        val dot = View(this).apply {
+            setBackgroundResource(R.drawable.bg_day_dot)
+            visibility = if (hasEntry) View.VISIBLE else View.INVISIBLE
+        }
+        inner.addView(
+            dot,
+            LinearLayout.LayoutParams((5 * density).toInt(), (5 * density).toInt()).apply {
+                topMargin = (3 * density).toInt()
+            }
+        )
+
+        cell.setOnClickListener {
+            selectedYear = year
+            selectedMonth = month
+            selectedDay = dayOfMonth
+            if (!inMonth) {
+                displayYear = year
+                displayMonth = month
+            }
+            renderCalendar()
+            applyList()
+        }
+        return cell
+    }
+
+    private fun applyScaledSizes() {
+        val scale = settings.fontScale
+        binding.textCalMonth.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
+        binding.textCalYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
+        val header = binding.weekHeader
+        for (index in 0 until header.childCount) {
+            (header.getChildAt(index) as? TextView)
+                ?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
+        }
+    }
+
+    private fun dayKey(year: Int, month: Int, day: Int) = "$year-$month-$day"
 
     private fun showFontSizeDialog() {
         val labels = arrayOf(
@@ -70,7 +262,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun confirmDelete(entry: com.wu.diary.model.DiaryEntry) {
+    private fun confirmDelete(entry: DiaryEntry) {
         AlertDialog.Builder(this)
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
