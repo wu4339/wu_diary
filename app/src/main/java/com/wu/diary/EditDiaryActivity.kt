@@ -410,6 +410,8 @@ class EditDiaryActivity : AppCompatActivity() {
         // 立即关闭编辑页，存储放到后台线程，避免点击保存后界面停顿。
         Feedback.saved(this)
         finish()
-        Thread { store.save(entry) }.start()
+        // 页面已关闭，用 Application Context 写入，避免继续持有正在销毁的 Activity。
+        val appContext = applicationContext
+        Thread { DiaryStore(appContext).save(entry) }.start()
     }
 }

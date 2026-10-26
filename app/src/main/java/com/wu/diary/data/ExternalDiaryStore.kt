@@ -81,13 +81,27 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
 
     private fun writeDay(day: String, entries: List<DiaryEntry>) {
         val name = "$day.md"
-        notesDir?.findFile(name)?.delete()
-        if (entries.isEmpty()) return
-        val file = notesDir?.createFile("text/markdown", name) ?: return
-        context.contentResolver.openOutputStream(file.uri)?.use {
-            it.write(BackupManager.markdownFor(day, entries.sortedBy { e -> e.createdAt })
-                .toByteArray(Charsets.UTF_8))
+        val existing = notesDir?.findFile(name)
+        if (entries.isEmpty()) {
+            existing?.delete()
+            return
         }
+        val content = BackupManager.markdownFor(day, entries.sortedBy { e -> e.createdAt })
+            .toByteArray(Charsets.UTF_8)
+        // 优先覆盖已有文件，避免删除后再重建的瞬间文件不存在，导致界面读到空的一天。
+        if (existing != null) {
+            val overwritten = runCatching {
+                context.contentResolver.openOutputStream(existing.uri, "wt")?.use {
+                    it.write(content)
+                } ?: error("无法写入笔记文件")
+            }.isSuccess
+            if (overwritten) return
+            existing.delete()
+        }
+        val file = notesDir?.createFile("text/markdown", name) ?: error("无法创建笔记文件")
+        context.contentResolver.openOutputStream(file.uri)?.use {
+            it.write(content)
+        } ?: error("无法写入笔记文件")
     }
 
     private fun copyImages(paths: List<String>) {

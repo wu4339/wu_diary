@@ -1,8 +1,10 @@
 package com.wu.diary
 
+import android.content.BroadcastReceiver
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.util.TypedValue
@@ -58,6 +60,14 @@ class MainActivity : AppCompatActivity() {
     private var pullReady = false
     private var pullAllowed = false
     private var pullTriggered = false
+    private var receiverRegistered = false
+
+    /** 后台保存完成后通知刷新，避免刚编辑完回到列表时读到写入中的文件。 */
+    private val dataChangedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            refresh()
+        }
+    }
     private var pullAnimator: ValueAnimator? = null
 
     /** 上次随机回顾到的笔记，避免连续两次打开同一篇。 */
@@ -137,6 +147,25 @@ class MainActivity : AppCompatActivity() {
 
         applyScaledSizes()
         renderCalendar()
+
+        // 从创建到销毁一直监听数据变更：后台写入完成时即使界面处于后台也能收到广播并刷新。
+        if (!receiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                dataChangedReceiver,
+                IntentFilter(DiaryStore.ACTION_DATA_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            receiverRegistered = true
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (receiverRegistered) {
+            unregisterReceiver(dataChangedReceiver)
+            receiverRegistered = false
+        }
     }
 
     /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）；顶部下拉读取剪贴板。 */
