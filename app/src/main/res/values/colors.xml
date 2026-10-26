@@ -9,4 +9,5 @@
     <color name="text_secondary">#BDBDBD</color>
     <color name="divider">#EFEFEF</color>
     <color name="fab_dark">#111111</color>
+    <color name="danger">#D93F3F</color>
 </resources>

@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedMonth = 0
     private var selectedDay = 0
     private var allEntries: List<DiaryEntry> = emptyList()
+    private var displayedEntries: List<DiaryEntry> = emptyList()
     private var appliedScale = 1f
     private var appliedLines = 0
 
@@ -59,7 +60,9 @@ class MainActivity : AppCompatActivity() {
             fontScale = settings.fontScale,
             previewLines = settings.previewLines,
             onClick = { entry ->
-                startActivity(EditDiaryActivity.intent(this, entry.id))
+                val ids = displayedEntries.map { it.id }
+                val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
+                startActivity(ViewDiaryActivity.intent(this, ids, index))
             },
             onLongClick = { entry -> confirmDelete(entry) }
         )
@@ -111,6 +114,7 @@ class MainActivity : AppCompatActivity() {
             allEntries
         }
         adapter.submit(entries)
+        displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()
     }

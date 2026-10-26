@@ -1,0 +1,202 @@
+package com.wu.diary
+
+import android.app.Dialog
+import android.content.Context
+import android.content.Intent
+import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowManager
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import com.wu.diary.data.DiaryStore
+import com.wu.diary.data.Settings
+import com.wu.diary.databinding.ActivityViewDiaryBinding
+import com.wu.diary.databinding.DialogNoteMenuBinding
+import com.wu.diary.model.DiaryEntry
+import com.wu.diary.util.ImageLoader
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/** 只读的笔记浏览页：支持上一篇/下一篇、编辑、删除，图片可点开大图。 */
+class ViewDiaryActivity : AppCompatActivity() {
+
+    companion object {
+        private const val EXTRA_IDS = "entry_ids"
+        private const val EXTRA_INDEX = "entry_index"
+
+        fun intent(context: Context, ids: List<String>, index: Int): Intent =
+            Intent(context, ViewDiaryActivity::class.java)
+                .putStringArrayListExtra(EXTRA_IDS, ArrayList(ids))
+                .putExtra(EXTRA_INDEX, index)
+    }
+
+    private lateinit var binding: ActivityViewDiaryBinding
+    private lateinit var store: DiaryStore
+
+    private var ids: List<String> = emptyList()
+    private var index = 0
+    private var entry: DiaryEntry? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityViewDiaryBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        store = DiaryStore(this)
+        ids = intent.getStringArrayListExtra(EXTRA_IDS) ?: emptyList()
+        index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
+
+        val scale = Settings(this).fontScale
+        binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * scale)
+        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
+        binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
+
+        binding.btnClose.setOnClickListener { finish() }
+        binding.btnMore.setOnClickListener { showMenu() }
+        binding.btnPrev.setOnClickListener { step(-1) }
+        binding.btnNext.setOnClickListener { step(1) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        load()
+    }
+
+    private fun load() {
+        val all = store.load()
+        entry = ids.getOrNull(index)?.let { id -> all.find { it.id == id } }
+        if (entry == null) {
+            finish()
+            return
+        }
+        render()
+    }
+
+    private fun render() {
+        val current = entry ?: return
+
+        val date = Date(current.createdAt)
+        binding.textDay.text = SimpleDateFormat("M/d", Locale.getDefault()).format(date)
+        binding.textYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
+
+        val text = listOf(current.title, current.content)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+        binding.textContent.text = text
+        binding.textContent.isVisible = text.isNotEmpty()
+
+        renderImages(current)
+        updateNav()
+    }
+
+    private fun renderImages(current: DiaryEntry) {
+        binding.imageContainer.removeAllViews()
+        binding.imageContainer.isVisible = current.images.isNotEmpty()
+        val width = resources.displayMetrics.widthPixels - (48 * resources.displayMetrics.density).toInt()
+        val gap = (14 * resources.displayMetrics.density).toInt()
+        current.images.forEach { path ->
+            val image = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = gap }
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageBitmap(ImageLoader.load(path, width))
+            }
+            image.setOnClickListener { openImage(path) }
+            binding.imageContainer.addView(image)
+        }
+    }
+
+    private fun updateNav() {
+        val hasPrev = index > 0
+        val hasNext = index < ids.lastIndex
+        binding.btnPrev.apply {
+            isEnabled = hasPrev
+            alpha = if (hasPrev) 1f else 0.25f
+        }
+        binding.btnNext.apply {
+            isEnabled = hasNext
+            alpha = if (hasNext) 1f else 0.25f
+        }
+    }
+
+    private fun step(delta: Int) {
+        val target = index + delta
+        if (target !in ids.indices) return
+        index = target
+        load()
+    }
+
+    /** 全屏查看图片，点击任意位置关闭。 */
+    private fun openImage(path: String) {
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val screenSize = maxOf(
+            resources.displayMetrics.widthPixels,
+            resources.displayMetrics.heightPixels
+        )
+        val image = ImageView(this).apply {
+            setBackgroundColor(Color.BLACK)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setImageBitmap(
+                ImageLoader.load(path, screenSize) ?: BitmapFactory.decodeFile(path)
+            )
+        }
+        image.setOnClickListener { dialog.dismiss() }
+        dialog.setContentView(image)
+        dialog.show()
+    }
+
+    private fun showMenu() {
+        val dialog = Dialog(this)
+        val menu = DialogNoteMenuBinding.inflate(layoutInflater)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(menu.root)
+
+        menu.itemEdit.setOnClickListener {
+            dialog.dismiss()
+            entry?.let { startActivity(EditDiaryActivity.intent(this, it.id)) }
+        }
+        menu.itemDelete.setOnClickListener {
+            dialog.dismiss()
+            confirmDelete()
+        }
+
+        val density = resources.displayMetrics.density
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.25f)
+            setGravity(Gravity.TOP or Gravity.END)
+            setLayout((210 * density).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+            attributes = attributes.apply {
+                y = (56 * density).toInt()
+                x = (8 * density).toInt()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun confirmDelete() {
+        val current = entry ?: return
+        AlertDialog.Builder(this)
+            .setMessage(R.string.delete_confirm)
+            .setPositiveButton(R.string.delete) { _, _ ->
+                store.delete(current.id)
+                finish()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+}

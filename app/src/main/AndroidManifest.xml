@@ -23,6 +23,10 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ViewDiaryActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".SettingsActivity"
             android:exported="false" />
     </application>

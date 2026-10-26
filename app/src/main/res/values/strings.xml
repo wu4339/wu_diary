@@ -33,4 +33,8 @@
     <string name="preview_lines">预览行数</string>
     <string name="preview_value">%1$d 行</string>
     <string name="preview_all">全显</string>
+    <string name="note_menu">更多</string>
+    <string name="edit">编辑</string>
+    <string name="prev_note">上一篇</string>
+    <string name="next_note">下一篇</string>
 </resources>
