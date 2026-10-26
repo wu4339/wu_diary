@@ -19,6 +19,14 @@
         android:textColor="@color/text_body"
         android:textSize="16sp" />
 
+    <LinearLayout
+        android:id="@+id/imageStrip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"

@@ -1,17 +1,23 @@
 package com.wu.diary.ui
 
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
+import com.wu.diary.util.ImageLoader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /** 按天分组的日记列表：同一天的记录共用一个日期头，记录之间用分割线隔开。 */
 class DiaryAdapter(
+    private val fontScale: Float,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -62,28 +68,48 @@ class DiaryAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
-            is Row.DateHeader -> {
-                val binding = (holder as DateViewHolder).binding
-                binding.textDate.text = row.day
-                binding.textYear.text = row.year
-                val top = binding.root.resources.displayMetrics.density * if (row.isFirst) 16 else 34
-                binding.root.setPadding(
-                    binding.root.paddingLeft,
-                    top.toInt(),
-                    binding.root.paddingRight,
-                    binding.root.paddingBottom
-                )
-            }
-
-            is Row.Entry -> {
-                val binding = (holder as EntryViewHolder).binding
-                binding.textBody.text = listOf(row.entry.title.trim(), row.entry.content.trim())
-                    .filter { it.isNotEmpty() }
-                    .joinToString("\n")
-                binding.root.setOnClickListener { onClick(row.entry) }
-                binding.root.setOnLongClickListener { onLongClick(row.entry); true }
-            }
+            is Row.DateHeader -> bindDate((holder as DateViewHolder).binding, row)
+            is Row.Entry -> bindEntry((holder as EntryViewHolder).binding, row.entry)
         }
+    }
+
+    private fun bindDate(binding: ItemDateBinding, row: Row.DateHeader) {
+        binding.textDate.text = row.day
+        binding.textYear.text = row.year
+        binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * fontScale)
+        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
+        val top = binding.root.resources.displayMetrics.density * if (row.isFirst) 16 else 34
+        binding.root.setPadding(
+            binding.root.paddingLeft,
+            top.toInt(),
+            binding.root.paddingRight,
+            binding.root.paddingBottom
+        )
+    }
+
+    private fun bindEntry(binding: ItemDiaryBinding, entry: DiaryEntry) {
+        val body = listOf(entry.title.trim(), entry.content.trim())
+            .filter { it.isNotEmpty() }
+            .joinToString("\n")
+        binding.textBody.text = body
+        binding.textBody.isVisible = body.isNotEmpty()
+        binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
+
+        binding.imageStrip.removeAllViews()
+        binding.imageStrip.isVisible = entry.images.isNotEmpty()
+        val thumb = (78 * binding.root.resources.displayMetrics.density).toInt()
+        val gap = (8 * binding.root.resources.displayMetrics.density).toInt()
+        entry.images.take(3).forEach { path ->
+            val image = ImageView(binding.root.context).apply {
+                layoutParams = LinearLayout.LayoutParams(thumb, thumb).apply { rightMargin = gap }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(ImageLoader.load(path, thumb))
+            }
+            binding.imageStrip.addView(image)
+        }
+
+        binding.root.setOnClickListener { onClick(entry) }
+        binding.root.setOnLongClickListener { onLongClick(entry); true }
     }
 
     companion object {

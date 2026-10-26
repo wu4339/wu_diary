@@ -13,4 +13,9 @@
     <string name="search">搜索</string>
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
+    <string name="font_size">字体大小</string>
+    <string name="font_small">小</string>
+    <string name="font_default">标准</string>
+    <string name="font_large">大</string>
+    <string name="font_huge">特大</string>
 </resources>

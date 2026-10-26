@@ -24,7 +24,9 @@ class DiaryStore(context: Context) {
     }
 
     fun delete(id: String) {
-        write(load().filterNot { it.id == id })
+        val all = load()
+        all.find { it.id == id }?.images?.forEach { File(it).delete() }
+        write(all.filterNot { it.id == id })
     }
 
     private fun write(entries: List<DiaryEntry>) {

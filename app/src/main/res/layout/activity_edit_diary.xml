@@ -55,6 +55,23 @@
             android:textSize="14sp" />
     </LinearLayout>
 
+    <HorizontalScrollView
+        android:id="@+id/imageScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="24dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/imageStrip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
     <EditText
         android:id="@+id/editContent"
         android:layout_width="match_parent"
