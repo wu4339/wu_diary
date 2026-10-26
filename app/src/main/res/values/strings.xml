@@ -56,4 +56,10 @@
     <string name="remove_image">删除图片</string>
     <string name="note_position">%1$d / %2$d</string>
     <string name="clipboard_created">已用剪贴板内容创建笔记</string>
+    <string name="hidden_space">隐藏空间</string>
+    <string name="hide_note">隐藏笔记</string>
+    <string name="unhide_note">取消隐藏</string>
+    <string name="note_hidden">已隐藏笔记</string>
+    <string name="note_unhidden">已取消隐藏</string>
+    <string name="hidden_empty">隐藏空间里还没有笔记</string>
 </resources>

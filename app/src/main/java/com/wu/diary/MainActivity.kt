@@ -96,6 +96,10 @@ class MainActivity : AppCompatActivity() {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)
             reviewRandom()
         }
+        binding.itemHiddenSpace.setOnClickListener {
+            binding.drawerRoot.closeDrawer(binding.drawerPanel)
+            startActivity(Intent(this, HiddenDiaryActivity::class.java))
+        }
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
@@ -197,7 +201,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        allEntries = store.load()
+        allEntries = store.load().filter { !it.hidden }
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
@@ -455,7 +459,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 随机挑一篇已有日记打开浏览页，上下篇可继续在全部日记间切换。 */
     private fun reviewRandom() {
-        val entries = store.load()
+        val entries = store.load().filter { !it.hidden }
         if (entries.isEmpty()) {
             Toast.makeText(this, R.string.random_review_empty, Toast.LENGTH_SHORT).show()
             return

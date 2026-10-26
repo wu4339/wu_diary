@@ -13,7 +13,9 @@ data class DiaryEntry(
     /** 本地图片绝对路径列表。 */
     val images: List<String> = emptyList(),
     /** 笔记标签。 */
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    /** 是否已隐藏（只在隐藏空间显示）。 */
+    val hidden: Boolean = false
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -23,6 +25,7 @@ data class DiaryEntry(
         put("updatedAt", updatedAt)
         put("images", JSONArray(images))
         put("tags", JSONArray(tags))
+        put("hidden", hidden)
     }
 
     companion object {
@@ -34,7 +37,8 @@ data class DiaryEntry(
                 createdAt = o.getLong("createdAt"),
                 updatedAt = o.getLong("updatedAt"),
                 images = readStringList(o.optJSONArray("images")),
-                tags = readStringList(o.optJSONArray("tags"))
+                tags = readStringList(o.optJSONArray("tags")),
+                hidden = o.optBoolean("hidden", false)
             )
         }
 

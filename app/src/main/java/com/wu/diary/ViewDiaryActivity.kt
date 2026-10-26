@@ -18,6 +18,7 @@ import android.view.WindowManager
 import android.text.method.LinkMovementMethod
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowInsetsControllerCompat
@@ -225,6 +226,25 @@ class ViewDiaryActivity : AppCompatActivity() {
         menu.itemDelete.setOnClickListener {
             dialog.dismiss()
             confirmDelete()
+        }
+        val current = entry
+        menu.itemHide.isVisible = current != null
+        if (current?.hidden == true) {
+            menu.textHide.text = getString(R.string.unhide_note)
+            menu.iconHide.setImageResource(R.drawable.ic_show)
+        }
+        menu.itemHide.setOnClickListener {
+            dialog.dismiss()
+            if (current == null) return@setOnClickListener
+            store.save(
+                current.copy(hidden = !current.hidden, updatedAt = System.currentTimeMillis())
+            )
+            Toast.makeText(
+                this,
+                if (current.hidden) R.string.note_unhidden else R.string.note_hidden,
+                Toast.LENGTH_SHORT
+            ).show()
+            finish()
         }
 
         val density = resources.displayMetrics.density
