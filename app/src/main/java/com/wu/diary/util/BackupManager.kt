@@ -15,12 +15,15 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
- * 笔记备份：导出为 zip（Diary/年-月-日.md + file/images/图片），也可从该结构导入。
+ * 笔记备份：导出为 zip（Diary/notes/年-月-日.md + Diary/files/图片），也可从该结构导入。
  */
 object BackupManager {
 
     private const val DIARY_DIR = "Diary"
-    private const val IMAGE_DIR = "file/images"
+    private const val NOTE_DIR = "Diary/notes"
+    private const val IMAGE_DIR = "Diary/files"
+    /** md 位于 Diary/notes，图片相对引用到 Diary/files。 */
+    private const val IMAGE_REF = "../files/"
 
     /** 导出全部笔记到指定 uri，返回导出的笔记数量。 */
     fun export(context: Context, uri: Uri): Int {
@@ -35,7 +38,7 @@ object BackupManager {
                 entries.groupBy { dayFormat.format(Date(it.createdAt)) }
                     .forEach { (day, dayEntries) ->
                         val markdown = buildMarkdown(day, dayEntries, timeFormat)
-                        zip.putNextEntry(ZipEntry("$DIARY_DIR/$day.md"))
+                        zip.putNextEntry(ZipEntry("$NOTE_DIR/$day.md"))
                         zip.write(markdown.toByteArray(Charsets.UTF_8))
                         zip.closeEntry()
                         dayEntries.forEach { entry ->
@@ -79,7 +82,7 @@ object BackupManager {
                                         String(zip.readBytes(), Charsets.UTF_8)
                                 )
                             }
-                            name.startsWith("$IMAGE_DIR/") -> {
+                            name.startsWith("$IMAGE_DIR/") || name.startsWith("file/images/") -> {
                                 val baseName = name.substringAfterLast('/')
                                 if (baseName.isNotEmpty()) {
                                     val target = uniqueImage(imageDir, baseName)
@@ -138,7 +141,7 @@ object BackupManager {
                 append("\n\n")
             }
             entry.images.forEach { path ->
-                append("![](../").append(IMAGE_DIR).append('/')
+                append("![]($IMAGE_REF")
                 append(File(path).name).append(")\n")
             }
             if (entry.images.isNotEmpty()) append("\n")
@@ -191,7 +194,9 @@ object BackupManager {
             val image = Regex("!\\[[^\\]]*]\\(([^)]+)\\)").find(trimmed)
             if (image != null) {
                 val path = image.groupValues[1]
-                if (path.contains("/images/")) images.add(path.substringAfterLast('/'))
+                if (path.contains("/images/") || path.contains("/files/")) {
+                    images.add(path.substringAfterLast('/'))
+                }
                 return@forEach
             }
             val tagText = when {
