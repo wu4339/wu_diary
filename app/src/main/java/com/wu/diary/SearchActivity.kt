@@ -60,8 +60,9 @@ class SearchActivity : AppCompatActivity() {
 
     private fun showResults(query: String) {
         val keyword = query.trim()
+        // 还没输入关键词时保持空白，不预先列出全部笔记。
         results = if (keyword.isEmpty()) {
-            allEntries
+            emptyList()
         } else {
             allEntries.filter { entry ->
                 entry.content.contains(keyword, ignoreCase = true) ||
@@ -70,7 +71,7 @@ class SearchActivity : AppCompatActivity() {
             }
         }
         adapter.submit(results, keyword)
-        binding.emptyView.isVisible = results.isEmpty()
+        binding.emptyView.isVisible = keyword.isNotEmpty() && results.isEmpty()
         binding.recycler.isVisible = results.isNotEmpty()
     }
 }
