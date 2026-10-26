@@ -319,16 +319,35 @@
         android:orientation="vertical"
         android:paddingTop="28dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="20dp"
-            android:fontFamily="serif"
-            android:text="@string/app_name"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="serif"
+                android:text="@string/app_name"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnSettingsTop"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/settings"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/text_primary" />
+        </LinearLayout>
 
         <View
             android:layout_width="match_parent"
@@ -359,29 +378,28 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <LinearLayout
-            android:id="@+id/itemSettings"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="24dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="6dp"
+            android:text="@string/tags_section"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
 
-            <TextView
-                android:layout_width="wrap_content"
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:id="@+id/tagList"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/settings"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/divider" />
+                android:orientation="vertical" />
+        </ScrollView>
     </LinearLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>

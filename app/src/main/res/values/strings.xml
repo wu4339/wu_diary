@@ -48,4 +48,6 @@
     <string name="add_tag">添加标签</string>
     <string name="tag_dialog_title">标签</string>
     <string name="tags_hint">用空格或逗号分隔多个标签</string>
+    <string name="tags_section">标签</string>
+    <string name="tags_empty">暂无标签</string>
 </resources>

@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnMenu.setOnClickListener {
             binding.drawerRoot.openDrawer(binding.drawerPanel)
         }
-        binding.itemSettings.setOnClickListener {
+        binding.btnSettingsTop.setOnClickListener {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)
             startActivity(Intent(this, SettingsActivity::class.java))
         }
@@ -152,8 +152,48 @@ class MainActivity : AppCompatActivity() {
 
     private fun refresh() {
         allEntries = store.load()
+        renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
+    }
+
+    /** 侧栏标签列表：汇总所有笔记的标签。 */
+    private fun renderTags() {
+        val container = binding.tagList
+        container.removeAllViews()
+        val density = resources.displayMetrics.density
+        val tags = allEntries.flatMap { it.tags }.distinct().sorted()
+        if (tags.isEmpty()) {
+            container.addView(
+                TextView(this).apply {
+                    text = getString(R.string.tags_empty)
+                    setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    setPadding(
+                        (24 * density).toInt(),
+                        (8 * density).toInt(),
+                        (24 * density).toInt(),
+                        (8 * density).toInt()
+                    )
+                }
+            )
+            return
+        }
+        tags.forEach { tag ->
+            container.addView(
+                TextView(this).apply {
+                    text = "#$tag"
+                    setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setPadding(
+                        (24 * density).toInt(),
+                        (12 * density).toInt(),
+                        (24 * density).toInt(),
+                        (12 * density).toInt()
+                    )
+                }
+            )
+        }
     }
 
     private fun applyList() {
