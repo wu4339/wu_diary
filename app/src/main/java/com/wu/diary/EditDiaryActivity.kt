@@ -2,6 +2,8 @@ package com.wu.diary
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -114,6 +116,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
         binding.btnTag.setOnClickListener { editTags() }
         binding.btnLocation.setOnClickListener { fetchLocation() }
+        binding.btnCut.setOnClickListener { cutParagraph() }
 
         if (existing != null) {
             binding.editContent.setSelection(binding.editContent.text.length)
@@ -217,6 +220,27 @@ class EditDiaryActivity : AppCompatActivity() {
             .filter { it.isNotEmpty() }
             .distinct()
             .take(10)
+
+    /** 剪切光标所在的整个段落：复制到剪贴板并从正文中删除。 */
+    private fun cutParagraph() {
+        val edit = binding.editContent
+        val cursor = edit.selectionStart.coerceIn(0, edit.text.length)
+        val text = edit.text
+        val lineStart = text.lastIndexOf("\n", cursor - 1) + 1
+        val lineEnd = text.indexOf("\n", cursor)
+        val end = if (lineEnd == -1) text.length else lineEnd
+        val paragraph = text.subSequence(lineStart, end).toString()
+        if (paragraph.isEmpty()) {
+            Toast.makeText(this, R.string.paragraph_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("wu_diary", paragraph))
+        val deleteEnd = if (lineEnd == -1) text.length else lineEnd + 1
+        text.delete(lineStart, deleteEnd)
+        edit.setSelection(lineStart)
+        Toast.makeText(this, R.string.paragraph_cut, Toast.LENGTH_SHORT).show()
+    }
 
     /** 获取当前位置坐标并插入到光标处。 */
     @SuppressLint("MissingPermission")

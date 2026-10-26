@@ -136,6 +136,17 @@
             android:src="@drawable/ic_location"
             app:tint="@color/text_primary" />
 
+        <ImageButton
+            android:id="@+id/btnCut"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cut_paragraph"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_cut"
+            app:tint="@color/text_primary" />
+
         <Space
             android:layout_width="0dp"
             android:layout_height="1dp"

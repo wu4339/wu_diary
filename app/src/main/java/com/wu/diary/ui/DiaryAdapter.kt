@@ -26,7 +26,7 @@ class DiaryAdapter(
 
     private sealed interface Row {
         data class DateHeader(val day: String, val year: String, val isFirst: Boolean) : Row
-        data class Entry(val entry: DiaryEntry) : Row
+        data class Entry(val entry: DiaryEntry, val isGroupEnd: Boolean) : Row
     }
 
     private val rows = mutableListOf<Row>()
@@ -35,16 +35,25 @@ class DiaryAdapter(
     private val yearTextFormat = SimpleDateFormat("yyyy", Locale.getDefault())
 
     fun submit(entries: List<DiaryEntry>) {
-        rows.clear()
+        val built = mutableListOf<Row>()
         var currentDay: String? = null
         entries.sortedByDescending { it.createdAt }.forEach { entry ->
             val date = Date(entry.createdAt)
             val day = dayFormat.format(date)
             if (day != currentDay) {
-                rows.add(Row.DateHeader(dayTextFormat.format(date), yearTextFormat.format(date), currentDay == null))
+                built.add(Row.DateHeader(dayTextFormat.format(date), yearTextFormat.format(date), currentDay == null))
                 currentDay = day
             }
-            rows.add(Row.Entry(entry))
+            built.add(Row.Entry(entry, false))
+        }
+        rows.clear()
+        built.forEachIndexed { index, row ->
+            if (row is Row.Entry) {
+                val next = built.getOrNull(index + 1)
+                rows.add(Row.Entry(row.entry, next == null || next is Row.DateHeader))
+            } else {
+                rows.add(row)
+            }
         }
         notifyDataSetChanged()
     }
@@ -71,7 +80,7 @@ class DiaryAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
             is Row.DateHeader -> bindDate((holder as DateViewHolder).binding, row)
-            is Row.Entry -> bindEntry((holder as EntryViewHolder).binding, row.entry)
+            is Row.Entry -> bindEntry((holder as EntryViewHolder).binding, row.entry, row.isGroupEnd)
         }
     }
 
@@ -89,7 +98,7 @@ class DiaryAdapter(
         )
     }
 
-    private fun bindEntry(binding: ItemDiaryBinding, entry: DiaryEntry) {
+    private fun bindEntry(binding: ItemDiaryBinding, entry: DiaryEntry, isGroupEnd: Boolean) {
         val body = listOf(entry.title.trim(), entry.content.trim())
             .filter { it.isNotEmpty() }
             .joinToString("\n")
@@ -98,6 +107,19 @@ class DiaryAdapter(
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
+
+        // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
+        val dividerMargin = if (isGroupEnd) {
+            0
+        } else {
+            (24 * binding.root.resources.displayMetrics.density).toInt()
+        }
+        val dividerParams = binding.divider.layoutParams as ViewGroup.MarginLayoutParams
+        if (dividerParams.marginStart != dividerMargin) {
+            dividerParams.marginStart = dividerMargin
+            dividerParams.marginEnd = dividerMargin
+            binding.divider.layoutParams = dividerParams
+        }
 
         binding.imageStrip.removeAllViews()
         binding.imageStrip.isVisible = entry.images.isNotEmpty()
