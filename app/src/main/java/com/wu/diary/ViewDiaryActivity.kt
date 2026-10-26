@@ -15,6 +15,7 @@ import android.view.GestureDetector
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -94,35 +95,58 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.titleBox.isVisible = randomReview
     }
 
+    private var swipeStartX = 0f
+    private var swipeStartY = 0f
+    private var swipeActive = false
+    private var swipeFromImages = false
+
     /**
-     * 整页范围识别双击与左右滑动：正文 TextView（可点击链接）和 ScrollView 都会消费触摸事件，
-     * 在 Activity 层统一转发给手势识别，普通浏览页与随机回顾页都能左右滑动切换。
+     * 整页范围识别左右滑动与双击：正文 TextView（可点击链接）和 ScrollView 都会消费触摸事件，
+     * 因此在这里直接按横向拖动距离判断，不再依赖 fling 速度，普通浏览页也能滑动切换。
      */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         doubleTapDetector.onTouchEvent(ev)
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                swipeStartX = ev.x
+                swipeStartY = ev.y
+                swipeActive = true
+                swipeFromImages = isInImageStrip(ev)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (swipeActive) {
+                    val dx = abs(ev.x - swipeStartX)
+                    val dy = abs(ev.y - swipeStartY)
+                    // 纵向拖动用于滚动内容，不再当作左右切换。
+                    if (dy > dx * 1.2f && dy > ViewConfiguration.get(this).scaledTouchSlop) {
+                        swipeActive = false
+                    }
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                if (swipeActive && !swipeFromImages) {
+                    val dx = ev.x - swipeStartX
+                    val dy = abs(ev.y - swipeStartY)
+                    val threshold = 48 * resources.displayMetrics.density
+                    if (abs(dx) > threshold && abs(dx) > dy * 1.2f) {
+                        swipeActive = false
+                        step(if (dx < 0) 1 else -1, flip = true)
+                        return true
+                    }
+                }
+                swipeActive = false
+            }
+            MotionEvent.ACTION_CANCEL -> swipeActive = false
+        }
         return super.dispatchTouchEvent(ev)
     }
 
-    /** 浏览页手势：双击进入编辑（可在设置中开启），左右滑动切换上/下一篇。 */
+    /** 浏览页手势：双击进入编辑（可在设置中开启）。 */
     private val doubleTapDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (Settings(this@ViewDiaryActivity).doubleTapEdit) {
                     openEditor()
-                    return true
-                }
-                return false
-            }
-
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (e1 == null) return false
-                val dx = e2.x - e1.x
-                val dy = e2.y - e1.y
-                val threshold = 56 * resources.displayMetrics.density
-                if (abs(dx) > threshold && abs(dx) > abs(dy) * 1.5f) {
-                    // 图片横向列表里的滑动用于滚动图片，不切换笔记。
-                    if (isInImageStrip(e1)) return false
-                    step(if (dx < 0) 1 else -1, flip = true)
                     return true
                 }
                 return false
