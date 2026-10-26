@@ -29,8 +29,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -64,7 +62,6 @@ class EditDiaryActivity : AppCompatActivity() {
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
-    private var statusBarHidden = false
     private var headerCollapsed = false
     private var headerFullHeight = 0
     private var headerAnimator: ValueAnimator? = null
@@ -143,21 +140,20 @@ class EditDiaryActivity : AppCompatActivity() {
         }
     }
 
-    /** 内容超过一屏后，上滑时把日期一起向上收起，并把状态栏一并隐藏。 */
+    /** 内容超过一屏后，上滑时把顶部栏和日期一起向上收起。 */
     private fun setupScrollBehavior() {
-        val threshold = (4 * resources.displayMetrics.density).toInt()
+        val threshold = (2 * resources.displayMetrics.density).toInt()
         binding.editContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            val atTop = scrollY <= 0
+            val atTop = scrollY <= threshold
             if (atTop == headerCollapsed) {
                 headerCollapsed = !atTop
                 animateHeader(collapse = headerCollapsed)
             }
-            setStatusBarHidden(scrollY > threshold)
         }
     }
 
     private fun animateHeader(collapse: Boolean) {
-        val header = binding.headerDate
+        val header = binding.headerTop
         if (headerFullHeight <= 0 && header.height > 0) headerFullHeight = header.height
         val full = headerFullHeight
         if (full <= 0) return
@@ -166,7 +162,7 @@ class EditDiaryActivity : AppCompatActivity() {
         val from = 1f - current.toFloat() / full
         val to = if (collapse) 1f else 0f
         headerAnimator = ValueAnimator.ofFloat(from, to).apply {
-            duration = 180
+            duration = 160
             addUpdateListener { animation ->
                 val progress = animation.animatedValue as Float
                 header.layoutParams = header.layoutParams.apply {
@@ -177,24 +173,6 @@ class EditDiaryActivity : AppCompatActivity() {
             }
             start()
         }
-    }
-
-    private fun setStatusBarHidden(hidden: Boolean) {
-        if (statusBarHidden == hidden) return
-        statusBarHidden = hidden
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        if (hidden) {
-            controller.hide(WindowInsetsCompat.Type.statusBars())
-        } else {
-            controller.show(WindowInsetsCompat.Type.statusBars())
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        setStatusBarHidden(false)
     }
 
     private fun renderImages() {

@@ -6,6 +6,13 @@
     android:background="@color/background"
     android:orientation="vertical">
 
+    <LinearLayout
+        android:id="@+id/headerTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="true"
+        android:orientation="vertical">
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="56dp">
@@ -66,6 +73,8 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/divider" />
+
+    </LinearLayout>
 
     <ScrollView
         android:id="@+id/scrollContent"

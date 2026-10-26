@@ -7,6 +7,13 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/headerTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="true"
+        android:orientation="vertical">
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:gravity="center_vertical"
@@ -61,6 +68,8 @@
                 android:textSize="16sp" />
         </LinearLayout>
     </FrameLayout>
+
+    </LinearLayout>
 
     <HorizontalScrollView
         android:id="@+id/imageScroll"

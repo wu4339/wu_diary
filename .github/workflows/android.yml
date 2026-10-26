@@ -26,8 +26,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build release APK
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Read version
         id: version
@@ -36,7 +36,7 @@ jobs:
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "wu_diary-${{ steps.version.outputs.value }}.apk"
+        run: cp app/build/outputs/apk/release/app-release.apk "wu_diary-${{ steps.version.outputs.value }}.apk"
 
       # 只推 main 即触发构建与发布，tag 由工作流自己创建，避免同一提交产生两条运行记录
       - name: Create GitHub Release

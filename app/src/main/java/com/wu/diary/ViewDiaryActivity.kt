@@ -1,6 +1,7 @@
 package com.wu.diary
 
 import android.app.Dialog
+import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -23,7 +24,6 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
@@ -60,7 +60,9 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var index = 0
     private var entry: DiaryEntry? = null
     private var randomReview = false
-    private var statusBarHidden = false
+    private var headerCollapsed = false
+    private var headerFullHeight = 0
+    private var headerAnimator: ValueAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,29 +95,38 @@ class ViewDiaryActivity : AppCompatActivity() {
             doubleTapDetector.onTouchEvent(event)
             false
         }
-        // 内容超过一屏后，上滑时状态栏隐藏，回到顶部再显示。
+        // 内容超过一屏后，上滑时顶部栏向上收起，回到顶部再显示。
         val threshold = (2 * resources.displayMetrics.density).toInt()
         binding.scrollContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            setStatusBarHidden(scrollY > threshold)
+            val atTop = scrollY <= threshold
+            if (atTop == headerCollapsed) {
+                headerCollapsed = !atTop
+                animateHeader(collapse = headerCollapsed)
+            }
         }
     }
 
-    private fun setStatusBarHidden(hidden: Boolean) {
-        if (statusBarHidden == hidden) return
-        statusBarHidden = hidden
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        if (hidden) {
-            controller.hide(WindowInsetsCompat.Type.statusBars())
-        } else {
-            controller.show(WindowInsetsCompat.Type.statusBars())
+    private fun animateHeader(collapse: Boolean) {
+        val header = binding.headerTop
+        if (headerFullHeight <= 0 && header.height > 0) headerFullHeight = header.height
+        val full = headerFullHeight
+        if (full <= 0) return
+        headerAnimator?.cancel()
+        val current = header.layoutParams.height.let { if (it >= 0) it else header.height }
+        val from = 1f - current.toFloat() / full
+        val to = if (collapse) 1f else 0f
+        headerAnimator = ValueAnimator.ofFloat(from, to).apply {
+            duration = 160
+            addUpdateListener { animation ->
+                val progress = animation.animatedValue as Float
+                header.layoutParams = header.layoutParams.apply {
+                    height = (full * (1f - progress)).toInt().coerceAtLeast(0)
+                }
+                header.translationY = -full * progress * 0.4f
+                header.alpha = 1f - progress
+            }
+            start()
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        setStatusBarHidden(false)
     }
 
     /** 浏览页手势：双击进入编辑（可在设置中开启），左右滑动切换上/下一篇。 */
