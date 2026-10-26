@@ -1,7 +1,6 @@
 package com.wu.diary
 
 import android.Manifest
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -9,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.graphics.Rect
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -16,6 +16,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.inputmethod.InputMethodManager
@@ -62,9 +64,6 @@ class EditDiaryActivity : AppCompatActivity() {
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
-    private var headerCollapsed = false
-    private var headerFullHeight = 0
-    private var headerAnimator: ValueAnimator? = null
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -114,7 +113,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
 
         renderImages()
-        setupScrollBehavior()
+        setupCursorVisibility()
 
         binding.btnClose.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }
@@ -137,42 +136,43 @@ class EditDiaryActivity : AppCompatActivity() {
             if (text != null) binding.editContent.setSelection(text.length)
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
+            binding.editContent.postDelayed({ scrollCursorIntoView() }, 300L)
         }
     }
 
-    /** 内容超过一屏后，上滑时把顶部栏和日期一起向上收起。 */
-    private fun setupScrollBehavior() {
-        val threshold = (2 * resources.displayMetrics.density).toInt()
-        binding.editContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            val atTop = scrollY <= threshold
-            if (atTop == headerCollapsed) {
-                headerCollapsed = !atTop
-                animateHeader(collapse = headerCollapsed)
+    /** 编辑页整体可滚动，输入或键盘弹出时把光标所在行带回可见区域。 */
+    private fun setupCursorVisibility() {
+        binding.editContent.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                binding.editContent.post { scrollCursorIntoView() }
             }
+        })
+        binding.editContent.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            scrollCursorIntoView()
+        }
+        // 键盘弹出 / 收起时可视区域变化，同样把光标行带回可见位置。
+        binding.scrollContent.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            scrollCursorIntoView()
         }
     }
 
-    private fun animateHeader(collapse: Boolean) {
-        val header = binding.headerTop
-        if (headerFullHeight <= 0 && header.height > 0) headerFullHeight = header.height
-        val full = headerFullHeight
-        if (full <= 0) return
-        headerAnimator?.cancel()
-        val current = header.layoutParams.height.let { if (it >= 0) it else header.height }
-        val from = 1f - current.toFloat() / full
-        val to = if (collapse) 1f else 0f
-        headerAnimator = ValueAnimator.ofFloat(from, to).apply {
-            duration = 160
-            addUpdateListener { animation ->
-                val progress = animation.animatedValue as Float
-                header.layoutParams = header.layoutParams.apply {
-                    height = (full * (1f - progress)).toInt().coerceAtLeast(0)
-                }
-                header.translationY = -full * progress * 0.4f
-                header.alpha = 1f - progress
-            }
-            start()
-        }
+    private fun scrollCursorIntoView() {
+        val edit = binding.editContent
+        val layout = edit.layout ?: return
+        val offset = edit.selectionEnd.coerceIn(0, edit.text?.length ?: 0)
+        val line = layout.getLineForOffset(offset)
+        val extra = (64 * resources.displayMetrics.density).toInt()
+        val rect = Rect(
+            edit.paddingLeft,
+            layout.getLineTop(line) + edit.paddingTop,
+            edit.width - edit.paddingRight,
+            layout.getLineBottom(line) + edit.paddingTop + extra
+        )
+        binding.scrollContent.requestChildRectangleOnScreen(edit, rect, false)
     }
 
     private fun renderImages() {
