@@ -11,6 +11,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.OnBackPressedCallback
@@ -84,6 +85,10 @@ class MainActivity : AppCompatActivity() {
         binding.itemSettings.setOnClickListener {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        binding.itemRandomReview.setOnClickListener {
+            binding.drawerRoot.closeDrawer(binding.drawerPanel)
+            reviewRandom()
         }
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
@@ -335,6 +340,17 @@ class MainActivity : AppCompatActivity() {
                 now.get(Calendar.SECOND)
             )
         }.timeInMillis
+    }
+
+    /** 随机挑一篇已有日记打开浏览页。 */
+    private fun reviewRandom() {
+        val entries = store.load()
+        if (entries.isEmpty()) {
+            Toast.makeText(this, R.string.random_review_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val entry = entries.random()
+        startActivity(ViewDiaryActivity.intent(this, listOf(entry.id), 0))
     }
 
     private fun confirmDelete(entry: DiaryEntry) {
