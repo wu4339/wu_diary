@@ -85,13 +85,18 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
 
-        if (existing == null) startTyping()
+        if (existing != null) {
+            binding.editContent.setSelection(binding.editContent.text.length)
+        }
+        startTyping()
     }
 
-    /** 新建日记时直接进入输入状态：聚焦文本框并弹出键盘。 */
+    /** 进入编辑页即输入：聚焦文本框、光标落在末尾并弹出键盘。 */
     private fun startTyping() {
         binding.editContent.requestFocus()
         binding.editContent.post {
+            val text = binding.editContent.text
+            if (text != null) binding.editContent.setSelection(text.length)
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
         }
@@ -146,7 +151,7 @@ class EditDiaryActivity : AppCompatActivity() {
                 images = imagePaths.toList()
             )
         store.save(entry)
-        Feedback.beep(this)
+        Feedback.saved(this)
         finish()
     }
 }

@@ -224,7 +224,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 store.delete(current.id)
-                Feedback.beep(this)
+                Feedback.deleted(this)
                 finish()
             }
             .setNegativeButton(R.string.cancel, null)

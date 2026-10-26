@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 store.delete(entry.id)
-                Feedback.beep(this)
+                Feedback.deleted(this)
                 refresh()
             }
             .setNegativeButton(R.string.cancel, null)
