@@ -39,6 +39,11 @@
             android:exported="false" />
 
         <activity
+            android:name=".SearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+
+        <activity
             android:name=".ShareReceiverActivity"
             android:excludeFromRecents="true"
             android:exported="true"
