@@ -3,6 +3,7 @@ package com.wu.diary
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.animation.ValueAnimator
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -49,8 +50,14 @@ class MainActivity : AppCompatActivity() {
     private var searchQuery = ""
     private var swipeDownX = 0f
     private var swipeDownY = 0f
+    private var pullStartX = 0f
     private var pullStartY = 0f
+    private var pullDistance = 0f
+    private var pullActive = false
+    private var pullReady = false
+    private var pullAllowed = false
     private var pullTriggered = false
+    private var pullAnimator: ValueAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,39 +133,101 @@ class MainActivity : AppCompatActivity() {
         renderCalendar()
     }
 
-    /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）。 */
+    /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）；顶部下拉读取剪贴板。 */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val density = resources.displayMetrics.density
+        val drawerThreshold = 80 * density
+        val pullThreshold = 72 * density
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 swipeDownX = ev.x
                 swipeDownY = ev.y
+                pullStartX = ev.x
                 pullStartY = ev.y
+                pullDistance = 0f
+                pullActive = false
                 pullTriggered = false
+                pullAllowed = !calendarVisible &&
+                    !binding.searchBar.isVisible &&
+                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel) &&
+                    !binding.recycler.canScrollVertically(-1)
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = ev.x - swipeDownX
                 val dy = kotlin.math.abs(ev.y - swipeDownY)
-                val threshold = 80 * resources.displayMetrics.density
-                if (dx > threshold && dx > dy * 1.5f &&
+                if (dx > drawerThreshold && dx > dy * 1.5f &&
                     !binding.drawerRoot.isDrawerOpen(binding.drawerPanel)
                 ) {
                     binding.drawerRoot.openDrawer(binding.drawerPanel)
                     swipeDownX = ev.x
                 }
-                val pullDy = ev.y - pullStartY
-                if (!pullTriggered && pullDy > threshold &&
-                    pullDy > kotlin.math.abs(dx) * 1.5f &&
-                    !calendarVisible &&
-                    !binding.searchBar.isVisible &&
-                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel) &&
-                    !binding.recycler.canScrollVertically(-1)
-                ) {
-                    pullTriggered = true
-                    checkClipboard()
+                if (pullAllowed && !pullTriggered) {
+                    val pullDy = ev.y - pullStartY
+                    val pullDx = kotlin.math.abs(ev.x - pullStartX)
+                    if (pullDy > 0 && pullDy > pullDx * 1.5f) {
+                        pullActive = true
+                        pullDistance = pullDy
+                        updatePullHint(pullDistance, pullThreshold)
+                    } else if (pullDy < 0 && pullActive) {
+                        pullActive = false
+                        pullDistance = 0f
+                        collapsePull()
+                    }
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (pullActive) {
+                    val ready = ev.actionMasked == MotionEvent.ACTION_UP &&
+                        pullDistance >= pullThreshold
+                    pullActive = false
+                    pullDistance = 0f
+                    collapsePull()
+                    if (ready) {
+                        pullTriggered = true
+                        checkClipboard()
+                        return true
+                    }
                 }
             }
         }
         return super.dispatchTouchEvent(ev)
+    }
+
+    /** 下拉过程中实时展示提示条高度与文案。 */
+    private fun updatePullHint(distance: Float, threshold: Float) {
+        pullAnimator?.cancel()
+        val density = resources.displayMetrics.density
+        val height = distance.coerceIn(0f, 88 * density).toInt()
+        val params = binding.pullHint.layoutParams
+        if (params.height != height) {
+            params.height = height
+            binding.pullHint.layoutParams = params
+        }
+        val ready = distance >= threshold
+        if (ready != pullReady) {
+            pullReady = ready
+            binding.pullText.setText(if (ready) R.string.pull_release else R.string.pull_hint)
+            binding.pullIcon.rotation = if (ready) 180f else 0f
+        }
+    }
+
+    /** 松手后提示条回收。 */
+    private fun collapsePull() {
+        pullReady = false
+        binding.pullText.setText(R.string.pull_hint)
+        binding.pullIcon.rotation = 0f
+        val params = binding.pullHint.layoutParams
+        val from = params.height
+        if (from <= 0) return
+        pullAnimator?.cancel()
+        pullAnimator = ValueAnimator.ofInt(from, 0).apply {
+            duration = 150
+            addUpdateListener {
+                params.height = it.animatedValue as Int
+                binding.pullHint.layoutParams = params
+            }
+            start()
+        }
     }
 
     /** 顶部下拉：剪贴板有文字时，询问是否用它新建一篇笔记。 */

@@ -66,4 +66,6 @@
     <string name="location_fetching">正在获取坐标…</string>
     <string name="location_failed">无法获取当前位置</string>
     <string name="location_inserted">已插入坐标</string>
+    <string name="pull_hint">下拉读取剪贴板</string>
+    <string name="pull_release">松开读取剪贴板</string>
 </resources>

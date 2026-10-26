@@ -6,6 +6,7 @@
     android:clickable="true"
     android:focusable="true"
     android:orientation="vertical"
+    android:paddingHorizontal="24dp"
     android:paddingTop="20dp">
 
     <LinearLayout
@@ -14,7 +15,6 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="14dp"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
         android:visibility="gone" />
 
     <TextView
@@ -23,7 +23,6 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:lineSpacingExtra="6dp"
-        android:paddingHorizontal="24dp"
         android:textColor="@color/text_body"
         android:textSize="16sp" />
 
