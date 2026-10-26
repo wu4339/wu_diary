@@ -10,6 +10,7 @@ import com.wu.diary.data.Settings
 import kotlin.math.PI
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.tanh
 import kotlin.random.Random
 
 /** 保存/删除操作提示音：直接合成 PCM 播放，音量比 ToneGenerator 更大。 */
@@ -21,12 +22,12 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildCrunch() }
+    private val deletedSamples: ShortArray by lazy { buildShred() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：捏碎/粉碎的噪声声。 */
+    /** 删除：纸张被撕碎粉碎的声音。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 合成与播放放到后台线程，避免点击保存/删除时阻塞界面。 */
@@ -78,26 +79,45 @@ object Feedback {
         return out
     }
 
-    /** 三段短促噪声脉冲，带高频颗粒感，听感接近纸张被捏碎。 */
-    private fun buildCrunch(): ShortArray {
-        val total = (SAMPLE_RATE * 0.24).toInt()
-        val out = ShortArray(total)
-        val random = Random(20261026)
-        val bursts = listOf(0.0 to 0.055, 0.07 to 0.05, 0.135 to 0.085)
-        for ((start, duration) in bursts) {
-            val from = (SAMPLE_RATE * start).toInt().coerceIn(0, total - 1)
-            val length = (SAMPLE_RATE * duration).toInt().coerceAtMost(total - from)
-            var lowPass = 0f
-            for (i in 0 until length) {
-                val progress = i.toFloat() / length
-                val envelope = (1f - progress) * (1f - progress)
-                val noise = random.nextFloat() * 2f - 1f
-                lowPass += 0.6f * (noise - lowPass)
-                val crisp = noise - lowPass
-                val value = crisp * envelope * 0.95f
-                out[from + i] = (value * Short.MAX_VALUE).toInt().toShort()
-            }
+    /** 粉碎声：低频闷响 + 密集颗粒噪声，模拟纸张被撕碎粉碎。 */
+    private fun buildShred(): ShortArray {
+        val total = (SAMPLE_RATE * 0.38).toInt()
+        val mix = FloatArray(total)
+
+        // 起始的低频闷响，给"砸下去"的重量感。
+        val thump = (SAMPLE_RATE * 0.12).toInt()
+        for (i in 0 until thump) {
+            val ratio = i.toFloat() / thump
+            val freq = 160.0 - 100.0 * ratio
+            val envelope = (1f - ratio) * (1f - ratio)
+            mix[i] += (sin(2 * PI * freq * i / SAMPLE_RATE) * envelope * 1.1).toFloat()
         }
-        return out
+
+        // 密集颗粒噪声：随机脉冲经高通后形成连续的撕碎颗粒感。
+        val random = Random(20261026)
+        var highPass = 0f
+        var previous = 0f
+        var grainTimer = 0
+        var grainVolume = 0f
+        for (i in thump until total) {
+            val progress = (i - thump).toFloat() / (total - thump)
+            val overall = (1f - progress) * (1f - progress)
+            val noise = random.nextFloat() * 2f - 1f
+            highPass = 0.86f * (highPass + noise - previous)
+            previous = noise
+            if (grainTimer <= 0) {
+                grainTimer = 9 + (random.nextFloat() * 220f).toInt()
+                grainVolume = 0.6f + random.nextFloat() * 0.7f
+            }
+            grainTimer--
+            grainVolume *= 0.9f
+            mix[i] += highPass * overall * grainVolume * 1.8f
+        }
+
+        // 软限幅：整体更响，同时避免刺耳的破音。
+        return ShortArray(total) { i ->
+            val value = tanh(mix[i] * 2.0f) * 0.98f
+            (value * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+        }
     }
 }
