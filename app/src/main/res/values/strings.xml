@@ -72,4 +72,14 @@
     <string name="paragraph_cut">已剪切当前段落</string>
     <string name="paragraph_empty">当前段落没有内容</string>
     <string name="save_action">Save</string>
+    <string name="backup_export">导出笔记</string>
+    <string name="backup_export_desc">导出为 zip（Diary/年-月-日.md + file/images）</string>
+    <string name="backup_import">导入笔记</string>
+    <string name="backup_import_desc">从 zip 备份中恢复笔记与图片</string>
+    <string name="exporting">正在导出…</string>
+    <string name="export_done">已导出 %1$d 篇笔记</string>
+    <string name="export_failed">导出失败</string>
+    <string name="importing">正在导入…</string>
+    <string name="import_done">已导入 %1$d 篇笔记</string>
+    <string name="import_failed">导入失败</string>
 </resources>

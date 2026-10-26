@@ -1,15 +1,29 @@
 package com.wu.diary
 
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySettingsBinding
+import com.wu.diary.util.BackupManager
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var settings: Settings
+
+    private val exportLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            uri?.let { exportNotes(it) }
+        }
+
+    private val importLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let { importNotes(it) }
+        }
 
     private val fontLabels: Array<String>
         get() = arrayOf(
@@ -50,8 +64,46 @@ class SettingsActivity : AppCompatActivity() {
             settings.doubleTapEdit = !settings.doubleTapEdit
             binding.switchDoubleTap.isChecked = settings.doubleTapEdit
         }
+        binding.rowExport.setOnClickListener {
+            exportLauncher.launch("wu_diary_backup.zip")
+        }
+        binding.rowImport.setOnClickListener {
+            importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
+        }
         updateFontValue()
         updatePreviewValue()
+    }
+
+    private fun exportNotes(uri: Uri) {
+        Toast.makeText(this, R.string.exporting, Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching { BackupManager.export(this, uri) }
+            runOnUiThread {
+                val count = result.getOrNull()
+                Toast.makeText(
+                    this,
+                    if (count != null) getString(R.string.export_done, count)
+                    else getString(R.string.export_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }.start()
+    }
+
+    private fun importNotes(uri: Uri) {
+        Toast.makeText(this, R.string.importing, Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = runCatching { BackupManager.import(this, uri) }
+            runOnUiThread {
+                val count = result.getOrNull()
+                Toast.makeText(
+                    this,
+                    if (count != null) getString(R.string.import_done, count)
+                    else getString(R.string.import_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }.start()
     }
 
     private fun updateFontValue() {
