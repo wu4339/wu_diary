@@ -11,10 +11,10 @@
     </style>
 
     <style name="Theme.WuDiary.Editor" parent="Theme.WuDiary">
-        <item name="android:windowAnimationStyle">@style/WindowAnimation.None</item>
+        <item name="android:windowAnimationStyle">@style/WindowAnimationNone</item>
     </style>
 
-    <style name="WindowAnimation.None">
+    <style name="WindowAnimationNone">
         <item name="android:activityOpenEnterAnimation">@null</item>
         <item name="android:activityOpenExitAnimation">@null</item>
         <item name="android:activityCloseEnterAnimation">@null</item>
