@@ -19,7 +19,8 @@
 
         <activity
             android:name=".EditDiaryActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

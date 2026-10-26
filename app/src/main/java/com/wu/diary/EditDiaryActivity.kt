@@ -33,28 +33,30 @@ class EditDiaryActivity : AppCompatActivity() {
         intent.getStringExtra(EXTRA_ID)?.let { id ->
             existing = store.load().find { it.id == id }
             existing?.let {
-                binding.editTitle.setText(it.title)
-                binding.editContent.setText(it.content)
+                binding.editContent.setText(
+                    listOf(it.title, it.content).filter { part -> part.isNotBlank() }
+                        .joinToString("\n")
+                )
             }
         }
 
-        binding.textEditorDate.text = SimpleDateFormat("M月d日 EEEE", Locale.CHINA)
-            .format(Date(existing?.createdAt ?: System.currentTimeMillis()))
+        val date = Date(existing?.createdAt ?: System.currentTimeMillis())
+        binding.textEditorDay.text = SimpleDateFormat("M/d", Locale.getDefault()).format(date)
+        binding.textEditorYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
 
-        binding.btnBack.setOnClickListener { finish() }
+        binding.btnClose.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }
     }
 
     private fun save() {
-        val title = binding.editTitle.text.toString().trim()
         val content = binding.editContent.text.toString().trim()
-        if (title.isEmpty() && content.isEmpty()) {
+        if (content.isEmpty()) {
             finish()
             return
         }
         val now = System.currentTimeMillis()
-        val entry = existing?.copy(title = title, content = content, updatedAt = now)
-            ?: DiaryEntry(title = title, content = content)
+        val entry = existing?.copy(title = "", content = content, updatedAt = now)
+            ?: DiaryEntry(title = "", content = content)
         store.save(entry)
         finish()
     }

@@ -7,45 +7,22 @@
     android:focusable="true"
     android:orientation="vertical"
     android:paddingHorizontal="24dp"
-    android:paddingTop="22dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/textDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="26sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textYear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="15sp" />
-    </LinearLayout>
+    android:paddingTop="20dp">
 
     <TextView
         android:id="@+id/textBody"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:ellipsize="end"
         android:lineSpacingExtra="6dp"
-        android:maxLines="8"
+        android:maxLines="10"
         android:textColor="@color/text_body"
         android:textSize="16sp" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="20dp"
         android:background="@color/divider" />
 
 </LinearLayout>
