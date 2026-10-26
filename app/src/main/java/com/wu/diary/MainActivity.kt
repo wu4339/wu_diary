@@ -63,7 +63,8 @@ class MainActivity : AppCompatActivity() {
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
         binding.fabAdd.setOnClickListener {
-            startActivity(EditDiaryActivity.intent(this, null))
+            val date = if (calendarVisible) selectedDateMillis() else null
+            startActivity(EditDiaryActivity.intent(this, null, date))
         }
         binding.btnMenu.setOnClickListener {
             binding.drawerRoot.openDrawer(binding.drawerPanel)
@@ -255,6 +256,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun dayKey(year: Int, month: Int, day: Int) = "$year-$month-$day"
+
+    /** 日历模式下新建日记时使用的日期：选中那天 + 当前时分秒。 */
+    private fun selectedDateMillis(): Long {
+        val now = Calendar.getInstance()
+        return Calendar.getInstance().apply {
+            clear()
+            set(
+                selectedYear,
+                selectedMonth,
+                selectedDay,
+                now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE),
+                now.get(Calendar.SECOND)
+            )
+        }.timeInMillis
+    }
 
     private fun confirmDelete(entry: DiaryEntry) {
         AlertDialog.Builder(this)

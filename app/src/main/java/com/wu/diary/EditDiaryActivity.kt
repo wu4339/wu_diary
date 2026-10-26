@@ -25,15 +25,19 @@ class EditDiaryActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_ID = "entry_id"
+        private const val EXTRA_DATE = "entry_date"
         private const val MAX_IMAGES = 9
 
-        fun intent(context: Context, entryId: String?): Intent =
-            Intent(context, EditDiaryActivity::class.java).putExtra(EXTRA_ID, entryId)
+        fun intent(context: Context, entryId: String?, date: Long? = null): Intent =
+            Intent(context, EditDiaryActivity::class.java)
+                .putExtra(EXTRA_ID, entryId)
+                .putExtra(EXTRA_DATE, date ?: 0L)
     }
 
     private lateinit var binding: ActivityEditDiaryBinding
     private lateinit var store: DiaryStore
     private var existing: DiaryEntry? = null
+    private var presetDate: Long = 0L
     private val imagePaths = mutableListOf<String>()
 
     private val pickImages =
@@ -52,6 +56,7 @@ class EditDiaryActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         store = DiaryStore(this)
+        presetDate = intent.getLongExtra(EXTRA_DATE, 0L)
         intent.getStringExtra(EXTRA_ID)?.let { id ->
             existing = store.load().find { it.id == id }
             existing?.let {
@@ -63,7 +68,7 @@ class EditDiaryActivity : AppCompatActivity() {
             }
         }
 
-        val date = Date(existing?.createdAt ?: System.currentTimeMillis())
+        val date = Date(existing?.createdAt ?: presetDate.takeIf { it > 0L } ?: System.currentTimeMillis())
         binding.textEditorDay.text = SimpleDateFormat("M/d", Locale.getDefault()).format(date)
         binding.textEditorYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
 
@@ -118,8 +123,15 @@ class EditDiaryActivity : AppCompatActivity() {
             return
         }
         val now = System.currentTimeMillis()
+        val entryDate = presetDate.takeIf { it > 0L } ?: now
         val entry = existing?.copy(title = "", content = content, updatedAt = now, images = imagePaths.toList())
-            ?: DiaryEntry(title = "", content = content, images = imagePaths.toList())
+            ?: DiaryEntry(
+                title = "",
+                content = content,
+                createdAt = entryDate,
+                updatedAt = entryDate,
+                images = imagePaths.toList()
+            )
         store.save(entry)
         finish()
     }
