@@ -6,9 +6,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
@@ -41,6 +43,7 @@ class EditDiaryActivity : AppCompatActivity() {
     private var existing: DiaryEntry? = null
     private var presetDate: Long = 0L
     private val imagePaths = mutableListOf<String>()
+    private val tags = mutableListOf<String>()
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -63,6 +66,7 @@ class EditDiaryActivity : AppCompatActivity() {
             existing = store.load().find { it.id == id }
             existing?.let {
                 imagePaths.addAll(it.images)
+                tags.addAll(it.tags)
                 binding.editContent.setText(
                     listOf(it.title, it.content).filter { part -> part.isNotBlank() }
                         .joinToString("\n")
@@ -84,6 +88,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnClose.setOnClickListener { finish() }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
+        binding.btnTag.setOnClickListener { editTags() }
 
         if (existing != null) {
             binding.editContent.setSelection(binding.editContent.text.length)
@@ -134,6 +139,38 @@ class EditDiaryActivity : AppCompatActivity() {
         target.absolutePath
     }.getOrNull()
 
+    /** 编辑标签：空格/逗号分隔，最多 10 个。 */
+    private fun editTags() {
+        val density = resources.displayMetrics.density
+        val input = EditText(this).apply {
+            setText(tags.joinToString(" "))
+            hint = getString(R.string.tags_hint)
+            setSingleLine(true)
+            setPadding(
+                (22 * density).toInt(),
+                (10 * density).toInt(),
+                (22 * density).toInt(),
+                (10 * density).toInt()
+            )
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.tag_dialog_title)
+            .setView(input)
+            .setPositiveButton(R.string.save) { _, _ ->
+                tags.clear()
+                tags.addAll(parseTags(input.text.toString()))
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun parseTags(raw: String): List<String> =
+        raw.split(Regex("[\\s,，、]+"))
+            .map { it.trim().removePrefix("#") }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(10)
+
     private fun save() {
         val content = binding.editContent.text.toString().trim()
         if (content.isEmpty() && imagePaths.isEmpty()) {
@@ -142,13 +179,20 @@ class EditDiaryActivity : AppCompatActivity() {
         }
         val now = System.currentTimeMillis()
         val entryDate = presetDate.takeIf { it > 0L } ?: now
-        val entry = existing?.copy(title = "", content = content, updatedAt = now, images = imagePaths.toList())
+        val entry = existing?.copy(
+            title = "",
+            content = content,
+            updatedAt = now,
+            images = imagePaths.toList(),
+            tags = tags.toList()
+        )
             ?: DiaryEntry(
                 title = "",
                 content = content,
                 createdAt = entryDate,
                 updatedAt = entryDate,
-                images = imagePaths.toList()
+                images = imagePaths.toList(),
+                tags = tags.toList()
             )
         store.save(entry)
         Feedback.saved(this)

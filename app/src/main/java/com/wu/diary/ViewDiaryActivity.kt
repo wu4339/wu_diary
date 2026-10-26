@@ -67,6 +67,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
+        binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
 
         binding.btnClose.setOnClickListener { finish() }
         binding.btnMore.setOnClickListener { showMenu() }
@@ -119,6 +120,9 @@ class ViewDiaryActivity : AppCompatActivity() {
             .joinToString("\n")
         binding.textContent.text = text
         binding.textContent.isVisible = text.isNotEmpty()
+
+        binding.textTags.text = current.tags.joinToString("  ") { "#$it" }
+        binding.textTags.isVisible = current.tags.isNotEmpty()
 
         renderImages(current)
         updateNav()
