@@ -11,11 +11,24 @@ android {
         applicationId = "com.wu.diary"
         minSdk = 24
         targetSdk = 34
-        versionCode = 102
-        versionName = "1.02"
+        versionCode = 1021
+        versionName = "1.021"
+    }
+
+    // 固定签名，避免每次 CI 构建用随机 debug key 导致覆盖安装时报签名不一致
+    signingConfigs {
+        create("stable") {
+            storeFile = rootProject.file("keystore/wu-diary.jks")
+            storePassword = "wudiary"
+            keyAlias = "wudiary"
+            keyPassword = "wudiary"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("stable")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
