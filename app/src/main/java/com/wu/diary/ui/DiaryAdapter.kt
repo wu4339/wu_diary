@@ -37,8 +37,8 @@ class DiaryAdapter(
     fun submit(entries: List<DiaryEntry>) {
         rows.clear()
         var currentDay: String? = null
-        entries.sortedByDescending { it.updatedAt }.forEach { entry ->
-            val date = Date(entry.updatedAt)
+        entries.sortedByDescending { it.createdAt }.forEach { entry ->
+            val date = Date(entry.createdAt)
             val day = dayFormat.format(date)
             if (day != currentDay) {
                 rows.add(Row.DateHeader(dayTextFormat.format(date), yearTextFormat.format(date), currentDay == null))

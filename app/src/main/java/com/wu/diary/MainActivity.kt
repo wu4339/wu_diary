@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
     private fun applyList() {
         val entries = if (calendarVisible) {
             allEntries.filter { entry ->
-                val day = Calendar.getInstance().apply { timeInMillis = entry.updatedAt }
+                val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
                 day.get(Calendar.YEAR) == selectedYear &&
                     day.get(Calendar.MONTH) == selectedMonth &&
                     day.get(Calendar.DAY_OF_MONTH) == selectedDay

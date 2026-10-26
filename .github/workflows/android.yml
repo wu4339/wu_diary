@@ -3,7 +3,6 @@ name: Android CI
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -13,7 +12,6 @@ permissions:
 
 jobs:
   build:
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,39 +28,29 @@ jobs:
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(grep -m1 'versionName = ' app/build.gradle.kts | sed -E 's/.*"(.*)".*/\1/')
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "wu_diary-${{ steps.version.outputs.value }}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: wu_diary-${{ steps.version.outputs.value }}
+          path: wu_diary-${{ steps.version.outputs.value }}.apk
 
-  release:
-    if: ${{ startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Rename APK
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          cp app/build/outputs/apk/debug/app-debug.apk "wu_diary-${VERSION}.apk"
-
+      # 只推 main 即触发构建与发布，tag 由工作流自己创建，避免同一提交产生两条运行记录
       - name: Create GitHub Release
+        if: ${{ github.event_name == 'push' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: wu_diary-*.apk
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          target_commitish: ${{ github.sha }}
+          files: wu_diary-${{ steps.version.outputs.value }}.apk
           generate_release_notes: true
