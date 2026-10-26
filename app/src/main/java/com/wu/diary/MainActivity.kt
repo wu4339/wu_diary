@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -45,6 +46,8 @@ class MainActivity : AppCompatActivity() {
     private var appliedScale = 1f
     private var appliedLines = 0
     private var searchQuery = ""
+    private var swipeDownX = 0f
+    private var swipeDownY = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,6 +117,28 @@ class MainActivity : AppCompatActivity() {
 
         applyScaledSizes()
         renderCalendar()
+    }
+
+    /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）。 */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                swipeDownX = ev.x
+                swipeDownY = ev.y
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = ev.x - swipeDownX
+                val dy = kotlin.math.abs(ev.y - swipeDownY)
+                val threshold = 80 * resources.displayMetrics.density
+                if (dx > threshold && dx > dy * 1.5f &&
+                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel)
+                ) {
+                    binding.drawerRoot.openDrawer(binding.drawerPanel)
+                    swipeDownX = ev.x
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onResume() {
@@ -342,15 +367,17 @@ class MainActivity : AppCompatActivity() {
         }.timeInMillis
     }
 
-    /** 随机挑一篇已有日记打开浏览页。 */
+    /** 随机挑一篇已有日记打开浏览页，上下篇可继续在全部日记间切换。 */
     private fun reviewRandom() {
         val entries = store.load()
         if (entries.isEmpty()) {
             Toast.makeText(this, R.string.random_review_empty, Toast.LENGTH_SHORT).show()
             return
         }
-        val entry = entries.random()
-        startActivity(ViewDiaryActivity.intent(this, listOf(entry.id), 0))
+        val ids = entries.map { it.id }
+        startActivity(
+            ViewDiaryActivity.intent(this, ids, ids.indices.random(), randomReview = true)
+        )
     }
 
     private fun confirmDelete(entry: DiaryEntry) {

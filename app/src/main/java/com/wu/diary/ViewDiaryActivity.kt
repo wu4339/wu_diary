@@ -38,11 +38,13 @@ class ViewDiaryActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_IDS = "entry_ids"
         private const val EXTRA_INDEX = "entry_index"
+        private const val EXTRA_RANDOM_REVIEW = "random_review"
 
-        fun intent(context: Context, ids: List<String>, index: Int): Intent =
+        fun intent(context: Context, ids: List<String>, index: Int, randomReview: Boolean = false): Intent =
             Intent(context, ViewDiaryActivity::class.java)
                 .putStringArrayListExtra(EXTRA_IDS, ArrayList(ids))
                 .putExtra(EXTRA_INDEX, index)
+                .putExtra(EXTRA_RANDOM_REVIEW, randomReview)
     }
 
     private lateinit var binding: ActivityViewDiaryBinding
@@ -70,6 +72,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnMore.setOnClickListener { showMenu() }
         binding.btnPrev.setOnClickListener { step(-1) }
         binding.btnNext.setOnClickListener { step(1) }
+        binding.textTitle.isVisible = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
         binding.scrollContent.setOnTouchListener { _, event ->
             doubleTapDetector.onTouchEvent(event)
             false
