@@ -2,16 +2,21 @@ package com.wu.diary
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -30,14 +35,12 @@ class EditDiaryActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_ID = "entry_id"
         private const val EXTRA_DATE = "entry_date"
-        private const val EXTRA_TEXT = "entry_text"
         private const val MAX_IMAGES = 9
 
-        fun intent(context: Context, entryId: String?, date: Long? = null, initialText: String? = null): Intent =
+        fun intent(context: Context, entryId: String?, date: Long? = null): Intent =
             Intent(context, EditDiaryActivity::class.java)
                 .putExtra(EXTRA_ID, entryId)
                 .putExtra(EXTRA_DATE, date ?: 0L)
-                .putExtra(EXTRA_TEXT, initialText)
     }
 
     private lateinit var binding: ActivityEditDiaryBinding
@@ -73,11 +76,6 @@ class EditDiaryActivity : AppCompatActivity() {
                     listOf(it.title, it.content).filter { part -> part.isNotBlank() }
                         .joinToString("\n")
                 )
-            }
-        }
-        if (existing == null) {
-            intent.getStringExtra(EXTRA_TEXT)?.takeIf { it.isNotBlank() }?.let { text ->
-                binding.editContent.setText(text)
             }
         }
 
@@ -117,16 +115,38 @@ class EditDiaryActivity : AppCompatActivity() {
     private fun renderImages() {
         binding.imageScroll.isVisible = imagePaths.isNotEmpty()
         binding.imageStrip.removeAllViews()
-        val size = (84 * resources.displayMetrics.density).toInt()
-        val gap = (8 * resources.displayMetrics.density).toInt()
+        val density = resources.displayMetrics.density
+        val size = (84 * density).toInt()
+        val gap = (8 * density).toInt()
         imagePaths.toList().forEach { path ->
-            val image = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = gap }
+            val thumb = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(size, size)
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 setImageBitmap(ImageLoader.load(path, size))
             }
-            image.setOnClickListener { removeImage(path) }
-            binding.imageStrip.addView(image)
+            val remove = ImageButton(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    (22 * density).toInt(),
+                    (22 * density).toInt()
+                ).apply {
+                    gravity = Gravity.TOP or Gravity.END
+                    topMargin = (4 * density).toInt()
+                    rightMargin = (4 * density).toInt()
+                }
+                background = ContextCompat.getDrawable(context, R.drawable.bg_x_badge)
+                setImageResource(R.drawable.ic_close)
+                imageTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.text_primary))
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
+                setPadding((5 * density).toInt(), (5 * density).toInt(), (5 * density).toInt(), (5 * density).toInt())
+                contentDescription = getString(R.string.remove_image)
+                setOnClickListener { removeImage(path) }
+            }
+            val cell = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = gap }
+                addView(thumb)
+                addView(remove)
+            }
+            binding.imageStrip.addView(cell)
         }
     }
 

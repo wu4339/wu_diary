@@ -76,7 +76,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnMore.setOnClickListener { showMenu() }
         binding.btnPrev.setOnClickListener { step(-1) }
         binding.btnNext.setOnClickListener { step(1) }
-        binding.textTitle.isVisible = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
+        binding.titleBox.isVisible = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
         binding.scrollContent.setOnTouchListener { _, event ->
             doubleTapDetector.onTouchEvent(event)
             false
@@ -129,6 +129,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         val date = Date(current.createdAt)
         binding.textDay.text = SimpleDateFormat("M/d", Locale.getDefault()).format(date)
         binding.textYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
+        binding.textPosition.text = getString(R.string.note_position, index + 1, ids.size)
 
         val text = listOf(current.title, current.content)
             .filter { it.isNotBlank() }

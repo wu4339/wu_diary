@@ -53,4 +53,7 @@
     <string name="clipboard_title">用剪贴板内容新建笔记？</string>
     <string name="clipboard_create">新建笔记</string>
     <string name="clipboard_empty">剪贴板里没有文字</string>
+    <string name="remove_image">删除图片</string>
+    <string name="note_position">%1$d / %2$d</string>
+    <string name="clipboard_created">已用剪贴板内容创建笔记</string>
 </resources>

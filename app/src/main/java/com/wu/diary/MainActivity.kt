@@ -175,7 +175,13 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.clipboard_title)
             .setMessage(preview)
             .setPositiveButton(R.string.clipboard_create) { _, _ ->
-                startActivity(EditDiaryActivity.intent(this, null, null, text))
+                val now = System.currentTimeMillis()
+                store.save(
+                    DiaryEntry(title = "", content = text, createdAt = now, updatedAt = now)
+                )
+                Feedback.saved(this)
+                refresh()
+                Toast.makeText(this, R.string.clipboard_created, Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
