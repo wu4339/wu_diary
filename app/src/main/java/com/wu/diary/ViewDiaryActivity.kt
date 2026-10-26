@@ -1,6 +1,8 @@
 package com.wu.diary
 
 import android.app.Dialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -235,6 +237,16 @@ class ViewDiaryActivity : AppCompatActivity() {
         menu.itemEdit.setOnClickListener {
             dialog.dismiss()
             entry?.let { startActivity(EditDiaryActivity.intent(this, it.id)) }
+        }
+        menu.itemCopy.setOnClickListener {
+            dialog.dismiss()
+            val text = listOf(entry?.title, entry?.content)
+                .filter { !it.isNullOrBlank() }
+                .joinToString("\n")
+            if (text.isEmpty()) return@setOnClickListener
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("wu_diary", text))
+            Toast.makeText(this, R.string.note_copied, Toast.LENGTH_SHORT).show()
         }
         menu.itemDelete.setOnClickListener {
             dialog.dismiss()

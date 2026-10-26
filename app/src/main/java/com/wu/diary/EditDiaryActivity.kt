@@ -230,8 +230,16 @@ class EditDiaryActivity : AppCompatActivity() {
         val lineEnd = text.indexOf("\n", cursor)
         val end = if (lineEnd == -1) text.length else lineEnd
         val paragraph = text.subSequence(lineStart, end).toString()
-        if (paragraph.isEmpty()) {
-            Toast.makeText(this, R.string.paragraph_empty, Toast.LENGTH_SHORT).show()
+        if (paragraph.isBlank()) {
+            // 空行：直接删掉这一行（连同行尾换行），光标留在原位。
+            if (lineEnd != -1) {
+                text.delete(lineStart, lineEnd + 1)
+                edit.setSelection(lineStart.coerceIn(0, text.length))
+            } else if (lineStart > 0) {
+                text.delete(lineStart - 1, lineStart)
+                edit.setSelection((lineStart - 1).coerceIn(0, text.length))
+            }
+            Toast.makeText(this, R.string.blank_line_removed, Toast.LENGTH_SHORT).show()
             return
         }
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -357,13 +365,9 @@ class EditDiaryActivity : AppCompatActivity() {
                 images = imagePaths.toList(),
                 tags = tags.toList()
             )
-        // 存储可能涉及 SAF 目录读写，放到后台线程避免保存时界面卡顿。
-        Thread {
-            store.save(entry)
-            runOnUiThread {
-                Feedback.saved(this)
-                finish()
-            }
-        }.start()
+        // 立即关闭编辑页，存储放到后台线程，避免点击保存后界面停顿。
+        Feedback.saved(this)
+        finish()
+        Thread { store.save(entry) }.start()
     }
 }

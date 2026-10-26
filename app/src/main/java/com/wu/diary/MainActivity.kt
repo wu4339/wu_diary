@@ -59,6 +59,9 @@ class MainActivity : AppCompatActivity() {
     private var pullTriggered = false
     private var pullAnimator: ValueAnimator? = null
 
+    /** 上次随机回顾到的笔记，避免连续两次打开同一篇。 */
+    private var lastRandomId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -539,9 +542,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.random_review_empty, Toast.LENGTH_SHORT).show()
             return
         }
-        val ids = entries.map { it.id }
+        // 打乱顺序，使上/下一篇切换也是随机顺序，并避免连续打开同一篇。
+        val ids = entries.shuffled().map { it.id }
+        var start = ids.indices.random()
+        if (ids.size > 1 && ids[start] == lastRandomId) start = (start + 1) % ids.size
+        lastRandomId = ids[start]
         startActivity(
-            ViewDiaryActivity.intent(this, ids, ids.indices.random(), randomReview = true)
+            ViewDiaryActivity.intent(this, ids, start, randomReview = true)
         )
     }
 

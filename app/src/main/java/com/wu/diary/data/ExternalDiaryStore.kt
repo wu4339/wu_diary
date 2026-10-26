@@ -33,59 +33,69 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
     fun hasNotes(): Boolean = markdownFiles().isNotEmpty()
 
     fun load(): List<DiaryEntry> {
-        val images = imageDir?.listFiles()?.mapNotNull { it.name }.orEmpty().toSet()
-        val result = mutableListOf<DiaryEntry>()
-        markdownFiles().sortedBy { it.name }.forEach { doc ->
-            val day = Regex("\\d{4}-\\d{2}-\\d{2}").find(doc.name.orEmpty())?.value ?: return@forEach
-            val markdown = readText(doc) ?: return@forEach
-            BackupManager.parse(day, markdown).forEachIndexed { index, entry ->
-                result.add(
-                    entry.copy(
-                        id = "ext-$day-${entry.createdAt}-$index",
-                        images = entry.images.filter { it in images }.mapNotNull { cacheImage(it) }
-                    )
-                )
-            }
+        val images = imageNames()
+        return markdownFiles().sortedBy { it.name }.flatMap { doc ->
+            val day = dayOf(doc.name.orEmpty()) ?: return@flatMap emptyList()
+            readEntries(day, doc, images)
         }
-        return result
     }
 
+    /** 只重写笔记所属的那一天，避免每次保存都读写全部文件。 */
     fun save(entry: DiaryEntry) {
-        val all = load().filterNot { it.id == entry.id } + entry
-        writeAll(all)
+        val day = dayFormat.format(Date(entry.createdAt))
+        copyImages(entry.images)
+        writeDay(day, loadDay(day).filterNot { it.id == entry.id } + entry)
     }
 
     fun delete(id: String) {
-        writeAll(load().filterNot { it.id == id })
+        val day = dayFromId(id)
+            ?: load().find { it.id == id }?.let { dayFormat.format(Date(it.createdAt)) }
+            ?: return
+        writeDay(day, loadDay(day).filterNot { it.id == id })
     }
 
     /** 用给定笔记覆盖整个目录（用于切换存储位置时迁移）。 */
     fun replaceAll(entries: List<DiaryEntry>) {
-        writeAll(entries)
+        copyImages(entries.flatMap { it.images })
+        val grouped = entries.groupBy { dayFormat.format(Date(it.createdAt)) }
+        grouped.forEach { (day, dayEntries) -> writeDay(day, dayEntries) }
+        markdownFiles().mapNotNull { it.name }
+            .filterNot { it in grouped.keys.map { day -> "$day.md" } }
+            .forEach { notesDir?.findFile(it)?.delete() }
     }
 
-    private fun writeAll(entries: List<DiaryEntry>) {
-        val copied = HashSet<String>()
-        entries.forEach { entry ->
-            entry.images.forEach { path ->
-                val image = File(path)
-                if (image.exists() && copied.add(image.name)) copyImageToDir(image)
-            }
-        }
+    private fun loadDay(day: String): List<DiaryEntry> {
+        val doc = notesDir?.findFile("$day.md") ?: return emptyList()
+        return readEntries(day, doc, imageNames())
+    }
 
-        val grouped = entries.groupBy { dayFormat.format(Date(it.createdAt)) }
-        val existing = markdownFiles().associateBy { it.name.orEmpty() }
-        grouped.forEach { (day, dayEntries) ->
-            val name = "$day.md"
-            existing[name]?.delete()
-            val file = notesDir?.createFile("text/markdown", name) ?: return@forEach
-            context.contentResolver.openOutputStream(file.uri)?.use {
-                it.write(BackupManager.markdownFor(day, dayEntries.sortedBy { e -> e.createdAt })
-                    .toByteArray(Charsets.UTF_8))
-            }
+    private fun readEntries(day: String, doc: DocumentFile, images: Set<String>): List<DiaryEntry> {
+        val markdown = readText(doc) ?: return emptyList()
+        return BackupManager.parse(day, markdown).mapIndexed { index, entry ->
+            entry.copy(
+                id = "ext-$day-${entry.createdAt}-$index",
+                images = entry.images.filter { it in images }.mapNotNull { cacheImage(it) }
+            )
         }
-        existing.keys.filterNot { it in grouped.keys.map { day -> "$day.md" } }
-            .forEach { existing[it]?.delete() }
+    }
+
+    private fun writeDay(day: String, entries: List<DiaryEntry>) {
+        val name = "$day.md"
+        notesDir?.findFile(name)?.delete()
+        if (entries.isEmpty()) return
+        val file = notesDir?.createFile("text/markdown", name) ?: return
+        context.contentResolver.openOutputStream(file.uri)?.use {
+            it.write(BackupManager.markdownFor(day, entries.sortedBy { e -> e.createdAt })
+                .toByteArray(Charsets.UTF_8))
+        }
+    }
+
+    private fun copyImages(paths: List<String>) {
+        val copied = HashSet<String>()
+        paths.forEach { path ->
+            val image = File(path)
+            if (image.exists() && copied.add(image.name)) copyImageToDir(image)
+        }
     }
 
     private fun copyImageToDir(image: File) {
@@ -120,10 +130,19 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
         }.getOrNull()
     }
 
+    private fun imageNames(): Set<String> =
+        imageDir?.listFiles()?.mapNotNull { it.name }.orEmpty().toSet()
+
     private fun markdownFiles(): List<DocumentFile> =
         notesDir?.listFiles()
             ?.filter { it.isFile && it.name?.endsWith(".md", true) == true }
             .orEmpty()
+
+    private fun dayOf(name: String): String? =
+        Regex("\\d{4}-\\d{2}-\\d{2}").find(name)?.value
+
+    private fun dayFromId(id: String): String? =
+        Regex("^ext-(\\d{4}-\\d{2}-\\d{2})-").find(id)?.groupValues?.get(1)
 
     private fun readText(doc: DocumentFile): String? = runCatching {
         context.contentResolver.openInputStream(doc.uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
