@@ -14,6 +14,7 @@ import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
+import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import java.io.File
 import java.text.SimpleDateFormat
@@ -133,6 +134,7 @@ class EditDiaryActivity : AppCompatActivity() {
                 images = imagePaths.toList()
             )
         store.save(entry)
+        Feedback.beep(this)
         finish()
     }
 }

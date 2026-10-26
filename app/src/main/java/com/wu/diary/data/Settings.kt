@@ -22,9 +22,25 @@ class Settings(context: Context) {
             prefs.edit().putInt(KEY_PREVIEW_LINES, value).apply()
         }
 
+    /** 保存 / 删除日记时是否播放提示音。 */
+    var soundEnabled: Boolean
+        get() = prefs.getBoolean(KEY_SOUND, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SOUND, value).apply()
+        }
+
+    /** 浏览页双击是否进入编辑。 */
+    var doubleTapEdit: Boolean
+        get() = prefs.getBoolean(KEY_DOUBLE_TAP, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_DOUBLE_TAP, value).apply()
+        }
+
     companion object {
         private const val KEY_FONT_SCALE = "font_scale"
         private const val KEY_PREVIEW_LINES = "preview_lines"
+        private const val KEY_SOUND = "sound_enabled"
+        private const val KEY_DOUBLE_TAP = "double_tap_edit"
 
         val FONT_SCALES = floatArrayOf(0.8f, 0.9f, 1f, 1.15f, 1.3f)
 

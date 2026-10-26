@@ -8,7 +8,9 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
@@ -24,6 +26,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityViewDiaryBinding
 import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
+import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,6 +70,23 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnMore.setOnClickListener { showMenu() }
         binding.btnPrev.setOnClickListener { step(-1) }
         binding.btnNext.setOnClickListener { step(1) }
+        binding.scrollContent.setOnTouchListener { _, event ->
+            doubleTapDetector.onTouchEvent(event)
+            false
+        }
+    }
+
+    /** 浏览页双击进入编辑（可在设置中开启）。 */
+    private val doubleTapDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (Settings(this@ViewDiaryActivity).doubleTapEdit) {
+                    openEditor()
+                    return true
+                }
+                return false
+            }
+        })
     }
 
     override fun onResume() {
@@ -138,6 +158,10 @@ class ViewDiaryActivity : AppCompatActivity() {
         load()
     }
 
+    private fun openEditor() {
+        entry?.let { startActivity(EditDiaryActivity.intent(this, it.id)) }
+    }
+
     /** 全屏查看图片，点击任意位置关闭。 */
     private fun openImage(path: String) {
         val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
@@ -200,6 +224,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 store.delete(current.id)
+                Feedback.beep(this)
                 finish()
             }
             .setNegativeButton(R.string.cancel, null)

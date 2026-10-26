@@ -23,6 +23,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityMainBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
+import com.wu.diary.util.Feedback
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
@@ -341,6 +342,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 store.delete(entry.id)
+                Feedback.beep(this)
                 refresh()
             }
             .setNegativeButton(R.string.cancel, null)

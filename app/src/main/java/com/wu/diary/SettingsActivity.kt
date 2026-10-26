@@ -40,6 +40,16 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener { finish() }
         binding.rowFontSize.setOnClickListener { showFontSizeDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
+        binding.switchSound.isChecked = settings.soundEnabled
+        binding.rowSound.setOnClickListener {
+            settings.soundEnabled = !settings.soundEnabled
+            binding.switchSound.isChecked = settings.soundEnabled
+        }
+        binding.switchDoubleTap.isChecked = settings.doubleTapEdit
+        binding.rowDoubleTap.setOnClickListener {
+            settings.doubleTapEdit = !settings.doubleTapEdit
+            binding.switchDoubleTap.isChecked = settings.doubleTapEdit
+        }
         updateFontValue()
         updatePreviewValue()
     }

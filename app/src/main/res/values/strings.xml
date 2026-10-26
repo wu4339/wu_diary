@@ -39,4 +39,8 @@
     <string name="edit">编辑</string>
     <string name="prev_note">上一篇</string>
     <string name="next_note">下一篇</string>
+    <string name="sound_feedback">操作提示音</string>
+    <string name="sound_feedback_desc">保存或删除日记时播放提示音</string>
+    <string name="double_tap_edit">双击进入编辑</string>
+    <string name="double_tap_edit_desc">在笔记浏览页双击可直接编辑</string>
 </resources>
