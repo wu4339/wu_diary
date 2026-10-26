@@ -181,6 +181,28 @@ object BackupManager {
         val lines = markdown.replace("\r\n", "\n").lines()
         val sections = mutableListOf<MutableList<String>>()
         var current: MutableList<String>? = null
+
+        // 无二级标题时，兼容「- 12:05:20 内容」这种列表式日记。
+        val bulletTime = Regex("^\\s*[-*+]\\s+(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s*(.*)$")
+        if (lines.none { it.startsWith("## ") }) {
+            lines.forEach { line ->
+                val match = bulletTime.find(line)
+                if (match != null) {
+                    val section = mutableListOf(match.groupValues[1])
+                    match.groupValues[2].takeIf { it.isNotBlank() }?.let { section.add(it) }
+                    sections.add(section)
+                    current = section
+                } else {
+                    current?.add(line)
+                }
+            }
+            return if (sections.isEmpty()) {
+                listOfNotNull(parseSection(dayStart, mutableListOf("").apply { addAll(lines) }))
+            } else {
+                sections.mapNotNull { parseSection(dayStart, it) }
+            }
+        }
+
         lines.forEach { line ->
             if (line.startsWith("## ")) {
                 val section = mutableListOf(line.removePrefix("## "))
