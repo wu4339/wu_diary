@@ -31,6 +31,7 @@ import com.wu.diary.util.ImageLoader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 /** 只读的笔记浏览页：支持上一篇/下一篇、编辑、删除，图片可点开大图。 */
 class ViewDiaryActivity : AppCompatActivity() {
@@ -80,12 +81,24 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
     }
 
-    /** 浏览页双击进入编辑（可在设置中开启）。 */
+    /** 浏览页手势：双击进入编辑（可在设置中开启），左右滑动切换上/下一篇。 */
     private val doubleTapDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (Settings(this@ViewDiaryActivity).doubleTapEdit) {
                     openEditor()
+                    return true
+                }
+                return false
+            }
+
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                if (e1 == null) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                val threshold = 70 * resources.displayMetrics.density
+                if (abs(dx) > threshold && abs(dx) > abs(dy) * 1.5f) {
+                    step(if (dx < 0) 1 else -1)
                     return true
                 }
                 return false
@@ -163,6 +176,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         if (target !in ids.indices) return
         index = target
         load()
+        binding.scrollContent.scrollTo(0, 0)
     }
 
     private fun openEditor() {
