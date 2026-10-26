@@ -101,11 +101,16 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var swipeFromImages = false
 
     /**
-     * 整页范围识别左右滑动与双击：正文 TextView（可点击链接）和 ScrollView 都会消费触摸事件，
-     * 因此在这里直接按横向拖动距离判断，不再依赖 fling 速度，普通浏览页也能滑动切换。
+     * 整页范围识别双击；左右滑动切换只在随机回顾里启用，普通查看页不响应滑动。
      */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         doubleTapDetector.onTouchEvent(ev)
+        if (randomReview && handleSwipe(ev)) return true
+        return super.dispatchTouchEvent(ev)
+    }
+
+    /** 随机回顾：按横向拖动距离判断左右滑动，返回 true 表示已切换笔记。 */
+    private fun handleSwipe(ev: MotionEvent): Boolean {
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 swipeStartX = ev.x
@@ -138,7 +143,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             }
             MotionEvent.ACTION_CANCEL -> swipeActive = false
         }
-        return super.dispatchTouchEvent(ev)
+        return false
     }
 
     /** 浏览页手势：双击进入编辑（可在设置中开启）。 */
