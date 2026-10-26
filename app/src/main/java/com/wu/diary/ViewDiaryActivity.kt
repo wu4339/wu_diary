@@ -84,6 +84,11 @@ class ViewDiaryActivity : AppCompatActivity() {
             doubleTapDetector.onTouchEvent(event)
             false
         }
+        // 正文可点击链接后 TextView 会消费触摸事件，这里同样转发给双击识别。
+        binding.textContent.setOnTouchListener { _, event ->
+            doubleTapDetector.onTouchEvent(event)
+            false
+        }
     }
 
     /** 浏览页手势：双击进入编辑（可在设置中开启），左右滑动切换上/下一篇。 */

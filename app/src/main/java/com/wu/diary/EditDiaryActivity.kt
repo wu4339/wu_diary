@@ -357,8 +357,13 @@ class EditDiaryActivity : AppCompatActivity() {
                 images = imagePaths.toList(),
                 tags = tags.toList()
             )
-        store.save(entry)
-        Feedback.saved(this)
-        finish()
+        // 存储可能涉及 SAF 目录读写，放到后台线程避免保存时界面卡顿。
+        Thread {
+            store.save(entry)
+            runOnUiThread {
+                Feedback.saved(this)
+                finish()
+            }
+        }.start()
     }
 }
