@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         store = DiaryStore(this)
         settings = Settings(this)
-        appliedScale = settings.fontScale
+        appliedScale = settings.previewScale
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         selectedDay = today.get(Calendar.DAY_OF_MONTH)
 
         adapter = DiaryAdapter(
-            fontScale = settings.fontScale,
+            fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
             showTags = settings.previewTags,
@@ -324,7 +324,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines ||
+        if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags
         ) {
             recreate()
@@ -548,7 +548,7 @@ class MainActivity : AppCompatActivity() {
                     if (inMonth) R.color.text_primary else R.color.text_secondary
                 )
             )
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * settings.fontScale)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * settings.previewScale)
         }
         inner.addView(number)
 
@@ -578,7 +578,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyScaledSizes() {
-        val scale = settings.fontScale
+        val scale = settings.previewScale
         binding.textCalMonth.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
         binding.textCalYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
         val header = binding.weekHeader

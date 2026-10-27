@@ -94,11 +94,11 @@ class ViewDiaryActivity : AppCompatActivity() {
         index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
 
         val settings = Settings(this)
-        val scale = settings.readingFontScale
+        val scale = settings.readingScale
         tagScale = scale
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
-        binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
+        binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, settings.readingFontSp.toFloat())
         binding.textContent.setLineSpacing(
             settings.lineSpacing * resources.displayMetrics.density,
             1f

@@ -43,12 +43,7 @@
     <string name="preview_value">%1$d 行</string>
     <string name="preview_all">全显</string>
     <string name="line_spacing">行间距</string>
-    <string name="line_spacing_none">无</string>
-    <string name="line_spacing_small">小</string>
-    <string name="line_spacing_default">标准</string>
-    <string name="line_spacing_large">大</string>
-    <string name="line_spacing_huge">特大</string>
-    <string name="line_spacing_value">%1$s（%2$d dp）</string>
+    <string name="line_spacing_value">%1$d dp</string>
     <string name="share_saved">已保存到今日笔记</string>
     <string name="share_empty">没有可保存的内容</string>
     <string name="share_failed">保存失败</string>

@@ -31,13 +31,13 @@ class HiddenDiaryActivity : AppCompatActivity() {
 
         store = DiaryStore(this)
         settings = Settings(this)
-        appliedScale = settings.fontScale
+        appliedScale = settings.previewScale
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
 
         adapter = DiaryAdapter(
-            fontScale = settings.fontScale,
+            fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
             showTags = settings.previewTags,
@@ -55,7 +55,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (appliedScale != settings.fontScale || appliedLines != settings.previewLines ||
+        if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags
         ) {
             recreate()

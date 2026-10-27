@@ -121,8 +121,8 @@
 
                     <ImageButton
                         android:id="@+id/btnTags"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/add_tag"
                         android:scaleType="centerInside"

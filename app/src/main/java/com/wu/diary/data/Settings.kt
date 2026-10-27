@@ -6,18 +6,28 @@ import android.content.Context
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    var fontScale: Float
-        get() = prefs.getFloat(KEY_FONT_SCALE, 1f)
+    /** 列表预览正文字号，单位 sp。 */
+    var fontSp: Int
+        get() = prefs.getInt(KEY_FONT_SP, DEFAULT_FONT_SP).coerceIn(FONT_SP_MIN, FONT_SP_MAX)
         set(value) {
-            prefs.edit().putFloat(KEY_FONT_SCALE, value).apply()
+            prefs.edit().putInt(KEY_FONT_SP, value.coerceIn(FONT_SP_MIN, FONT_SP_MAX)).apply()
         }
 
-    /** 查看 / 编辑页面的字号缩放，与列表预览字号分开设置。 */
-    var readingFontScale: Float
-        get() = prefs.getFloat(KEY_READING_FONT_SCALE, 1f)
+    /** 查看 / 编辑页面的正文字号，单位 sp，与列表预览分开设置。 */
+    var readingFontSp: Int
+        get() = prefs.getInt(KEY_READING_FONT_SP, DEFAULT_READING_FONT_SP)
+            .coerceIn(FONT_SP_MIN, FONT_SP_MAX)
         set(value) {
-            prefs.edit().putFloat(KEY_READING_FONT_SCALE, value).apply()
+            prefs.edit().putInt(KEY_READING_FONT_SP, value.coerceIn(FONT_SP_MIN, FONT_SP_MAX)).apply()
         }
+
+    /** 列表预览的字号缩放系数（相对 16sp 基准），日期等其它文字按同比例缩放。 */
+    val previewScale: Float
+        get() = fontSp / PREVIEW_BASE_SP
+
+    /** 查看 / 编辑页的字号缩放系数（相对 17sp 基准）。 */
+    val readingScale: Float
+        get() = readingFontSp / READING_BASE_SP
 
     var previewLines: Int
         get() {
@@ -65,8 +75,8 @@ class Settings(context: Context) {
         }
 
     companion object {
-        private const val KEY_FONT_SCALE = "font_scale"
-        private const val KEY_READING_FONT_SCALE = "reading_font_scale"
+        private const val KEY_FONT_SP = "font_sp"
+        private const val KEY_READING_FONT_SP = "reading_font_sp"
         private const val KEY_PREVIEW_LINES = "preview_lines"
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_DOUBLE_TAP = "double_tap_edit"
@@ -74,18 +84,27 @@ class Settings(context: Context) {
         private const val KEY_PREVIEW_TAGS = "preview_tags"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
 
-        val FONT_SCALES = floatArrayOf(0.8f, 0.9f, 1f, 1.15f, 1.3f)
+        /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */
+        private const val PREVIEW_BASE_SP = 16f
 
-        /** 可选的行间距（dp）。 */
-        val LINE_SPACINGS = floatArrayOf(0f, 3f, 6f, 9f, 12f)
+        /** 查看 / 编辑页正文的基准字号（sp）。 */
+        private const val READING_BASE_SP = 17f
+
+        /** 可选正文字号（sp），12sp ~ 22sp，精度 1sp。 */
+        const val FONT_SP_MIN = 12
+        const val FONT_SP_MAX = 22
+        val FONT_SPS = (FONT_SP_MIN..FONT_SP_MAX).toList()
+
+        const val DEFAULT_FONT_SP = 16
+        const val DEFAULT_READING_FONT_SP = 17
+
+        /** 可选的行间距（dp），0dp ~ 12dp，精度 1dp。 */
+        val LINE_SPACINGS = (0..12).map { it.toFloat() }
 
         const val DEFAULT_LINE_SPACING = 6f
 
         /** 默认行间距在 LINE_SPACINGS 中的下标。 */
-        const val DEFAULT_LINE_SPACING_INDEX = 2
-
-        /** 默认字号档位在 FONT_SCALES 中的下标。 */
-        const val DEFAULT_FONT_INDEX = 2
+        const val DEFAULT_LINE_SPACING_INDEX = 6
 
         /** 可选的预览行数（不含「全显」）。 */
         val PREVIEW_LINES = intArrayOf(3, 4, 5, 6, 7, 8, 9, 10)

@@ -17,17 +17,8 @@ import com.wu.diary.data.ExternalDiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySettingsBinding
 import com.wu.diary.util.BackupManager
-import kotlin.math.roundToInt
 
 class SettingsActivity : AppCompatActivity() {
-
-    private companion object {
-        /** 列表预览正文的基准字号，见 DiaryAdapter。 */
-        const val PREVIEW_BASE_SP = 16f
-
-        /** 查看 / 编辑页正文的基准字号，见 ViewDiaryActivity / EditDiaryActivity。 */
-        const val READING_BASE_SP = 17f
-    }
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var settings: Settings
@@ -47,29 +38,20 @@ class SettingsActivity : AppCompatActivity() {
             uri?.let { importNotes(it) }
         }
 
-    /** 字号档位统一按 sp 显示：预览正文基准 16sp，查看/编辑正文基准 17sp。 */
-    private fun fontLabels(base: Float): Array<String> =
-        Settings.FONT_SCALES.map {
-            getString(R.string.font_size_value, (base * it).roundToInt())
-        }.toTypedArray()
+    /** 字号选项统一按 sp 显示：12sp ~ 22sp。 */
+    private val fontLabels: Array<String>
+        get() = Settings.FONT_SPS.map { getString(R.string.font_size_value, it) }.toTypedArray()
 
     private val previewLabels: Array<String>
         get() = previewValues.map { lineLabel(it) }.toTypedArray()
 
+    /** 行间距选项：0dp ~ 12dp。 */
     private val lineSpacingLabels: Array<String>
-        get() = arrayOf(
-            getString(R.string.line_spacing_none),
-            getString(R.string.line_spacing_small),
-            getString(R.string.line_spacing_default),
-            getString(R.string.line_spacing_large),
-            getString(R.string.line_spacing_huge)
-        )
+        get() = Settings.LINE_SPACINGS.map { getString(R.string.line_spacing_value, it.toInt()) }
+            .toTypedArray()
 
-    private fun lineSpacingLabel(value: Float): String {
-        val index = Settings.LINE_SPACINGS.indexOfFirst { it == value }
-        val label = lineSpacingLabels[if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX]
-        return getString(R.string.line_spacing_value, label, value.toInt())
-    }
+    private fun lineSpacingLabel(value: Float): String =
+        getString(R.string.line_spacing_value, value.toInt())
 
     /** 预览行数选项：3~10 行 + 全显。 */
     private val previewValues: IntArray
@@ -215,15 +197,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateFontValue() {
-        val index = Settings.FONT_SCALES.indexOfFirst { it == settings.fontScale }
-        binding.textFontValue.text =
-            fontLabels(PREVIEW_BASE_SP)[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
+        binding.textFontValue.text = getString(R.string.font_size_value, settings.fontSp)
     }
 
     private fun updateReadingFontValue() {
-        val index = Settings.FONT_SCALES.indexOfFirst { it == settings.readingFontScale }
-        binding.textReadingFontValue.text =
-            fontLabels(READING_BASE_SP)[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
+        binding.textReadingFontValue.text = getString(R.string.font_size_value, settings.readingFontSp)
     }
 
     private fun updatePreviewValue() {
@@ -235,21 +213,19 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showFontSizeDialog() {
-        val scales = Settings.FONT_SCALES
-        val index = scales.indexOfFirst { it == settings.fontScale }
-        val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
-        showSliderDialog(R.string.font_size, fontLabels(PREVIEW_BASE_SP).toList(), current) { which ->
-            settings.fontScale = scales[which]
+        val options = Settings.FONT_SPS
+        val current = options.indexOf(settings.fontSp).coerceAtLeast(0)
+        showSliderDialog(R.string.font_size, fontLabels.toList(), current) { which ->
+            settings.fontSp = options[which]
             updateFontValue()
         }
     }
 
     private fun showReadingFontSizeDialog() {
-        val scales = Settings.FONT_SCALES
-        val index = scales.indexOfFirst { it == settings.readingFontScale }
-        val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
-        showSliderDialog(R.string.reading_font_size, fontLabels(READING_BASE_SP).toList(), current) { which ->
-            settings.readingFontScale = scales[which]
+        val options = Settings.FONT_SPS
+        val current = options.indexOf(settings.readingFontSp).coerceAtLeast(0)
+        showSliderDialog(R.string.reading_font_size, fontLabels.toList(), current) { which ->
+            settings.readingFontSp = options[which]
             updateReadingFontValue()
         }
     }
@@ -269,10 +245,7 @@ class SettingsActivity : AppCompatActivity() {
         val values = Settings.LINE_SPACINGS
         val index = values.indexOfFirst { it == settings.lineSpacing }
         val current = if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX
-        val labels = values.indices.map {
-            getString(R.string.line_spacing_value, lineSpacingLabels[it], values[it].toInt())
-        }
-        showSliderDialog(R.string.line_spacing, labels, current) { which ->
+        showSliderDialog(R.string.line_spacing, lineSpacingLabels.toList(), current) { which ->
             settings.lineSpacing = values[which]
             updateLineSpacingValue()
         }

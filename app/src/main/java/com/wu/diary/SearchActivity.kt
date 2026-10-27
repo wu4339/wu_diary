@@ -54,7 +54,7 @@ class SearchActivity : AppCompatActivity() {
         allEntries = store.load().filter { !it.hidden }
 
         adapter = DiaryAdapter(
-            fontScale = settings.fontScale,
+            fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
             showTags = settings.previewTags,
