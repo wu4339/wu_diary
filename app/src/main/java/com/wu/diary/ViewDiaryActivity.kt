@@ -8,9 +8,14 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.Layout
+import android.text.Spannable
+import android.text.TextPaint
 import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.URLSpan
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
@@ -36,6 +41,7 @@ import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.LinkOpener
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -205,12 +211,35 @@ class ViewDiaryActivity : AppCompatActivity() {
             .joinToString("\n")
         binding.textContent.text = text
         binding.textContent.isVisible = text.isNotEmpty()
+        applyLinkSpans()
 
         binding.textTags.text = current.tags.joinToString("  ") { "#$it" }
         binding.textTags.isVisible = current.tags.isNotEmpty()
 
         renderImages(current)
         updateNav()
+    }
+
+    /** 把自动识别的链接换成自定义 span，点击时优先用对应 App 打开。 */
+    private fun applyLinkSpans() {
+        val text = binding.textContent.text as? Spannable ?: return
+        text.getSpans(0, text.length, URLSpan::class.java).forEach { span ->
+            val start = text.getSpanStart(span)
+            val end = text.getSpanEnd(span)
+            val flags = text.getSpanFlags(span)
+            val url = span.url
+            text.removeSpan(span)
+            text.setSpan(object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    LinkOpener.open(this@ViewDiaryActivity, Uri.parse(url))
+                }
+
+                override fun updateDrawState(ds: TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.isUnderlineText = false
+                }
+            }, start, end, flags)
+        }
     }
 
     private fun renderImages(current: DiaryEntry) {
