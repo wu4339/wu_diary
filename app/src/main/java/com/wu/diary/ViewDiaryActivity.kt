@@ -11,11 +11,12 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.Layout
-import android.text.Spannable
+import android.text.SpannableString
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.text.style.URLSpan
+import android.text.util.Linkify
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
@@ -209,9 +210,9 @@ class ViewDiaryActivity : AppCompatActivity() {
         val text = listOf(current.title, current.content)
             .filter { it.isNotBlank() }
             .joinToString("\n")
-        binding.textContent.text = text
+        binding.textContent.text = linkify(text)
+        binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
-        applyLinkSpans()
 
         binding.textTags.text = current.tags.joinToString("  ") { "#$it" }
         binding.textTags.isVisible = current.tags.isNotEmpty()
@@ -220,16 +221,17 @@ class ViewDiaryActivity : AppCompatActivity() {
         updateNav()
     }
 
-    /** 把自动识别的链接换成自定义 span，点击时优先用对应 App 打开。 */
-    private fun applyLinkSpans() {
-        val text = binding.textContent.text as? Spannable ?: return
-        text.getSpans(0, text.length, URLSpan::class.java).forEach { span ->
-            val start = text.getSpanStart(span)
-            val end = text.getSpanEnd(span)
-            val flags = text.getSpanFlags(span)
+    /** 识别正文里的网址，并换成点击时优先用对应 App 打开的 span。 */
+    private fun linkify(text: String): CharSequence {
+        val spannable = SpannableString(text)
+        Linkify.addLinks(spannable, Linkify.WEB_URLS)
+        spannable.getSpans(0, spannable.length, URLSpan::class.java).forEach { span ->
+            val start = spannable.getSpanStart(span)
+            val end = spannable.getSpanEnd(span)
+            val flags = spannable.getSpanFlags(span)
             val url = span.url
-            text.removeSpan(span)
-            text.setSpan(object : ClickableSpan() {
+            spannable.removeSpan(span)
+            spannable.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) {
                     LinkOpener.open(this@ViewDiaryActivity, Uri.parse(url))
                 }
@@ -240,6 +242,7 @@ class ViewDiaryActivity : AppCompatActivity() {
                 }
             }, start, end, flags)
         }
+        return spannable
     }
 
     private fun renderImages(current: DiaryEntry) {

@@ -67,17 +67,22 @@ object LinkOpener {
     )
 
     fun open(context: Context, uri: Uri) {
-        val scheme = uri.scheme?.lowercase()
+        val target = withScheme(uri)
+        val scheme = target.scheme?.lowercase()
         if (scheme != "http" && scheme != "https") {
-            startSafely(context, Intent(Intent.ACTION_VIEW, uri))
+            startSafely(context, Intent(Intent.ACTION_VIEW, target))
             return
         }
 
-        val mapped = packageForHost(uri.host)
-        if (mapped != null && launchIn(context, uri, mapped)) return
-        if (launchInRegisteredApp(context, uri)) return
-        startSafely(context, Intent(Intent.ACTION_VIEW, uri))
+        val mapped = packageForHost(target.host)
+        if (mapped != null && launchIn(context, target, mapped)) return
+        if (launchInRegisteredApp(context, target)) return
+        startSafely(context, Intent(Intent.ACTION_VIEW, target))
     }
+
+    /** 有些链接文本不带 http/https，补上后再打开。 */
+    private fun withScheme(uri: Uri): Uri =
+        if (uri.scheme.isNullOrEmpty()) Uri.parse("https://$uri") else uri
 
     private fun packageForHost(host: String?): String? {
         val normalized = host?.lowercase()?.removePrefix("www.") ?: return null
