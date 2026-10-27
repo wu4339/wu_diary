@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -20,12 +21,15 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -231,23 +235,89 @@ class EditDiaryActivity : AppCompatActivity() {
         target.absolutePath
     }.getOrNull()
 
-    /** 编辑标签：空格/逗号分隔，最多 10 个。 */
+    /** 编辑标签：可直接输入，也可以点选已有的标签；空格/逗号分隔，最多 10 个。 */
     private fun editTags() {
         val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+
+        val existingTags = store.load()
+            .flatMap { it.tags }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
         val input = EditText(this).apply {
             setText(tags.joinToString(" "))
             hint = getString(R.string.tags_hint)
             setSingleLine(true)
-            setPadding(
-                (22 * density).toInt(),
-                (10 * density).toInt(),
-                (22 * density).toInt(),
-                (10 * density).toInt()
-            )
+            setPadding(dp(4), dp(10), dp(4), dp(10))
         }
+        container.addView(input)
+
+        if (existingTags.isNotEmpty()) {
+            container.addView(
+                TextView(this).apply {
+                    text = getString(R.string.existing_tags)
+                    setTextColor(ContextCompat.getColor(this@EditDiaryActivity, R.color.text_secondary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                    setPadding(0, dp(16), 0, dp(6))
+                }
+            )
+            val chipRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 0, 0, dp(8))
+            }
+            val chipViews = mutableListOf<Pair<String, TextView>>()
+
+            fun refreshChips() {
+                val current = parseTags(input.text.toString())
+                chipViews.forEach { (tag, view) ->
+                    val selected = tag in current
+                    view.setTextColor(
+                        ContextCompat.getColor(
+                            this@EditDiaryActivity,
+                            if (selected) R.color.text_primary else R.color.text_secondary
+                        )
+                    )
+                    view.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+                }
+            }
+
+            existingTags.forEach { tag ->
+                val chip = TextView(this).apply {
+                    text = "#$tag"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    isClickable = true
+                    setOnClickListener {
+                        val current = parseTags(input.text.toString()).toMutableList()
+                        if (tag in current) current.remove(tag) else current.add(tag)
+                        input.setText(current.joinToString(" "))
+                        input.setSelection(input.text.length)
+                        refreshChips()
+                    }
+                }
+                chipRow.addView(chip)
+                chipViews.add(tag to chip)
+            }
+            container.addView(
+                HorizontalScrollView(this).apply {
+                    isHorizontalScrollBarEnabled = false
+                    overScrollMode = View.OVER_SCROLL_NEVER
+                    addView(chipRow)
+                }
+            )
+            refreshChips()
+        }
+
         AlertDialog.Builder(this)
             .setTitle(R.string.tag_dialog_title)
-            .setView(input)
+            .setView(container)
             .setPositiveButton(R.string.save) { _, _ ->
                 tags.clear()
                 tags.addAll(parseTags(input.text.toString()))

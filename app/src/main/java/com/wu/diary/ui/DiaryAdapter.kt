@@ -97,7 +97,8 @@ class DiaryAdapter(
         binding.textYear.text = row.year
         binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * fontScale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
-        val top = binding.root.resources.displayMetrics.density * if (row.isFirst) 16 else 34
+        // 日期在“上方的分割线”和“第一条笔记”之间垂直居中（上方约 26dp、下方约 20dp）。
+        val top = binding.root.resources.displayMetrics.density * if (row.isFirst) 16 else 26
         binding.root.setPadding(
             binding.root.paddingLeft,
             top.toInt(),

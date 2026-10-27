@@ -16,6 +16,7 @@
     <string name="tag_filter_active">仅显示标签 #%1$s 的笔记</string>
     <string name="tag_filter_cleared">已显示全部笔记</string>
     <string name="tag_filter_bar">仅显示 #%1$s 的笔记，点击取消</string>
+    <string name="existing_tags">已有标签（点选即可添加）</string>
     <string name="filter">筛选</string>
     <string name="advanced_search">高级搜索</string>
     <string name="filter_has_image">包含图片</string>
