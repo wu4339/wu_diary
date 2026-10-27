@@ -9,10 +9,7 @@ import android.os.Looper
 import com.wu.diary.data.Settings
 import kotlin.math.PI
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.sin
-import kotlin.math.tanh
-import kotlin.random.Random
 
 /** 保存/删除操作提示音：直接合成 PCM 播放，音量比 ToneGenerator 更大。 */
 object Feedback {
@@ -23,12 +20,12 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildShatter() }
+    private val deletedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(587.33, 440.0)) }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：玻璃碎裂声。 */
+    /** 删除：两段下行音，通用的删除提示音。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 合成与播放放到后台线程，避免点击保存/删除时阻塞界面。 */
@@ -78,56 +75,5 @@ object Feedback {
             offset += noteSamples
         }
         return out
-    }
-
-    /** 删除：玻璃碎裂声——短促高频爆裂 + 大量细碎玻璃碴散落 + 低频裂纹。 */
-    private fun buildShatter(): ShortArray {
-        val total = (SAMPLE_RATE * 0.75).toInt()
-        val mix = FloatArray(total)
-        val random = Random(112233)
-
-        // 起始爆裂：几十毫秒的高频噪声，像玻璃被击中的瞬间。
-        val burst = (SAMPLE_RATE * 0.05).toInt()
-        var high = 0f
-        var previous = 0f
-        for (i in 0 until burst) {
-            val progress = i.toFloat() / burst
-            val noise = random.nextFloat() * 2f - 1f
-            high = 0.88f * (high + noise - previous)
-            previous = noise
-            mix[i] += high * (1f - progress).pow(1.4f) * 2.6f
-        }
-
-        // 玻璃碴散落：几十个随机的高频短音错落出现。
-        repeat(28) {
-            val start = burst + (random.nextFloat() * (total - burst) * 0.72f).toInt()
-            val freq = 2200.0 + random.nextDouble() * 4200.0
-            val length = (SAMPLE_RATE * (0.04 + random.nextFloat() * 0.10)).toInt()
-            val gain = 0.45f + random.nextFloat() * 0.85f
-            for (j in 0 until length) {
-                val index = start + j
-                if (index >= total) break
-                val progress = j.toFloat() / length
-                val envelope = (1f - progress).pow(2.4f)
-                val ring = sin(2 * PI * freq * j / SAMPLE_RATE) * 0.65 +
-                    sin(2 * PI * freq * 1.51 * j / SAMPLE_RATE) * 0.35
-                mix[index] += (ring * envelope * gain).toFloat()
-            }
-        }
-
-        // 低频裂纹「咔」的一声，给碎裂一点重量。
-        val crack = (SAMPLE_RATE * 0.20).toInt()
-        for (i in 0 until crack) {
-            val progress = i.toFloat() / crack
-            val freq = 340.0 - 240.0 * progress
-            val envelope = (1f - progress).pow(2.5f)
-            mix[i] += (sin(2 * PI * freq * i / SAMPLE_RATE) * envelope * 1.3).toFloat()
-        }
-
-        // 软限幅，整体接近满幅但不破音。
-        return ShortArray(total) { i ->
-            val value = tanh(mix[i] * 1.6f) * 0.98f
-            (value * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
-        }
     }
 }

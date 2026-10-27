@@ -33,6 +33,7 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
@@ -352,6 +353,10 @@ class ViewDiaryActivity : AppCompatActivity() {
         val image = ImageView(this).apply {
             setBackgroundColor(Color.BLACK)
             scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
             setImageBitmap(
                 ImageLoader.load(path, screenSize) ?: BitmapFactory.decodeFile(path)
             )
@@ -360,10 +365,22 @@ class ViewDiaryActivity : AppCompatActivity() {
         dialog.setContentView(image)
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.BLACK))
+            // 让内容铺满整屏并绘制到系统栏下面，状态栏/导航栏也就变成纯黑。
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+            WindowCompat.setDecorFitsSystemWindows(this, false)
             statusBarColor = Color.BLACK
             navigationBarColor = Color.BLACK
-            WindowInsetsControllerCompat(this, image).isAppearanceLightStatusBars = false
-            WindowInsetsControllerCompat(this, image).isAppearanceLightNavigationBars = false
+            WindowInsetsControllerCompat(this, image).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+        dialog.setOnShowListener {
+            dialog.window?.setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
         }
         dialog.show()
     }
