@@ -40,7 +40,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -107,6 +106,7 @@ class ViewDiaryActivity : AppCompatActivity() {
 
         binding.btnClose.setOnClickListener { finish() }
         binding.btnMore.setOnClickListener { showMenu() }
+        binding.btnTags.setOnClickListener { editTags() }
         binding.btnPrev.setOnClickListener { step(-1) }
         binding.btnNext.setOnClickListener { step(1) }
         randomReview = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
@@ -222,8 +222,6 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textContent.isVisible = text.isNotEmpty()
 
         binding.textTags.text = current.tags.joinToString("  ") { "#$it" }
-        // 用 invisible 而不是 gone：标签行始终占位，加/删标签时正文不会上下跳。
-        binding.textTags.isInvisible = current.tags.isEmpty()
 
         renderImages(current)
         updateNav()

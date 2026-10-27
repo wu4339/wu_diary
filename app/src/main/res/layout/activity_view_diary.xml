@@ -112,14 +112,32 @@
                         android:textSize="18sp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textTags"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:minHeight="18dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnTags"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/add_tag"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_tag"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/textTags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
                 <HorizontalScrollView
                     android:id="@+id/imageScroll"
