@@ -7,6 +7,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.animation.ValueAnimator
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
@@ -50,6 +54,8 @@ class MainActivity : AppCompatActivity() {
     private var appliedShowTags = false
     private var swipeDownX = 0f
     private var swipeDownY = 0f
+    /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
+    private var drawerSwiped = false
     private var pullStartX = 0f
     private var pullStartY = 0f
     private var pullDistance = 0f
@@ -172,6 +178,7 @@ class MainActivity : AppCompatActivity() {
             MotionEvent.ACTION_DOWN -> {
                 swipeDownX = ev.x
                 swipeDownY = ev.y
+                drawerSwiped = false
                 pullStartX = ev.x
                 pullStartY = ev.y
                 pullDistance = 0f
@@ -182,12 +189,17 @@ class MainActivity : AppCompatActivity() {
                     !binding.recycler.canScrollVertically(-1)
             }
             MotionEvent.ACTION_MOVE -> {
+                // 已经滑出侧栏的这一次手势不再传给列表，避免松手时误触打开笔记。
+                if (drawerSwiped) return true
                 val dx = ev.x - swipeDownX
                 val dy = kotlin.math.abs(ev.y - swipeDownY)
                 if (dx > drawerThreshold && dx > dy * 1.5f) {
                     if (!binding.drawerRoot.isDrawerOpen(binding.drawerPanel)) {
                         binding.drawerRoot.openDrawer(binding.drawerPanel)
                         swipeDownX = ev.x
+                        drawerSwiped = true
+                        cancelChildTouch(ev)
+                        return true
                     }
                 }
                 if (pullAllowed && !pullTriggered) {
@@ -205,6 +217,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (drawerSwiped) {
+                    drawerSwiped = false
+                    return true
+                }
                 if (pullActive) {
                     val ready = ev.actionMasked == MotionEvent.ACTION_UP &&
                         pullDistance >= pullThreshold
@@ -220,6 +236,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return super.dispatchTouchEvent(ev)
+    }
+
+    /** 滑出侧栏时给列表补发取消事件，避免列表项把这串触摸当成点击。 */
+    private fun cancelChildTouch(ev: MotionEvent) {
+        val cancel = MotionEvent.obtain(ev)
+        cancel.action = MotionEvent.ACTION_CANCEL
+        super.dispatchTouchEvent(cancel)
+        cancel.recycle()
     }
 
     /** 下拉过程中实时展示提示条高度与文案。 */
@@ -330,9 +354,26 @@ class MainActivity : AppCompatActivity() {
             return
         }
         tags.forEach { tag ->
+            val count = allEntries.count { tag in it.tags }
             container.addView(
                 TextView(this).apply {
-                    text = "#$tag"
+                    text = SpannableString("#$tag  $count").apply {
+                        val suffixStart = "#$tag  ".length
+                        setSpan(
+                            ForegroundColorSpan(
+                                ContextCompat.getColor(context, R.color.text_secondary)
+                            ),
+                            suffixStart,
+                            length,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                        setSpan(
+                            RelativeSizeSpan(0.82f),
+                            suffixStart,
+                            length,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
                     setTextColor(ContextCompat.getColor(context, R.color.text_primary))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                     if (tag == activeTag) setTypeface(typeface, android.graphics.Typeface.BOLD)
