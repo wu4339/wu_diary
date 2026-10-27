@@ -129,6 +129,7 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
 
         renderImages()
+        renderEditorTags()
         setupCursorVisibility()
 
         binding.btnClose.setOnClickListener { finish() }
@@ -191,6 +192,12 @@ class EditDiaryActivity : AppCompatActivity() {
             layout.getLineBottom(line) + edit.paddingTop + extra
         )
         binding.scrollContent.requestChildRectangleOnScreen(edit, rect, false)
+    }
+
+    /** 编辑页展示当前笔记已选的标签。 */
+    private fun renderEditorTags() {
+        binding.textEditorTags.text = tags.joinToString("  ") { "#$it" }
+        binding.textEditorTags.isVisible = tags.isNotEmpty()
     }
 
     private fun renderImages() {
@@ -333,6 +340,7 @@ class EditDiaryActivity : AppCompatActivity() {
             .setPositiveButton(R.string.save) { _, _ ->
                 tags.clear()
                 tags.addAll(parseTags(input.text.toString()))
+                renderEditorTags()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

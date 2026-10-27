@@ -69,6 +69,16 @@
                     android:textSize="18sp" />
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/textEditorTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
             <HorizontalScrollView
                 android:id="@+id/imageScroll"
                 android:layout_width="match_parent"
