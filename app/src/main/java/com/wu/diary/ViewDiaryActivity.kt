@@ -151,12 +151,26 @@ class ViewDiaryActivity : AppCompatActivity() {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (Settings(this@ViewDiaryActivity).doubleTapEdit) {
-                    openEditor()
+                    openEditor(offsetAt(e))
                     return true
                 }
                 return false
             }
         })
+    }
+
+    /** 双击位置对应到正文中的字符偏移，进入编辑页后光标落在这里。 */
+    private fun offsetAt(e: MotionEvent): Int {
+        val target = binding.textContent
+        val text = target.text?.toString().orEmpty()
+        val layout = target.layout ?: return -1
+        val location = IntArray(2)
+        target.getLocationOnScreen(location)
+        val x = e.rawX - location[0] - target.totalPaddingLeft
+        val y = e.rawY - location[1] - target.totalPaddingTop
+        if (y < 0 || text.isEmpty()) return -1
+        val line = layout.getLineForVertical(y.toInt())
+        return layout.getOffsetForHorizontal(line, x).coerceIn(0, text.length)
     }
 
     override fun onResume() {
@@ -288,8 +302,8 @@ class ViewDiaryActivity : AppCompatActivity() {
             y >= location[1] && y <= location[1] + strip.height
     }
 
-    private fun openEditor() {
-        entry?.let { startActivity(EditDiaryActivity.intent(this, it.id)) }
+    private fun openEditor(cursor: Int = -1) {
+        entry?.let { startActivity(EditDiaryActivity.intent(this, it.id, cursor = cursor)) }
     }
 
     /** 全屏查看图片，点击任意位置关闭。 */

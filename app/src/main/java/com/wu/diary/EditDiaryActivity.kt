@@ -53,18 +53,27 @@ class EditDiaryActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_ID = "entry_id"
         private const val EXTRA_DATE = "entry_date"
+        private const val EXTRA_CURSOR = "entry_cursor"
         private const val MAX_IMAGES = 9
 
-        fun intent(context: Context, entryId: String?, date: Long? = null): Intent =
+        fun intent(
+            context: Context,
+            entryId: String?,
+            date: Long? = null,
+            cursor: Int = -1
+        ): Intent =
             Intent(context, EditDiaryActivity::class.java)
                 .putExtra(EXTRA_ID, entryId)
                 .putExtra(EXTRA_DATE, date ?: 0L)
+                .putExtra(EXTRA_CURSOR, cursor)
     }
 
     private lateinit var binding: ActivityEditDiaryBinding
     private lateinit var store: DiaryStore
     private var existing: DiaryEntry? = null
     private var presetDate: Long = 0L
+    /** 从查看页双击进入时，光标落在双击的位置；-1 表示落在末尾。 */
+    private var initialCursor = -1
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
@@ -95,6 +104,7 @@ class EditDiaryActivity : AppCompatActivity() {
 
         store = DiaryStore(this)
         presetDate = intent.getLongExtra(EXTRA_DATE, 0L)
+        initialCursor = intent.getIntExtra(EXTRA_CURSOR, -1)
         intent.getStringExtra(EXTRA_ID)?.let { id ->
             existing = store.load().find { it.id == id }
             existing?.let {
@@ -134,12 +144,14 @@ class EditDiaryActivity : AppCompatActivity() {
         startTyping()
     }
 
-    /** 进入编辑页即输入：聚焦文本框、光标落在末尾并弹出键盘。 */
+    /** 进入编辑页即输入：聚焦文本框、光标落在上次的位置（或末尾）并弹出键盘。 */
     private fun startTyping() {
         binding.editContent.requestFocus()
         binding.editContent.post {
             val text = binding.editContent.text
-            if (text != null) binding.editContent.setSelection(text.length)
+            val length = text?.length ?: 0
+            val position = if (initialCursor in 0..length) initialCursor else length
+            binding.editContent.setSelection(position)
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
             binding.editContent.postDelayed({ scrollCursorIntoView() }, 300L)

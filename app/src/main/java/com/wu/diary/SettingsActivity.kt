@@ -3,10 +3,15 @@ package com.wu.diary
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.TypedValue
+import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.ExternalDiaryStore
 import com.wu.diary.data.Settings
@@ -237,20 +242,53 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
+    /** 行间距：拖动滑块选择档位，松手即生效。 */
     private fun showLineSpacingDialog() {
         val values = Settings.LINE_SPACINGS
         val index = values.indexOfFirst { it == settings.lineSpacing }
         val current = if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX
-        val labels = values.indices.map {
-            getString(R.string.line_spacing_value, lineSpacingLabels[it], values[it].toInt())
-        }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.line_spacing)
-            .setSingleChoiceItems(labels, current) { dialog, which ->
-                dialog.dismiss()
-                settings.lineSpacing = values[which]
+        val density = resources.displayMetrics.density
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((24 * density).toInt(), (8 * density).toInt(), (24 * density).toInt(), 0)
+        }
+        val valueText = TextView(this).apply {
+            text = getString(
+                R.string.line_spacing_value,
+                lineSpacingLabels[current],
+                values[current].toInt()
+            )
+            setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        }
+        val seekBar = SeekBar(this).apply {
+            max = values.size - 1
+            progress = current
+            setPadding(0, (12 * density).toInt(), 0, 0)
+        }
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
+                valueText.text = getString(
+                    R.string.line_spacing_value,
+                    lineSpacingLabels[progress],
+                    values[progress].toInt()
+                )
+                settings.lineSpacing = values[progress]
                 updateLineSpacingValue()
             }
+
+            override fun onStartTrackingTouch(bar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(bar: SeekBar?) {}
+        })
+        container.addView(valueText)
+        container.addView(seekBar)
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.line_spacing)
+            .setView(container)
+            .setPositiveButton(android.R.string.ok, null)
             .show()
     }
 }
