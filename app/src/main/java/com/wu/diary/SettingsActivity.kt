@@ -211,8 +211,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showFontSizeDialog() {
         val scales = Settings.FONT_SCALES
-        val current = scales.indexOfFirst { it == settings.fontScale }
-            .coerceAtLeast(Settings.DEFAULT_FONT_INDEX)
+        val index = scales.indexOfFirst { it == settings.fontScale }
+        val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
         AlertDialog.Builder(this)
             .setTitle(R.string.font_size)
             .setSingleChoiceItems(fontLabels, current) { dialog, which ->
@@ -225,8 +225,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showPreviewLinesDialog() {
         val options = previewValues
-        val current = options.indexOf(settings.previewLines)
-            .coerceAtLeast(Settings.DEFAULT_PREVIEW_INDEX)
+        val index = options.indexOf(settings.previewLines)
+        val current = if (index >= 0) index else Settings.DEFAULT_PREVIEW_INDEX
         AlertDialog.Builder(this)
             .setTitle(R.string.preview_lines)
             .setSingleChoiceItems(previewLabels, current) { dialog, which ->
@@ -239,8 +239,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showLineSpacingDialog() {
         val values = Settings.LINE_SPACINGS
-        val current = values.indexOfFirst { it == settings.lineSpacing }
-            .coerceAtLeast(Settings.DEFAULT_LINE_SPACING_INDEX)
+        val index = values.indexOfFirst { it == settings.lineSpacing }
+        val current = if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX
         val labels = values.indices.map {
             getString(R.string.line_spacing_value, lineSpacingLabels[it], values[it].toInt())
         }.toTypedArray()
