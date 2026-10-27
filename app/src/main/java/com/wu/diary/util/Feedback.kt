@@ -9,6 +9,7 @@ import android.os.Looper
 import com.wu.diary.data.Settings
 import kotlin.math.PI
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.tanh
 import kotlin.random.Random
@@ -22,12 +23,12 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildCrumple() }
+    private val deletedSamples: ShortArray by lazy { buildRecycle() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：揉皱撕碎纸张的声音。 */
+    /** 删除：类似 Windows 清空回收站的下坠气声。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 合成与播放放到后台线程，避免点击保存/删除时阻塞界面。 */
@@ -79,45 +80,40 @@ object Feedback {
         return out
     }
 
-    /** 删除：揉皱/撕碎纸张的"嚓啦"声。 */
-    private fun buildCrumple(): ShortArray {
-        val total = (SAMPLE_RATE * 0.30).toInt()
+    /** 删除：模拟 Windows「清空回收站」的短促下坠气声，结尾一记闷响。 */
+    private fun buildRecycle(): ShortArray {
+        val total = (SAMPLE_RATE * 0.60).toInt()
         val mix = FloatArray(total)
+        val random = Random(20261026)
 
-        // 开头一记短促闷响，像纸团被一把攥住。
-        val hit = (SAMPLE_RATE * 0.10).toInt()
-        for (i in 0 until hit) {
-            val ratio = i.toFloat() / hit
-            val freq = 210.0 - 140.0 * ratio
-            val envelope = (1f - ratio) * (1f - ratio)
-            mix[i] += (sin(2 * PI * freq * i / SAMPLE_RATE) * envelope * 1.2).toFloat()
-        }
-
-        // 揉皱纸张：中频噪声被随机颗粒快速切断，形成"嚓啦嚓啦"的褶皱感。
-        val random = Random(778899)
+        // 噪声经截止频率快速下滑的低通，形成「嗖」的一口气被抽走的感觉。
         var low = 0f
-        var mid = 0f
-        var grainTimer = 0
-        var grainVolume = 0f
-        for (i in hit until total) {
-            val progress = (i - hit).toFloat() / (total - hit)
+        var lower = 0f
+        for (i in 0 until total) {
+            val progress = i.toFloat() / total
+            val cutoff = 3400f * (1f - progress).pow(2.4f) + 380f
+            val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.92f)
             val noise = random.nextFloat() * 2f - 1f
-            low += 0.10f * (noise - low)
-            mid += 0.42f * (noise - mid)
-            val band = mid - low
-            if (grainTimer <= 0) {
-                grainTimer = 7 + (random.nextFloat() * 130f).toInt()
-                grainVolume = 0.5f + random.nextFloat() * 0.9f
-            }
-            grainTimer--
-            grainVolume *= 0.93f
-            val envelope = (1f - progress) * (1f - progress)
-            mix[i] += band * envelope * grainVolume * 2.2f
+            low += coefficient * (noise - low)
+            lower += coefficient * 0.45f * (low - lower)
+            val band = low - lower
+            val attack = min(1.0, i / (SAMPLE_RATE * 0.02)).toFloat()
+            val envelope = attack * (1f - progress).pow(1.5f)
+            mix[i] += band * envelope * 3.2f
         }
 
-        // 软限幅：整体更响，同时避免刺耳的破音。
+        // 结尾一记低沉的「咚」，像垃圾桶盖合上。
+        val plopStart = (total * 0.72f).toInt()
+        for (i in plopStart until total) {
+            val progress = (i - plopStart).toFloat() / (total - plopStart)
+            val freq = 200.0 - 110.0 * progress
+            val envelope = (1f - progress) * (1f - progress)
+            mix[i] += (sin(2 * PI * freq * i / SAMPLE_RATE) * envelope * 1.1).toFloat()
+        }
+
+        // 软限幅，整体接近满幅但不会破音。
         return ShortArray(total) { i ->
-            val value = tanh(mix[i] * 2.0f) * 0.98f
+            val value = tanh(mix[i] * 1.7f) * 0.98f
             (value * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }

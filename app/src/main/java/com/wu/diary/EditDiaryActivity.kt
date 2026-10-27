@@ -155,8 +155,33 @@ class EditDiaryActivity : AppCompatActivity() {
             binding.editContent.setSelection(position)
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.editContent, InputMethodManager.SHOW_IMPLICIT)
-            binding.editContent.postDelayed({ scrollCursorIntoView() }, 300L)
+            // 从浏览页双击进入时把光标行放到屏幕中间；新建笔记仍只保证光标可见。
+            binding.editContent.postDelayed({
+                if (initialCursor >= 0) centerCursorLine() else scrollCursorIntoView()
+            }, 350L)
+            if (initialCursor >= 0) {
+                // 键盘弹出会改变可见高度，等布局稳定后再校正一次。
+                binding.editContent.postDelayed({ centerCursorLine() }, 700L)
+            }
         }
+    }
+
+    /** 把光标所在行滚动到可见区域的正中。 */
+    private fun centerCursorLine() {
+        val edit = binding.editContent
+        val layout = edit.layout ?: return
+        val offset = edit.selectionEnd.coerceIn(0, edit.text?.length ?: 0)
+        val line = layout.getLineForOffset(offset)
+        val lineCenter = (layout.getLineTop(line) + layout.getLineBottom(line)) / 2
+
+        var top = edit.top
+        var parent = edit.parent as? View
+        while (parent != null && parent !== binding.scrollContent) {
+            top += parent.top
+            parent = parent.parent as? View
+        }
+        val target = top + edit.paddingTop + lineCenter - binding.scrollContent.height / 2
+        binding.scrollContent.smoothScrollTo(0, target.coerceAtLeast(0))
     }
 
     /** 编辑页整体可滚动，输入或键盘弹出时把光标所在行带回可见区域。 */
