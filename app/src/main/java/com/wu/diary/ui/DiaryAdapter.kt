@@ -17,6 +17,7 @@ import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.TagChips
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -125,9 +126,10 @@ class DiaryAdapter(
         binding.textBody.breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
         binding.textBody.hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
 
-        binding.textTags.text = entry.tags.joinToString("  ") { "#$it" }
-        binding.textTags.isVisible = showTags && entry.tags.isNotEmpty()
-        binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
+        // 预览标签与查看/编辑页一致，使用带光晕的标签色块。
+        val showEntryTags = showTags && entry.tags.isNotEmpty()
+        binding.tagScroll.isVisible = showEntryTags
+        if (showEntryTags) TagChips.render(binding.tagStrip, entry.tags, fontScale)
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
         val dividerMargin = if (isGroupEnd) {

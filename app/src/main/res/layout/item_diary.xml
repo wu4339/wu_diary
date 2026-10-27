@@ -27,15 +27,23 @@
         android:textColor="@color/text_body"
         android:textSize="16sp" />
 
-    <TextView
-        android:id="@+id/textTags"
+    <HorizontalScrollView
+        android:id="@+id/tagScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:paddingHorizontal="24dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp"
-        android:visibility="gone" />
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/tagStrip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 
     <View
         android:id="@+id/divider"
