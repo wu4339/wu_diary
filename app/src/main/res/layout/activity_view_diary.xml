@@ -85,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
-                android:paddingTop="22dp"
+                android:paddingTop="12dp"
                 android:paddingBottom="96dp">
 
                 <LinearLayout
@@ -116,10 +116,10 @@
                     android:id="@+id/textTags"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="6dp"
+                    android:minHeight="18dp"
                     android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:visibility="gone" />
+                    android:textSize="13sp" />
 
                 <HorizontalScrollView
                     android:id="@+id/imageScroll"

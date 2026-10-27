@@ -35,6 +35,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -222,7 +223,8 @@ class EditDiaryActivity : AppCompatActivity() {
     /** 编辑页展示当前笔记已选的标签。 */
     private fun renderEditorTags() {
         binding.textEditorTags.text = tags.joinToString("  ") { "#$it" }
-        binding.textEditorTags.isVisible = tags.isNotEmpty()
+        // 标签行始终占位，保存标签后正文不会被挤下去。
+        binding.textEditorTags.isInvisible = tags.isEmpty()
     }
 
     private fun renderImages() {
