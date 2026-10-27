@@ -17,8 +17,17 @@ import com.wu.diary.data.ExternalDiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySettingsBinding
 import com.wu.diary.util.BackupManager
+import kotlin.math.roundToInt
 
 class SettingsActivity : AppCompatActivity() {
+
+    private companion object {
+        /** 列表预览正文的基准字号，见 DiaryAdapter。 */
+        const val PREVIEW_BASE_SP = 16f
+
+        /** 查看 / 编辑页正文的基准字号，见 ViewDiaryActivity / EditDiaryActivity。 */
+        const val READING_BASE_SP = 17f
+    }
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var settings: Settings
@@ -38,14 +47,11 @@ class SettingsActivity : AppCompatActivity() {
             uri?.let { importNotes(it) }
         }
 
-    private val fontLabels: Array<String>
-        get() = arrayOf(
-            getString(R.string.font_smaller),
-            getString(R.string.font_small),
-            getString(R.string.font_default),
-            getString(R.string.font_large),
-            getString(R.string.font_huge)
-        )
+    /** 字号档位统一按 sp 显示：预览正文基准 16sp，查看/编辑正文基准 17sp。 */
+    private fun fontLabels(base: Float): Array<String> =
+        Settings.FONT_SCALES.map {
+            getString(R.string.font_size_value, (base * it).roundToInt())
+        }.toTypedArray()
 
     private val previewLabels: Array<String>
         get() = previewValues.map { lineLabel(it) }.toTypedArray()
@@ -210,13 +216,14 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateFontValue() {
         val index = Settings.FONT_SCALES.indexOfFirst { it == settings.fontScale }
-        binding.textFontValue.text = fontLabels[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
+        binding.textFontValue.text =
+            fontLabels(PREVIEW_BASE_SP)[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
     }
 
     private fun updateReadingFontValue() {
         val index = Settings.FONT_SCALES.indexOfFirst { it == settings.readingFontScale }
         binding.textReadingFontValue.text =
-            fontLabels[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
+            fontLabels(READING_BASE_SP)[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
     }
 
     private fun updatePreviewValue() {
@@ -231,7 +238,7 @@ class SettingsActivity : AppCompatActivity() {
         val scales = Settings.FONT_SCALES
         val index = scales.indexOfFirst { it == settings.fontScale }
         val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
-        showSliderDialog(R.string.font_size, fontLabels.toList(), current) { which ->
+        showSliderDialog(R.string.font_size, fontLabels(PREVIEW_BASE_SP).toList(), current) { which ->
             settings.fontScale = scales[which]
             updateFontValue()
         }
@@ -241,7 +248,7 @@ class SettingsActivity : AppCompatActivity() {
         val scales = Settings.FONT_SCALES
         val index = scales.indexOfFirst { it == settings.readingFontScale }
         val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
-        showSliderDialog(R.string.reading_font_size, fontLabels.toList(), current) { which ->
+        showSliderDialog(R.string.reading_font_size, fontLabels(READING_BASE_SP).toList(), current) { which ->
             settings.readingFontScale = scales[which]
             updateReadingFontValue()
         }

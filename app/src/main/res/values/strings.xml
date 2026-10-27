@@ -27,11 +27,7 @@
     <string name="add_image">添加图片</string>
     <string name="font_size">预览字体大小</string>
     <string name="reading_font_size">查看/编辑字体大小</string>
-    <string name="font_smaller">较小</string>
-    <string name="font_small">小</string>
-    <string name="font_default">标准</string>
-    <string name="font_large">大</string>
-    <string name="font_huge">特大</string>
+    <string name="font_size_value">%1$dsp</string>
     <string name="prev_month">上一月</string>
     <string name="next_month">下一月</string>
     <string name="week_sun">Sun</string>
