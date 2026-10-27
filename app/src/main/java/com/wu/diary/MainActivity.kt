@@ -202,6 +202,15 @@ class MainActivity : AppCompatActivity() {
                         return true
                     }
                 }
+                // 向左滑：直接切到随机回顾。
+                if (dx < -drawerThreshold && -dx > dy * 1.5f && !calendarVisible &&
+                    !binding.drawerRoot.isDrawerOpen(binding.drawerPanel)
+                ) {
+                    drawerSwiped = true
+                    cancelChildTouch(ev)
+                    reviewRandom()
+                    return true
+                }
                 if (pullAllowed && !pullTriggered) {
                     val pullDy = ev.y - pullStartY
                     val pullDx = kotlin.math.abs(ev.x - pullStartX)

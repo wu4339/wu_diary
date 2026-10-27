@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -28,11 +29,15 @@ import android.view.Window
 import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
@@ -405,6 +410,10 @@ class ViewDiaryActivity : AppCompatActivity() {
             clipboard.setPrimaryClip(ClipData.newPlainText("wu_diary", text))
             Toast.makeText(this, R.string.note_copied, Toast.LENGTH_SHORT).show()
         }
+        menu.itemTag.setOnClickListener {
+            dialog.dismiss()
+            editTags()
+        }
         menu.itemDelete.setOnClickListener {
             dialog.dismiss()
             confirmDelete()
@@ -443,6 +452,110 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
         dialog.show()
     }
+
+    /** 查看页里直接给当前笔记加/删标签，保存后立即刷新标签行。 */
+    private fun editTags() {
+        val current = entry ?: return
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+
+        val existingTags = store.load()
+            .flatMap { it.tags }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
+        val input = EditText(this).apply {
+            setText(current.tags.joinToString(" "))
+            hint = getString(R.string.tags_hint)
+            setSingleLine(true)
+            setPadding(dp(4), dp(10), dp(4), dp(10))
+        }
+        container.addView(input)
+
+        if (existingTags.isNotEmpty()) {
+            container.addView(
+                TextView(this).apply {
+                    text = getString(R.string.existing_tags)
+                    setTextColor(ContextCompat.getColor(this@ViewDiaryActivity, R.color.text_secondary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                    setPadding(0, dp(16), 0, dp(6))
+                }
+            )
+            val chipRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 0, 0, dp(8))
+            }
+            val chipViews = mutableListOf<Pair<String, TextView>>()
+
+            fun refreshChips() {
+                val selectedTags = parseTags(input.text.toString())
+                chipViews.forEach { (tag, view) ->
+                    val selected = tag in selectedTags
+                    view.setTextColor(
+                        ContextCompat.getColor(
+                            this@ViewDiaryActivity,
+                            if (selected) R.color.text_primary else R.color.text_secondary
+                        )
+                    )
+                    view.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+                }
+            }
+
+            existingTags.forEach { tag ->
+                val chip = TextView(this).apply {
+                    text = "#$tag"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    isClickable = true
+                    setOnClickListener {
+                        val selectedTags = parseTags(input.text.toString()).toMutableList()
+                        if (tag in selectedTags) selectedTags.remove(tag) else selectedTags.add(tag)
+                        input.setText(selectedTags.joinToString(" "))
+                        input.setSelection(input.text.length)
+                        refreshChips()
+                    }
+                }
+                chipRow.addView(chip)
+                chipViews.add(tag to chip)
+            }
+            container.addView(
+                HorizontalScrollView(this).apply {
+                    isHorizontalScrollBarEnabled = false
+                    overScrollMode = View.OVER_SCROLL_NEVER
+                    addView(chipRow)
+                }
+            )
+            refreshChips()
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.tag_dialog_title)
+            .setView(container)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val updated = current.copy(
+                    tags = parseTags(input.text.toString()),
+                    updatedAt = System.currentTimeMillis()
+                )
+                store.save(updated)
+                entry = updated
+                render()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun parseTags(raw: String): List<String> =
+        raw.split(Regex("[\\s,，、]+"))
+            .map { it.trim().removePrefix("#") }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(10)
 
     private fun confirmDelete() {
         val current = entry ?: return
