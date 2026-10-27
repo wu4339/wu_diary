@@ -95,6 +95,10 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
+        // 标签文字带一圈柔和光晕。
+        binding.textTags.setShadowLayer(
+            4f * scale * resources.displayMetrics.density, 0f, 0f, 0x40000000
+        )
         binding.textContent.setLineSpacing(
             settings.lineSpacing * resources.displayMetrics.density,
             1f
@@ -291,6 +295,8 @@ class ViewDiaryActivity : AppCompatActivity() {
             }
             return
         }
+        // 随机回顾里切换笔记时播放翻书声。
+        if (randomReview) Feedback.pageTurn(this)
         // 随机回顾里左右滑动时用翻书效果切换，其他情况直接切换。
         if (flip && randomReview) {
             flipTo(target, delta)

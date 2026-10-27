@@ -125,8 +125,13 @@ class EditDiaryActivity : AppCompatActivity() {
         val scale = settings.fontScale
         binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
+        binding.textEditorTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
+        // 标签文字带一圈柔和光晕。
+        binding.textEditorTags.setShadowLayer(
+            4f * scale * resources.displayMetrics.density, 0f, 0f, 0x40000000
+        )
 
         renderImages()
         renderEditorTags()
