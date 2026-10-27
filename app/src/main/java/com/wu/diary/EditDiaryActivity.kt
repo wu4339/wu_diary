@@ -109,8 +109,8 @@ class EditDiaryActivity : AppCompatActivity() {
 
         val settings = Settings(this)
         val scale = settings.fontScale
-        binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
-        binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
+        binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
+        binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
 

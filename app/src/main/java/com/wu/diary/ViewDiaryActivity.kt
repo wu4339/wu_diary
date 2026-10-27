@@ -77,8 +77,8 @@ class ViewDiaryActivity : AppCompatActivity() {
 
         val settings = Settings(this)
         val scale = settings.fontScale
-        binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * scale)
-        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * scale)
+        binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
+        binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
         binding.textContent.setLineSpacing(

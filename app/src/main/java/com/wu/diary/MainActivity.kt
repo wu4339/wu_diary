@@ -57,6 +57,8 @@ class MainActivity : AppCompatActivity() {
     private var pullAllowed = false
     private var pullTriggered = false
     private var receiverRegistered = false
+    /** 当前只显示某个标签的笔记；为空表示不过滤。 */
+    private var activeTag: String? = null
 
     /** 后台保存完成后通知刷新，避免刚编辑完回到列表时读到写入中的文件。 */
     private val dataChangedReceiver = object : BroadcastReceiver() {
@@ -126,6 +128,13 @@ class MainActivity : AppCompatActivity() {
         binding.btnSearch.setOnClickListener {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)
             startActivity(Intent(this, SearchActivity::class.java))
+        }
+
+        binding.tagFilterBar.setOnClickListener {
+            activeTag = null
+            renderTags()
+            applyList()
+            Toast.makeText(this, R.string.tag_filter_cleared, Toast.LENGTH_SHORT).show()
         }
 
         applyScaledSizes()
@@ -323,32 +332,63 @@ class MainActivity : AppCompatActivity() {
                     text = "#$tag"
                     setTextColor(ContextCompat.getColor(context, R.color.text_primary))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    if (tag == activeTag) setTypeface(typeface, android.graphics.Typeface.BOLD)
                     setPadding(
                         (24 * density).toInt(),
                         (12 * density).toInt(),
                         (24 * density).toInt(),
                         (12 * density).toInt()
                     )
+                    background = ContextCompat.getDrawable(
+                        context,
+                        TypedValue().also {
+                            context.theme.resolveAttribute(
+                                android.R.attr.selectableItemBackground,
+                                it,
+                                true
+                            )
+                        }.resourceId
+                    )
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { selectTag(tag) }
                 }
             )
         }
     }
 
+    /** 点击标签：关闭侧栏只显示该标签的笔记；再次点击同一标签取消筛选。 */
+    private fun selectTag(tag: String) {
+        activeTag = if (activeTag == tag) null else tag
+        binding.drawerRoot.closeDrawer(binding.drawerPanel)
+        if (calendarVisible && activeTag != null) toggleCalendar()
+        Toast.makeText(
+            this,
+            if (activeTag == null) getString(R.string.tag_filter_cleared)
+            else getString(R.string.tag_filter_active, tag),
+            Toast.LENGTH_SHORT
+        ).show()
+        renderTags()
+        applyList()
+    }
+
     private fun applyList() {
-        val entries = if (calendarVisible) {
-            allEntries.filter { entry ->
+        val entries = when {
+            activeTag != null -> allEntries.filter { activeTag in it.tags }
+            calendarVisible -> allEntries.filter { entry ->
                 val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
                 day.get(Calendar.YEAR) == selectedYear &&
                     day.get(Calendar.MONTH) == selectedMonth &&
                     day.get(Calendar.DAY_OF_MONTH) == selectedDay
             }
-        } else {
-            allEntries
+            else -> allEntries
         }
         adapter.submit(entries)
         displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()
+        binding.tagFilterBar.isVisible = activeTag != null
+        binding.tagFilterBar.text = activeTag?.let { getString(R.string.tag_filter_bar, it) }.orEmpty()
         binding.emptySubtitle.text = getString(R.string.empty_subtitle)
     }
 
