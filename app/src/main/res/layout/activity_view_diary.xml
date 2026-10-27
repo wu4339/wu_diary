@@ -129,14 +129,21 @@
                         android:src="@drawable/ic_tag"
                         app:tint="@color/text_secondary" />
 
-                    <TextView
-                        android:id="@+id/textTags"
+                    <HorizontalScrollView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:clipToPadding="false"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/tagStrip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
                 </LinearLayout>
 
                 <HorizontalScrollView

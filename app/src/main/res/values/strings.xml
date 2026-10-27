@@ -25,7 +25,8 @@
     <string name="filter_no_tag">无标签</string>
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
-    <string name="font_size">字体大小</string>
+    <string name="font_size">预览字体大小</string>
+    <string name="reading_font_size">查看/编辑字体大小</string>
     <string name="font_smaller">较小</string>
     <string name="font_small">小</string>
     <string name="font_default">标准</string>

@@ -12,6 +12,13 @@ class Settings(context: Context) {
             prefs.edit().putFloat(KEY_FONT_SCALE, value).apply()
         }
 
+    /** 查看 / 编辑页面的字号缩放，与列表预览字号分开设置。 */
+    var readingFontScale: Float
+        get() = prefs.getFloat(KEY_READING_FONT_SCALE, 1f)
+        set(value) {
+            prefs.edit().putFloat(KEY_READING_FONT_SCALE, value).apply()
+        }
+
     var previewLines: Int
         get() {
             val stored = prefs.getInt(KEY_PREVIEW_LINES, DEFAULT_PREVIEW_LINES)
@@ -59,6 +66,7 @@ class Settings(context: Context) {
 
     companion object {
         private const val KEY_FONT_SCALE = "font_scale"
+        private const val KEY_READING_FONT_SCALE = "reading_font_scale"
         private const val KEY_PREVIEW_LINES = "preview_lines"
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_DOUBLE_TAP = "double_tap_edit"

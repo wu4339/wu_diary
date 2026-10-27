@@ -49,6 +49,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
+import com.wu.diary.util.TagChips
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,6 +81,9 @@ class ViewDiaryActivity : AppCompatActivity() {
     /** 翻书动画进行中，避免连续滑动打断。 */
     private var flipping = false
 
+    /** 查看页字号缩放，用于标签色块。 */
+    private var tagScale = 1f
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityViewDiaryBinding.inflate(layoutInflater)
@@ -90,15 +94,11 @@ class ViewDiaryActivity : AppCompatActivity() {
         index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
 
         val settings = Settings(this)
-        val scale = settings.fontScale
+        val scale = settings.readingFontScale
+        tagScale = scale
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
-        binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
-        // 标签文字带一圈柔和光晕。
-        binding.textTags.setShadowLayer(
-            4f * scale * resources.displayMetrics.density, 0f, 0f, 0x40000000
-        )
         binding.textContent.setLineSpacing(
             settings.lineSpacing * resources.displayMetrics.density,
             1f
@@ -225,7 +225,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
 
-        binding.textTags.text = current.tags.joinToString("  ") { "#$it" }
+        TagChips.render(binding.tagStrip, current.tags, tagScale)
 
         renderImages(current)
         updateNav()

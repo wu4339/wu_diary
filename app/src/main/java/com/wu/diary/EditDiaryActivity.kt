@@ -42,6 +42,7 @@ import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.TagChips
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -77,6 +78,9 @@ class EditDiaryActivity : AppCompatActivity() {
     private val imagePaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
+
+    /** 编辑页字号缩放，用于标签色块。 */
+    private var tagScale = 1f
 
     private val pickImages =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -122,16 +126,12 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.textEditorYear.text = SimpleDateFormat("yyyy", Locale.getDefault()).format(date)
 
         val settings = Settings(this)
-        val scale = settings.fontScale
+        val scale = settings.readingFontScale
+        tagScale = scale
         binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
-        binding.textEditorTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * scale)
         binding.editContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * scale)
         binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
-        // 标签文字带一圈柔和光晕。
-        binding.textEditorTags.setShadowLayer(
-            4f * scale * resources.displayMetrics.density, 0f, 0f, 0x40000000
-        )
 
         renderImages()
         renderEditorTags()
@@ -227,7 +227,7 @@ class EditDiaryActivity : AppCompatActivity() {
 
     /** 编辑页展示当前笔记已选的标签。 */
     private fun renderEditorTags() {
-        binding.textEditorTags.text = tags.joinToString("  ") { "#$it" }
+        TagChips.render(binding.tagStrip, tags, tagScale)
     }
 
     private fun renderImages() {

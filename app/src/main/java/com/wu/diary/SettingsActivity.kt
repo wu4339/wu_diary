@@ -81,6 +81,7 @@ class SettingsActivity : AppCompatActivity() {
         settings = Settings(this)
         binding.btnBack.setOnClickListener { finish() }
         binding.rowFontSize.setOnClickListener { showFontSizeDialog() }
+        binding.rowReadingFontSize.setOnClickListener { showReadingFontSizeDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
@@ -108,6 +109,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.rowStorage.setOnClickListener { showStorageDialog() }
         updateFontValue()
+        updateReadingFontValue()
         updatePreviewValue()
         updateLineSpacingValue()
         updateStorageValue()
@@ -211,6 +213,12 @@ class SettingsActivity : AppCompatActivity() {
         binding.textFontValue.text = fontLabels[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
     }
 
+    private fun updateReadingFontValue() {
+        val index = Settings.FONT_SCALES.indexOfFirst { it == settings.readingFontScale }
+        binding.textReadingFontValue.text =
+            fontLabels[if (index >= 0) index else Settings.DEFAULT_FONT_INDEX]
+    }
+
     private fun updatePreviewValue() {
         binding.textPreviewValue.text = lineLabel(settings.previewLines)
     }
@@ -226,6 +234,16 @@ class SettingsActivity : AppCompatActivity() {
         showSliderDialog(R.string.font_size, fontLabels.toList(), current) { which ->
             settings.fontScale = scales[which]
             updateFontValue()
+        }
+    }
+
+    private fun showReadingFontSizeDialog() {
+        val scales = Settings.FONT_SCALES
+        val index = scales.indexOfFirst { it == settings.readingFontScale }
+        val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
+        showSliderDialog(R.string.reading_font_size, fontLabels.toList(), current) { which ->
+            settings.readingFontScale = scales[which]
+            updateReadingFontValue()
         }
     }
 
