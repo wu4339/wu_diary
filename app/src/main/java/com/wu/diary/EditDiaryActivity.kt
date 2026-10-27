@@ -134,6 +134,7 @@ class EditDiaryActivity : AppCompatActivity() {
             TypedValue.COMPLEX_UNIT_SP,
             settings.readingFontSp.toFloat()
         )
+        binding.editContent.typeface = settings.typeface
         binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
 
         renderImages()

@@ -70,6 +70,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener { finish() }
         binding.rowFontSize.setOnClickListener { showFontSizeDialog() }
         binding.rowReadingFontSize.setOnClickListener { showReadingFontSizeDialog() }
+        binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
@@ -98,6 +99,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowStorage.setOnClickListener { showStorageDialog() }
         updateFontValue()
         updateReadingFontValue()
+        updateFontFamilyValue()
         updatePreviewValue()
         updateLineSpacingValue()
         updateStorageValue()
@@ -202,6 +204,33 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateReadingFontValue() {
         binding.textReadingFontValue.text = getString(R.string.font_size_value, settings.readingFontSp)
+    }
+
+    private fun fontFamilyLabel(family: String): String = when (family) {
+        "serif" -> getString(R.string.font_family_serif)
+        "monospace" -> getString(R.string.font_family_monospace)
+        "casual" -> getString(R.string.font_family_casual)
+        else -> getString(R.string.font_family_sans)
+    }
+
+    private fun updateFontFamilyValue() {
+        binding.textFontFamilyValue.text = fontFamilyLabel(settings.fontFamily)
+    }
+
+    /** 字体：列表单选，选中即生效。 */
+    private fun showFontFamilyDialog() {
+        val families = Settings.FONT_FAMILIES
+        val labels = families.map { fontFamilyLabel(it) }.toTypedArray()
+        val checked = families.indexOf(settings.fontFamily).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.font_family)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.fontFamily = families[which]
+                updateFontFamilyValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun updatePreviewValue() {

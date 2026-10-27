@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private var appliedLines = 0
     private var appliedLineSpacing = 0f
     private var appliedShowTags = false
+    private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
@@ -89,6 +90,7 @@ class MainActivity : AppCompatActivity() {
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
+        appliedFontFamily = settings.fontFamily
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -98,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         selectedDay = today.get(Calendar.DAY_OF_MONTH)
 
         adapter = DiaryAdapter(
+            typeface = settings.typeface,
             fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
@@ -325,7 +328,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
-            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags
+            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags ||
+            appliedFontFamily != settings.fontFamily
         ) {
             recreate()
             return

@@ -1,10 +1,25 @@
 package com.wu.diary.data
 
 import android.content.Context
+import android.graphics.Typeface
 
-/** 本地偏好设置：正文字号缩放、列表预览最大行数。 */
+/** 本地偏好设置：正文字体、字号、列表预览最大行数。 */
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
+    /** 正文使用的系统字体家族，如 sans-serif / serif / monospace。 */
+    var fontFamily: String
+        get() {
+            val stored = prefs.getString(KEY_FONT_FAMILY, DEFAULT_FONT_FAMILY)
+            return if (stored != null && stored in FONT_FAMILIES) stored else DEFAULT_FONT_FAMILY
+        }
+        set(value) {
+            prefs.edit().putString(KEY_FONT_FAMILY, value).apply()
+        }
+
+    /** 当前字体对应的 Typeface，正文和预览共用。 */
+    val typeface: Typeface
+        get() = Typeface.create(fontFamily, Typeface.NORMAL)
 
     /** 列表预览正文字号，单位 sp。 */
     var fontSp: Int
@@ -75,6 +90,7 @@ class Settings(context: Context) {
         }
 
     companion object {
+        private const val KEY_FONT_FAMILY = "font_family"
         private const val KEY_FONT_SP = "font_sp"
         private const val KEY_READING_FONT_SP = "reading_font_sp"
         private const val KEY_PREVIEW_LINES = "preview_lines"
@@ -89,6 +105,10 @@ class Settings(context: Context) {
 
         /** 查看 / 编辑页正文的基准字号（sp）。 */
         private const val READING_BASE_SP = 17f
+
+        /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
+        val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")
+        const val DEFAULT_FONT_FAMILY = "sans-serif"
 
         /** 可选正文字号（sp），12sp ~ 22sp，精度 1sp。 */
         const val FONT_SP_MIN = 12

@@ -2,6 +2,7 @@ package com.wu.diary.ui
 
 import android.text.SpannableString
 import android.text.Spanned
+import android.graphics.Typeface
 import android.text.style.BackgroundColorSpan
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -24,6 +25,7 @@ import java.util.Locale
 
 /** 按天分组的日记列表：同一天的记录共用一个日期头，记录之间用分割线隔开。 */
 class DiaryAdapter(
+    private val typeface: Typeface,
     private val fontScale: Float,
     private val previewLines: Int,
     private val lineSpacing: Float,
@@ -117,6 +119,7 @@ class DiaryAdapter(
         binding.textBody.isVisible = body.isNotEmpty()
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
+        binding.textBody.typeface = typeface
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
         binding.textBody.setLineSpacing(
             lineSpacing * binding.root.resources.displayMetrics.density,

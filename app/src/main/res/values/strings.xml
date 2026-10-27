@@ -28,6 +28,11 @@
     <string name="font_size">预览字体大小</string>
     <string name="reading_font_size">查看/编辑字体大小</string>
     <string name="font_size_value">%1$dsp</string>
+    <string name="font_family">字体</string>
+    <string name="font_family_sans">系统默认</string>
+    <string name="font_family_serif">衬线</string>
+    <string name="font_family_monospace">等宽</string>
+    <string name="font_family_casual">圆润</string>
     <string name="prev_month">上一月</string>
     <string name="next_month">下一月</string>
     <string name="week_sun">Sun</string>

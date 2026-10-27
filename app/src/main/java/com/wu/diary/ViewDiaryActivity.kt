@@ -99,6 +99,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, settings.readingFontSp.toFloat())
+        binding.textContent.typeface = settings.typeface
         binding.textContent.setLineSpacing(
             settings.lineSpacing * resources.displayMetrics.density,
             1f

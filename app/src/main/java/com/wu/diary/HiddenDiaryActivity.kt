@@ -23,6 +23,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
     private var appliedLines = 0
     private var appliedLineSpacing = 0f
     private var appliedShowTags = false
+    private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +36,10 @@ class HiddenDiaryActivity : AppCompatActivity() {
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
+        appliedFontFamily = settings.fontFamily
 
         adapter = DiaryAdapter(
+            typeface = settings.typeface,
             fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
@@ -56,7 +59,8 @@ class HiddenDiaryActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
-            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags
+            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags ||
+            appliedFontFamily != settings.fontFamily
         ) {
             recreate()
             return
