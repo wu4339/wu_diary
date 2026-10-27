@@ -63,6 +63,8 @@
     <string name="sound_feedback_desc">保存或删除日记时播放提示音</string>
     <string name="double_tap_edit">双击进入编辑</string>
     <string name="double_tap_edit_desc">在笔记浏览页双击可直接编辑</string>
+    <string name="preview_tags">显示笔记标签</string>
+    <string name="preview_tags_desc">在主界面预览中显示笔记的 #标签</string>
     <string name="random_review">随机回顾</string>
     <string name="random_review_empty">还没有可以回顾的日记</string>
     <string name="add_tag">添加标签</string>

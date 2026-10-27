@@ -26,6 +26,7 @@ class DiaryAdapter(
     private val fontScale: Float,
     private val previewLines: Int,
     private val lineSpacing: Float,
+    private val showTags: Boolean,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -123,6 +124,10 @@ class DiaryAdapter(
         // 与编辑页统一换行策略，保证列表预览的行数与编辑页一致。
         binding.textBody.breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
         binding.textBody.hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
+
+        binding.textTags.text = entry.tags.joinToString("  ") { "#$it" }
+        binding.textTags.isVisible = showTags && entry.tags.isNotEmpty()
+        binding.textTags.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
         val dividerMargin = if (isGroupEnd) {

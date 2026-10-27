@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var appliedScale = 1f
     private var appliedLines = 0
     private var appliedLineSpacing = 0f
+    private var appliedShowTags = false
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     private var pullStartX = 0f
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         appliedScale = settings.fontScale
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
+        appliedShowTags = settings.previewTags
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -93,6 +95,7 @@ class MainActivity : AppCompatActivity() {
             fontScale = settings.fontScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
+            showTags = settings.previewTags,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -289,7 +292,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (appliedScale != settings.fontScale || appliedLines != settings.previewLines ||
-            appliedLineSpacing != settings.lineSpacing
+            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags
         ) {
             recreate()
             return

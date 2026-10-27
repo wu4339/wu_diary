@@ -88,6 +88,11 @@ class SettingsActivity : AppCompatActivity() {
             settings.soundEnabled = !settings.soundEnabled
             binding.switchSound.isChecked = settings.soundEnabled
         }
+        binding.switchPreviewTags.isChecked = settings.previewTags
+        binding.rowPreviewTags.setOnClickListener {
+            settings.previewTags = !settings.previewTags
+            binding.switchPreviewTags.isChecked = settings.previewTags
+        }
         binding.switchDoubleTap.isChecked = settings.doubleTapEdit
         binding.rowDoubleTap.setOnClickListener {
             settings.doubleTapEdit = !settings.doubleTapEdit

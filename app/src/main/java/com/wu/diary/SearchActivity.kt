@@ -57,6 +57,7 @@ class SearchActivity : AppCompatActivity() {
             fontScale = settings.fontScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
+            showTags = settings.previewTags,
             onClick = { entry ->
                 val ids = results.map { it.id }
                 val index = results.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)

@@ -43,6 +43,13 @@ class Settings(context: Context) {
             prefs.edit().putFloat(KEY_LINE_SPACING, value).apply()
         }
 
+    /** 列表预览时是否显示笔记标签。 */
+    var previewTags: Boolean
+        get() = prefs.getBoolean(KEY_PREVIEW_TAGS, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_PREVIEW_TAGS, value).apply()
+        }
+
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
         get() = prefs.getString(KEY_STORAGE_URI, null)
@@ -56,6 +63,7 @@ class Settings(context: Context) {
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_DOUBLE_TAP = "double_tap_edit"
         private const val KEY_LINE_SPACING = "line_spacing"
+        private const val KEY_PREVIEW_TAGS = "preview_tags"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
 
         val FONT_SCALES = floatArrayOf(0.8f, 0.9f, 1f, 1.15f, 1.3f)
