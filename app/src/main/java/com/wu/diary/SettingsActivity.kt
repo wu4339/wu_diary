@@ -218,28 +218,20 @@ class SettingsActivity : AppCompatActivity() {
         val scales = Settings.FONT_SCALES
         val index = scales.indexOfFirst { it == settings.fontScale }
         val current = if (index >= 0) index else Settings.DEFAULT_FONT_INDEX
-        AlertDialog.Builder(this)
-            .setTitle(R.string.font_size)
-            .setSingleChoiceItems(fontLabels, current) { dialog, which ->
-                dialog.dismiss()
-                settings.fontScale = scales[which]
-                updateFontValue()
-            }
-            .show()
+        showSliderDialog(R.string.font_size, fontLabels.toList(), current) { which ->
+            settings.fontScale = scales[which]
+            updateFontValue()
+        }
     }
 
     private fun showPreviewLinesDialog() {
         val options = previewValues
         val index = options.indexOf(settings.previewLines)
         val current = if (index >= 0) index else Settings.DEFAULT_PREVIEW_INDEX
-        AlertDialog.Builder(this)
-            .setTitle(R.string.preview_lines)
-            .setSingleChoiceItems(previewLabels, current) { dialog, which ->
-                dialog.dismiss()
-                settings.previewLines = options[which]
-                updatePreviewValue()
-            }
-            .show()
+        showSliderDialog(R.string.preview_lines, previewLabels.toList(), current) { which ->
+            settings.previewLines = options[which]
+            updatePreviewValue()
+        }
     }
 
     /** 行间距：拖动滑块选择档位，松手即生效。 */
@@ -247,35 +239,41 @@ class SettingsActivity : AppCompatActivity() {
         val values = Settings.LINE_SPACINGS
         val index = values.indexOfFirst { it == settings.lineSpacing }
         val current = if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX
-        val density = resources.displayMetrics.density
+        val labels = values.indices.map {
+            getString(R.string.line_spacing_value, lineSpacingLabels[it], values[it].toInt())
+        }
+        showSliderDialog(R.string.line_spacing, labels, current) { which ->
+            settings.lineSpacing = values[which]
+            updateLineSpacingValue()
+        }
+    }
 
+    /** 通用滑块选择弹窗：拖动到对应档位即显示并生效。 */
+    private fun showSliderDialog(
+        titleRes: Int,
+        labels: List<String>,
+        current: Int,
+        onChanged: (Int) -> Unit
+    ) {
+        val density = resources.displayMetrics.density
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding((24 * density).toInt(), (8 * density).toInt(), (24 * density).toInt(), 0)
         }
         val valueText = TextView(this).apply {
-            text = getString(
-                R.string.line_spacing_value,
-                lineSpacingLabels[current],
-                values[current].toInt()
-            )
+            text = labels[current]
             setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
         }
         val seekBar = SeekBar(this).apply {
-            max = values.size - 1
+            max = labels.size - 1
             progress = current
             setPadding(0, (12 * density).toInt(), 0, 0)
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
-                valueText.text = getString(
-                    R.string.line_spacing_value,
-                    lineSpacingLabels[progress],
-                    values[progress].toInt()
-                )
-                settings.lineSpacing = values[progress]
-                updateLineSpacingValue()
+                valueText.text = labels[progress]
+                onChanged(progress)
             }
 
             override fun onStartTrackingTouch(bar: SeekBar?) {}
@@ -286,7 +284,7 @@ class SettingsActivity : AppCompatActivity() {
         container.addView(seekBar)
 
         AlertDialog.Builder(this)
-            .setTitle(R.string.line_spacing)
+            .setTitle(titleRes)
             .setView(container)
             .setPositiveButton(android.R.string.ok, null)
             .show()

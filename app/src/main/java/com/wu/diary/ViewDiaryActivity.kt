@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.text.Layout
 import android.text.method.LinkMovementMethod
 import android.util.TypedValue
 import android.view.GestureDetector
@@ -85,6 +86,9 @@ class ViewDiaryActivity : AppCompatActivity() {
             settings.lineSpacing * resources.displayMetrics.density,
             1f
         )
+        // 与编辑页保持一致的中文换行策略，否则同一段文字在查看页和编辑页的折行位置会不同。
+        binding.textContent.breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
+        binding.textContent.hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NONE
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
 
         binding.btnClose.setOnClickListener { finish() }

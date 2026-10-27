@@ -120,6 +120,9 @@ class DiaryAdapter(
             lineSpacing * binding.root.resources.displayMetrics.density,
             1f
         )
+        // 与编辑页统一换行策略，保证列表预览的行数与编辑页一致。
+        binding.textBody.breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
+        binding.textBody.hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
         val dividerMargin = if (isGroupEnd) {
