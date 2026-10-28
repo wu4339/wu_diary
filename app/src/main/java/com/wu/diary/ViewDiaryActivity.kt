@@ -1,10 +1,12 @@
 package com.wu.diary
 
 import android.app.Dialog
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
@@ -206,6 +208,28 @@ class ViewDiaryActivity : AppCompatActivity() {
         load()
     }
 
+    /** 后台保存/删除完成后的广播：重新读取数据，保证查看页内容最新。 */
+    private val dataChangedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            load()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            this,
+            dataChangedReceiver,
+            IntentFilter(DiaryStore.ACTION_DATA_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(dataChangedReceiver)
+    }
+
     private fun load() {
         val all = store.load()
         entry = ids.getOrNull(index)?.let { id -> all.find { it.id == id } }
@@ -361,7 +385,15 @@ class ViewDiaryActivity : AppCompatActivity() {
     }
 
     private fun openEditor(cursor: Int = -1) {
-        entry?.let { startActivity(EditDiaryActivity.intent(this, it.id, cursor = cursor)) }
+        entry?.let {
+            startActivity(
+                EditDiaryActivity.intent(this, it.id, cursor = cursor)
+                    // 附带浏览上下文，编辑保存后回到当前查看位置。
+                    .putStringArrayListExtra(EditDiaryActivity.EXTRA_FROM_IDS, ArrayList(ids))
+                    .putExtra(EditDiaryActivity.EXTRA_FROM_INDEX, index)
+                    .putExtra(EditDiaryActivity.EXTRA_FROM_RANDOM, randomReview)
+            )
+        }
     }
 
     /** 全屏查看图片，点击任意位置关闭。 */
@@ -414,7 +446,14 @@ class ViewDiaryActivity : AppCompatActivity() {
 
         menu.itemEdit.setOnClickListener {
             dialog.dismiss()
-            entry?.let { startActivity(EditDiaryActivity.intent(this, it.id)) }
+            entry?.let {
+                startActivity(
+                    EditDiaryActivity.intent(this, it.id)
+                        .putStringArrayListExtra(EditDiaryActivity.EXTRA_FROM_IDS, ArrayList(ids))
+                        .putExtra(EditDiaryActivity.EXTRA_FROM_INDEX, index)
+                        .putExtra(EditDiaryActivity.EXTRA_FROM_RANDOM, randomReview)
+                )
+            }
         }
         menu.itemCopy.setOnClickListener {
             dialog.dismiss()

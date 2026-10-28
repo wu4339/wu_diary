@@ -264,7 +264,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:paddingBottom="160dp"
+                    android:paddingBottom="260dp"
                     android:visibility="gone">
 
                     <ImageView

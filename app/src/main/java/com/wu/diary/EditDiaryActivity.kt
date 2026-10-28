@@ -56,6 +56,12 @@ class EditDiaryActivity : AppCompatActivity() {
         private const val EXTRA_ID = "entry_id"
         private const val EXTRA_DATE = "entry_date"
         private const val EXTRA_CURSOR = "entry_cursor"
+
+        /** 查看页打开编辑时附带的浏览上下文，保存后按原样回到查看页。 */
+        const val EXTRA_FROM_IDS = "from_view_ids"
+        const val EXTRA_FROM_INDEX = "from_view_index"
+        const val EXTRA_FROM_RANDOM = "from_view_random"
+
         private const val MAX_IMAGES = 9
 
         fun intent(
@@ -632,6 +638,22 @@ class EditDiaryActivity : AppCompatActivity() {
             )
         // 立即关闭编辑页，存储放到后台线程，避免点击保存后界面停顿。
         Feedback.saved(this)
+        if (existing != null) {
+            // 编辑已有笔记：保存后退出到查看界面。
+            // 从随机回顾进入时带上原浏览列表与位置，其他情况只展示当前笔记。
+            val fromIds = intent.getStringArrayListExtra(EXTRA_FROM_IDS)
+            val viewIntent = if (fromIds != null) {
+                ViewDiaryActivity.intent(
+                    this,
+                    fromIds,
+                    intent.getIntExtra(EXTRA_FROM_INDEX, 0),
+                    intent.getBooleanExtra(EXTRA_FROM_RANDOM, false)
+                )
+            } else {
+                ViewDiaryActivity.intent(this, listOf(entry.id), 0)
+            }.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(viewIntent)
+        }
         finish()
         // 页面已关闭，用 Application Context 写入，避免继续持有正在销毁的 Activity。
         val appContext = applicationContext
