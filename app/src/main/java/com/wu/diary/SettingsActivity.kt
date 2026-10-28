@@ -73,6 +73,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
+        binding.rowReadingLineSpacing.setOnClickListener { showReadingLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
         binding.rowSound.setOnClickListener {
             settings.soundEnabled = !settings.soundEnabled
@@ -102,6 +103,7 @@ class SettingsActivity : AppCompatActivity() {
         updateFontFamilyValue()
         updatePreviewValue()
         updateLineSpacingValue()
+        updateReadingLineSpacingValue()
         updateStorageValue()
     }
 
@@ -241,6 +243,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.textLineSpacingValue.text = lineSpacingLabel(settings.lineSpacing)
     }
 
+    private fun updateReadingLineSpacingValue() {
+        binding.textReadingLineSpacingValue.text = lineSpacingLabel(settings.readingLineSpacing)
+    }
+
     private fun showFontSizeDialog() {
         val options = Settings.FONT_SPS
         val current = options.indexOf(settings.fontSp).coerceAtLeast(0)
@@ -269,7 +275,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    /** 行间距：拖动滑块选择档位，松手即生效。 */
+    /** 预览行间距：拖动滑块选择档位，松手即生效。 */
     private fun showLineSpacingDialog() {
         val values = Settings.LINE_SPACINGS
         val index = values.indexOfFirst { it == settings.lineSpacing }
@@ -277,6 +283,21 @@ class SettingsActivity : AppCompatActivity() {
         showSliderDialog(R.string.line_spacing, lineSpacingLabels.toList(), current) { which ->
             settings.lineSpacing = values[which]
             updateLineSpacingValue()
+        }
+    }
+
+    /** 查看 / 编辑行间距，与预览行间距分开设置。 */
+    private fun showReadingLineSpacingDialog() {
+        val values = Settings.LINE_SPACINGS
+        val index = values.indexOfFirst { it == settings.readingLineSpacing }
+        val current = if (index >= 0) index else Settings.DEFAULT_LINE_SPACING_INDEX
+        showSliderDialog(
+            R.string.reading_line_spacing,
+            lineSpacingLabels.toList(),
+            current
+        ) { which ->
+            settings.readingLineSpacing = values[which]
+            updateReadingLineSpacingValue()
         }
     }
 

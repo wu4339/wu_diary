@@ -75,6 +75,13 @@ class Settings(context: Context) {
             prefs.edit().putFloat(KEY_LINE_SPACING, value).apply()
         }
 
+    /** 查看 / 编辑页面的行间距，单位 dp，与列表预览分开设置。 */
+    var readingLineSpacing: Float
+        get() = prefs.getFloat(KEY_READING_LINE_SPACING, DEFAULT_LINE_SPACING)
+        set(value) {
+            prefs.edit().putFloat(KEY_READING_LINE_SPACING, value).apply()
+        }
+
     /** 列表预览时是否显示笔记标签。 */
     var previewTags: Boolean
         get() = prefs.getBoolean(KEY_PREVIEW_TAGS, false)
@@ -97,6 +104,7 @@ class Settings(context: Context) {
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_DOUBLE_TAP = "double_tap_edit"
         private const val KEY_LINE_SPACING = "line_spacing"
+        private const val KEY_READING_LINE_SPACING = "reading_line_spacing"
         private const val KEY_PREVIEW_TAGS = "preview_tags"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
 

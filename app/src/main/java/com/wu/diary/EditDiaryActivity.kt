@@ -135,7 +135,10 @@ class EditDiaryActivity : AppCompatActivity() {
             settings.readingFontSp.toFloat()
         )
         binding.editContent.typeface = settings.typeface
-        binding.editContent.setLineSpacing(settings.lineSpacing * resources.displayMetrics.density, 1f)
+        binding.editContent.setLineSpacing(
+            settings.readingLineSpacing * resources.displayMetrics.density,
+            1f
+        )
 
         renderImages()
         renderEditorTags()
@@ -321,10 +324,10 @@ class EditDiaryActivity : AppCompatActivity() {
                     setPadding(0, dp(16), 0, dp(6))
                 }
             )
-            val chipRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, 0, 0, dp(8))
-            }
+            val chipRows = listOf(
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL },
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            )
             val chipViews = mutableListOf<Pair<String, TextView>>()
 
             fun refreshChips() {
@@ -341,7 +344,9 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
             }
 
-            existingTags.forEach { tag ->
+            // 现有标签分两行展示，方便一次看到更多可选项。
+            val split = (existingTags.size + 1) / 2
+            existingTags.forEachIndexed { index, tag ->
                 val chip = TextView(this).apply {
                     text = "#$tag"
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
@@ -355,16 +360,19 @@ class EditDiaryActivity : AppCompatActivity() {
                         refreshChips()
                     }
                 }
-                chipRow.addView(chip)
+                chipRows[if (index < split) 0 else 1].addView(chip)
                 chipViews.add(tag to chip)
             }
-            container.addView(
-                HorizontalScrollView(this).apply {
-                    isHorizontalScrollBarEnabled = false
-                    overScrollMode = View.OVER_SCROLL_NEVER
-                    addView(chipRow)
-                }
-            )
+            chipRows.forEachIndexed { rowIndex, chipRow ->
+                container.addView(
+                    HorizontalScrollView(this).apply {
+                        isHorizontalScrollBarEnabled = false
+                        overScrollMode = View.OVER_SCROLL_NEVER
+                        setPadding(0, 0, 0, dp(if (rowIndex == 0) 4 else 8))
+                        addView(chipRow)
+                    }
+                )
+            }
             refreshChips()
         }
 

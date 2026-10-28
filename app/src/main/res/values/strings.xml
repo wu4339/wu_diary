@@ -47,7 +47,8 @@
     <string name="preview_lines">预览行数</string>
     <string name="preview_value">%1$d 行</string>
     <string name="preview_all">全显</string>
-    <string name="line_spacing">行间距</string>
+    <string name="line_spacing">预览行间距</string>
+    <string name="reading_line_spacing">查看/编辑行间距</string>
     <string name="line_spacing_value">%1$d dp</string>
     <string name="share_saved">已保存到今日笔记</string>
     <string name="share_empty">没有可保存的内容</string>

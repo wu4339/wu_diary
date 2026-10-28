@@ -25,6 +25,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.appbar.AppBarLayout
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityMainBinding
@@ -136,6 +137,16 @@ class MainActivity : AppCompatActivity() {
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
+
+        // 顶栏与日历收起时，底部悬浮按键一起下移淡出。
+        binding.appBar.addOnOffsetChangedListener(
+            AppBarLayout.OnOffsetChangedListener { _, verticalOffset ->
+                val total = binding.appBar.totalScrollRange.toFloat()
+                val fraction = if (total <= 0f) 0f else (-verticalOffset / total).coerceIn(0f, 1f)
+                binding.fabBar.alpha = 1f - fraction
+                binding.fabBar.translationY = binding.fabBar.height * fraction
+            }
+        )
 
         binding.btnSearch.setOnClickListener {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)

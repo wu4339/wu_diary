@@ -105,7 +105,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, settings.readingFontSp.toFloat())
         binding.textContent.typeface = settings.typeface
         binding.textContent.setLineSpacing(
-            settings.lineSpacing * resources.displayMetrics.density,
+            settings.readingLineSpacing * resources.displayMetrics.density,
             1f
         )
         // 与编辑页保持一致的中文换行策略，否则同一段文字在查看页和编辑页的折行位置会不同。
@@ -501,10 +501,10 @@ class ViewDiaryActivity : AppCompatActivity() {
                     setPadding(0, dp(16), 0, dp(6))
                 }
             )
-            val chipRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, 0, 0, dp(8))
-            }
+            val chipRows = listOf(
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL },
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            )
             val chipViews = mutableListOf<Pair<String, TextView>>()
 
             fun refreshChips() {
@@ -521,7 +521,9 @@ class ViewDiaryActivity : AppCompatActivity() {
                 }
             }
 
-            existingTags.forEach { tag ->
+            // 现有标签分两行展示，方便一次看到更多可选项。
+            val split = (existingTags.size + 1) / 2
+            existingTags.forEachIndexed { index, tag ->
                 val chip = TextView(this).apply {
                     text = "#$tag"
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
@@ -535,16 +537,19 @@ class ViewDiaryActivity : AppCompatActivity() {
                         refreshChips()
                     }
                 }
-                chipRow.addView(chip)
+                chipRows[if (index < split) 0 else 1].addView(chip)
                 chipViews.add(tag to chip)
             }
-            container.addView(
-                HorizontalScrollView(this).apply {
-                    isHorizontalScrollBarEnabled = false
-                    overScrollMode = View.OVER_SCROLL_NEVER
-                    addView(chipRow)
-                }
-            )
+            chipRows.forEachIndexed { rowIndex, chipRow ->
+                container.addView(
+                    HorizontalScrollView(this).apply {
+                        isHorizontalScrollBarEnabled = false
+                        overScrollMode = View.OVER_SCROLL_NEVER
+                        setPadding(0, 0, 0, dp(if (rowIndex == 0) 4 else 8))
+                        addView(chipRow)
+                    }
+                )
+            }
             refreshChips()
         }
 
@@ -578,7 +583,20 @@ class ViewDiaryActivity : AppCompatActivity() {
             .setPositiveButton(R.string.delete) { _, _ ->
                 store.delete(current.id)
                 Feedback.deleted(this)
-                finish()
+                if (!randomReview) {
+                    finish()
+                    return@setPositiveButton
+                }
+                // 随机回顾里删除后继续看下一篇；删的是最后一篇则回到上一篇。
+                val remaining = ids.filterNot { it == current.id }
+                if (remaining.isEmpty()) {
+                    finish()
+                    return@setPositiveButton
+                }
+                ids = remaining
+                index = index.coerceAtMost(remaining.lastIndex)
+                load()
+                binding.scrollContent.scrollTo(0, 0)
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
