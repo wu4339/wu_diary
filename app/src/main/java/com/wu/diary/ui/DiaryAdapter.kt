@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.wu.diary.R
 import com.wu.diary.data.Settings
@@ -47,7 +48,40 @@ class DiaryAdapter(
     private var highlightQuery = ""
 
     fun submit(entries: List<DiaryEntry>, highlight: String = "") {
+        val highlightChanged = highlightQuery != highlight
         highlightQuery = highlight
+        val built = buildRows(entries)
+        // 搜索关键词变化时整体重绑；其他情况用 DiffUtil 局部刷新，避免保存后整个列表闪烁。
+        if (highlightChanged) {
+            rows.clear()
+            rows.addAll(built)
+            notifyDataSetChanged()
+            return
+        }
+        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = rows.size
+            override fun getNewListSize(): Int = built.size
+
+            override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean {
+                val old = rows[oldPos]
+                val new = built[newPos]
+                return when {
+                    old is Row.DateHeader && new is Row.DateHeader -> old.day == new.day
+                    old is Row.Entry && new is Row.Entry -> old.entry.id == new.entry.id
+                    else -> false
+                }
+            }
+
+            override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean =
+                rows[oldPos] == built[newPos]
+        })
+        rows.clear()
+        rows.addAll(built)
+        diff.dispatchUpdatesTo(this)
+    }
+
+    /** 把笔记列表展开成带日期头的行序列。 */
+    private fun buildRows(entries: List<DiaryEntry>): List<Row> {
         val built = mutableListOf<Row>()
         var currentDay: String? = null
         entries.sortedByDescending { it.createdAt }.forEach { entry ->
@@ -59,16 +93,16 @@ class DiaryAdapter(
             }
             built.add(Row.Entry(entry, false))
         }
-        rows.clear()
+        val result = mutableListOf<Row>()
         built.forEachIndexed { index, row ->
             if (row is Row.Entry) {
                 val next = built.getOrNull(index + 1)
-                rows.add(Row.Entry(row.entry, next == null || next is Row.DateHeader))
+                result.add(Row.Entry(row.entry, next == null || next is Row.DateHeader))
             } else {
-                rows.add(row)
+                result.add(row)
             }
         }
-        notifyDataSetChanged()
+        return result
     }
 
     class DateViewHolder(val binding: ItemDateBinding) : RecyclerView.ViewHolder(binding.root)

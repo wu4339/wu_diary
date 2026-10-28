@@ -652,6 +652,8 @@ class EditDiaryActivity : AppCompatActivity() {
             } else {
                 ViewDiaryActivity.intent(this, listOf(entry.id), 0)
             }.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            // 带上最新内容，查看页首帧即渲染新内容，避免旧内容闪现。
+            viewIntent.putExtra(ViewDiaryActivity.EXTRA_FOCUS_ENTRY, entry.toJson().toString())
             startActivity(viewIntent)
         }
         finish()

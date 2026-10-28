@@ -48,6 +48,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityViewDiaryBinding
 import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
+import org.json.JSONObject
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
@@ -66,6 +67,9 @@ class ViewDiaryActivity : AppCompatActivity() {
         private const val EXTRA_INDEX = "entry_index"
         private const val EXTRA_RANDOM_REVIEW = "random_review"
 
+        /** 编辑页保存后跳转时携带的最新笔记内容，首帧直接渲染，避免先显示旧内容再跳变。 */
+        const val EXTRA_FOCUS_ENTRY = "focus_entry"
+
         fun intent(context: Context, ids: List<String>, index: Int, randomReview: Boolean = false): Intent =
             Intent(context, ViewDiaryActivity::class.java)
                 .putStringArrayListExtra(EXTRA_IDS, ArrayList(ids))
@@ -80,6 +84,9 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var index = 0
     private var entry: DiaryEntry? = null
     private var randomReview = false
+
+    /** 编辑页带来的最新内容，第一次 load() 时优先使用，之后仍以存储为准。 */
+    private var pendingEntry: DiaryEntry? = null
 
     /** 翻书动画进行中，避免连续滑动打断。 */
     private var flipping = false
@@ -98,6 +105,11 @@ class ViewDiaryActivity : AppCompatActivity() {
         store = DiaryStore(this)
         ids = intent.getStringArrayListExtra(EXTRA_IDS) ?: emptyList()
         index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (ids.size - 1).coerceAtLeast(0))
+        intent.getStringExtra(EXTRA_FOCUS_ENTRY)?.let { json ->
+            runCatching { DiaryEntry.fromJson(JSONObject(json)) }.getOrNull()?.let { fresh ->
+                if (ids.getOrNull(index) == fresh.id) pendingEntry = fresh
+            }
+        }
 
         val settings = Settings(this)
         val scale = settings.readingScale
@@ -231,8 +243,11 @@ class ViewDiaryActivity : AppCompatActivity() {
     }
 
     private fun load() {
-        val all = store.load()
-        entry = ids.getOrNull(index)?.let { id -> all.find { it.id == id } }
+        val targetId = ids.getOrNull(index)
+        // 编辑页刚保存的内容直接使用，避免存储尚未写完时先显示旧内容。
+        val fresh = pendingEntry?.takeIf { it.id == targetId }
+        pendingEntry = null
+        entry = fresh ?: targetId?.let { id -> store.load().find { it.id == id } }
         if (entry == null) {
             finish()
             return
