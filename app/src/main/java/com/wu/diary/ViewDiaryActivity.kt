@@ -229,7 +229,9 @@ class ViewDiaryActivity : AppCompatActivity() {
             .joinToString("\n")
         val rendered = MarkdownText.render(text)
         renderedText = rendered
-        binding.textContent.text = linkify(rendered?.text ?: text)
+        val styled = linkify(rendered?.text ?: text)
+        if (rendered != null) MarkdownText.style(styled, rendered)
+        binding.textContent.text = styled
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
 
@@ -240,7 +242,7 @@ class ViewDiaryActivity : AppCompatActivity() {
     }
 
     /** 识别正文里的网址，并换成点击时优先用对应 App 打开的 span。 */
-    private fun linkify(text: String): CharSequence {
+    private fun linkify(text: String): SpannableString {
         val spannable = SpannableString(text)
         Linkify.addLinks(spannable, Linkify.WEB_URLS)
         spannable.getSpans(0, spannable.length, URLSpan::class.java).forEach { span ->

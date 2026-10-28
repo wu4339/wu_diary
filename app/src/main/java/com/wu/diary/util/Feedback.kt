@@ -98,8 +98,9 @@ object Feedback {
             val attack = min(1.0, t / 0.003)
             val envelope = attack * (exp(-7.0 * t) * 0.85 + exp(-1.2 * t) * 0.15)
             val wave = sin(phase) * 0.9 + sin(2 * phase) * 0.1
-            out[i] = (wave * envelope * 0.9 * Short.MAX_VALUE)
-                .toInt().coerceIn(-32768, 32767).toShort()
+            // 软限幅后拉满音量，保证删除时的提示音足够响。
+            val value = tanh(wave * envelope * 2.4) * 0.98
+            out[i] = (value * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
         return out
     }

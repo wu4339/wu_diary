@@ -118,7 +118,9 @@ class DiaryAdapter(
             .joinToString("\n")
         val rendered = MarkdownText.render(body)
         val display = rendered?.text ?: body
-        binding.textBody.text = highlightBody(display, binding)
+        val styled = highlightBody(display, binding)
+        if (rendered != null) MarkdownText.style(styled, rendered)
+        binding.textBody.text = styled
         binding.textBody.isVisible = display.isNotEmpty()
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
@@ -168,10 +170,10 @@ class DiaryAdapter(
     }
 
     /** 搜索状态下把命中的关键词加亮。 */
-    private fun highlightBody(body: String, binding: ItemDiaryBinding): CharSequence {
-        val query = highlightQuery
-        if (query.isEmpty() || body.isEmpty()) return body
+    private fun highlightBody(body: String, binding: ItemDiaryBinding): SpannableString {
         val spannable = SpannableString(body)
+        val query = highlightQuery
+        if (query.isEmpty() || body.isEmpty()) return spannable
         val color = ContextCompat.getColor(binding.root.context, R.color.search_highlight)
         val source = body.lowercase()
         val target = query.lowercase()
