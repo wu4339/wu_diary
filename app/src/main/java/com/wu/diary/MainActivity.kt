@@ -366,12 +366,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
         refresh()
-        // 应用打开时默认显示在最顶部：列表回到顶部，顶栏与日历展开。
+        // 重启应用（冷启动首次进入）显示最新日期：等首次布局完成后回到列表顶部并展开顶栏；
+        // 后台恢复或从应用内页面返回时保持原来的浏览位置。
         if (firstResume) {
             firstResume = false
-            binding.recycler.stopScroll()
-            (binding.recycler.layoutManager as? LinearLayoutManager)?.scrollToPosition(0)
-            binding.appBar.setExpanded(true, false)
+            binding.recycler.post {
+                binding.recycler.stopScroll()
+                (binding.recycler.layoutManager as? LinearLayoutManager)?.scrollToPosition(0)
+                binding.appBar.setExpanded(true, false)
+            }
         }
     }
 
@@ -384,8 +387,11 @@ class MainActivity : AppCompatActivity() {
     /** 常规条目动画器（新增淡入、位移下移），删除刷新后恢复使用。 */
     private var defaultItemAnimator: DefaultItemAnimator? = null
 
-    /** 首次进入界面时回到顶部。 */
+    /** 重启应用后首次进入界面时回到顶部。 */
     private var firstResume = true
+
+    /** 删除后用于恢复位置的锚点：第一屏条目 id 及其距列表顶部的偏移。 */
+    private var pendingDeleteAnchor: Pair<String, Int>? = null
 
     private fun refresh() {
         if (pendingRevealId != null) return
@@ -403,6 +409,15 @@ class MainActivity : AppCompatActivity() {
             binding.recycler.post {
                 binding.recycler.itemAnimator = defaultItemAnimator
                 skipListAnimation = false
+                // 删除后按锚点精确还原滚动位置，列表不跳动。
+                pendingDeleteAnchor?.let { (anchorId, top) ->
+                    pendingDeleteAnchor = null
+                    val pos = adapter.positionOf(anchorId)
+                    if (pos >= 0) {
+                        (binding.recycler.layoutManager as? LinearLayoutManager)
+                            ?.scrollToPositionWithOffset(pos, top)
+                    }
+                }
             }
         }
         if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
@@ -743,6 +758,17 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
+                // 记录删除前第一屏条目的位置作为锚点，刷新完成后精确还原，列表不跳动。
+                val lm = binding.recycler.layoutManager as? LinearLayoutManager
+                val first = lm?.findFirstVisibleItemPosition() ?: -1
+                pendingDeleteAnchor = null
+                if (first >= 0 && adapter.entryIdAt(first) != entry.id) {
+                    val anchorId = adapter.entryIdAt(first)
+                    val top = anchorId?.let { id ->
+                        lm?.findViewByPosition(first)?.top ?: 0
+                    } ?: 0
+                    if (anchorId != null) pendingDeleteAnchor = anchorId to top
+                }
                 // 先播放该条目收起动画，动画结束后才真正删除数据。
                 animateRowRemoval(entry.id) {
                     // 收起过程中其他条目已被平滑推上去，随后无动画刷新提交删除。
