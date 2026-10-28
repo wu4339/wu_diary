@@ -355,11 +355,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
+        val previousIds = allEntries.map { it.id }.toSet()
         allEntries = store.load().filter { !it.hidden }
+        val addedId = allEntries.firstOrNull { it.id !in previousIds }?.id
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
+        // 新增笔记：滚动到它所在的位置，配合 DiffUtil 的插入动画形成过渡。
+        if (addedId != null) {
+            val position = adapter.positionOf(addedId)
+            if (position >= 0) {
+                (binding.recycler.layoutManager as? LinearLayoutManager)
+                    ?.scrollToPositionWithOffset(position, 0)
+            }
+        }
     }
 
     /** 侧栏标签列表：汇总所有笔记的标签。 */

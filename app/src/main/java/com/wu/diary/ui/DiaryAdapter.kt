@@ -105,6 +105,10 @@ class DiaryAdapter(
         return result
     }
 
+    /** 返回指定笔记在列表中的行位置，找不到时返回 -1。 */
+    fun positionOf(entryId: String): Int =
+        rows.indexOfFirst { it is Row.Entry && it.entry.id == entryId }
+
     class DateViewHolder(val binding: ItemDateBinding) : RecyclerView.ViewHolder(binding.root)
     class EntryViewHolder(val binding: ItemDiaryBinding) : RecyclerView.ViewHolder(binding.root)
 
