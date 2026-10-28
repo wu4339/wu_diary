@@ -24,6 +24,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.appbar.AppBarLayout
 import com.wu.diary.data.DiaryStore
@@ -115,9 +116,17 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
+        // 放慢插入/位移动画，让"新笔记淡入、其他笔记下移"的过程更清楚。
+        (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
+            addDuration = 220
+            moveDuration = 260
+        }
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
             startActivity(EditDiaryActivity.intent(this, null, date))
+            // 编辑页像从列表里展开：主界面原位不动，编辑页放大进入。
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.editor_grow_in, 0)
         }
         binding.btnMenu.setOnClickListener {
             binding.drawerRoot.openDrawer(binding.drawerPanel)
@@ -362,12 +371,17 @@ class MainActivity : AppCompatActivity() {
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
-        // 新增笔记：滚动到它所在的位置，配合 DiffUtil 的插入动画形成过渡。
+        // 新增笔记：只有它不在可见区域内时才滚动过去；
+        // 已在可见区域时保持原位，播放"新笔记淡入、其他笔记下移"的过渡动画。
         if (addedId != null) {
             val position = adapter.positionOf(addedId)
-            if (position >= 0) {
-                (binding.recycler.layoutManager as? LinearLayoutManager)
-                    ?.scrollToPositionWithOffset(position, 0)
+            val lm = binding.recycler.layoutManager as? LinearLayoutManager
+            if (position >= 0 && lm != null) {
+                val first = lm.findFirstVisibleItemPosition()
+                val last = lm.findLastVisibleItemPosition()
+                if (position < first || position > last) {
+                    lm.scrollToPositionWithOffset(position, 0)
+                }
             }
         }
     }

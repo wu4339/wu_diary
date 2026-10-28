@@ -657,6 +657,11 @@ class EditDiaryActivity : AppCompatActivity() {
             startActivity(viewIntent)
         }
         finish()
+        // 新建笔记：编辑页缩小淡出退场，露出下方主界面，列表播放新笔记插入动画。
+        if (existing == null) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, R.anim.editor_shrink_out)
+        }
         // 页面已关闭，用 Application Context 写入，避免继续持有正在销毁的 Activity。
         val appContext = applicationContext
         Thread { DiaryStore(appContext).save(entry) }.start()
