@@ -363,7 +363,11 @@ class MainActivity : AppCompatActivity() {
         refresh()
     }
 
+    /** 等待播放新增笔记动画期间不再响应其他刷新，避免动画被打断造成闪烁。 */
+    private var pendingRevealId: String? = null
+
     private fun refresh() {
+        if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
         allEntries = store.load().filter { !it.hidden }
         val addedId = allEntries.firstOrNull { it.id !in previousIds }?.id
@@ -373,22 +377,26 @@ class MainActivity : AppCompatActivity() {
 
         val lm = binding.recycler.layoutManager as? LinearLayoutManager
         if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
-            // 列表不在顶部时分两步：
-            // 1) 先展示旧列表，定位到新笔记所属日期（通常是顶部）；
-            // 2) 稍等片刻再插入新笔记，播放淡入+下移动画。
-            applyList(excludeId = addedId)
-            lm.scrollToPositionWithOffset(0, 0)
+            pendingRevealId = addedId
+            // 先等编辑页缩小动画（约220ms）播完，再分两步：
+            // 1) 回到顶部，显示新笔记所属日期；2) 稍等片刻插入新笔记，播放淡入+下移动画。
             binding.recycler.postDelayed({
-                applyList()
-                // 往旧日期添加时插入点可能在屏幕外，直接定位过去。
-                val pos = adapter.positionOf(addedId)
-                val last = (binding.recycler.layoutManager as? LinearLayoutManager)
-                    ?.findLastVisibleItemPosition() ?: -1
-                if (pos >= 0 && last >= 0 && pos > last) {
-                    (binding.recycler.layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(pos, 0)
-                }
-            }, 450)
+                applyList(excludeId = addedId)
+                (binding.recycler.layoutManager as? LinearLayoutManager)
+                    ?.scrollToPositionWithOffset(0, 0)
+                binding.recycler.postDelayed({
+                    pendingRevealId = null
+                    applyList()
+                    // 往旧日期添加时插入点可能在屏幕外，直接定位过去。
+                    val pos = adapter.positionOf(addedId)
+                    val last = (binding.recycler.layoutManager as? LinearLayoutManager)
+                        ?.findLastVisibleItemPosition() ?: -1
+                    if (pos >= 0 && last >= 0 && pos > last) {
+                        (binding.recycler.layoutManager as? LinearLayoutManager)
+                            ?.scrollToPositionWithOffset(pos, 0)
+                    }
+                }, 450)
+            }, 230)
         } else {
             applyList()
             if (addedId != null && lm != null) {
