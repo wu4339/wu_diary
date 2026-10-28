@@ -390,8 +390,8 @@ class MainActivity : AppCompatActivity() {
     /** 重启应用后首次进入界面时回到顶部。 */
     private var firstResume = true
 
-    /** 删除后用于恢复位置的锚点：第一屏条目 id 及其距列表顶部的偏移。 */
-    private var pendingDeleteAnchor: Pair<String, Int>? = null
+    /** 删除后用于恢复位置的锚点：被删行上方第一个可见行的位置及其距列表顶部的像素偏移。 */
+    private var pendingDeleteAnchor: Pair<Int, Int>? = null
 
     private fun refresh() {
         if (pendingRevealId != null) return
@@ -409,13 +409,19 @@ class MainActivity : AppCompatActivity() {
             binding.recycler.post {
                 binding.recycler.itemAnimator = defaultItemAnimator
                 skipListAnimation = false
-                // 删除后按锚点精确还原滚动位置，列表不跳动。
-                pendingDeleteAnchor?.let { (anchorId, top) ->
+                // 按锚点校正滚动像素差：锚点在删除行上方，位置不会变化，视觉上完全不跳动。
+                pendingDeleteAnchor?.let { (anchorPos, anchorTop) ->
                     pendingDeleteAnchor = null
-                    val pos = adapter.positionOf(anchorId)
-                    if (pos >= 0) {
-                        (binding.recycler.layoutManager as? LinearLayoutManager)
-                            ?.scrollToPositionWithOffset(pos, top)
+                    (binding.recycler.layoutManager as? LinearLayoutManager)?.let { manager ->
+                        val view = manager.findViewByPosition(anchorPos)
+                        if (view != null) {
+                            binding.recycler.scrollBy(0, view.top - anchorTop)
+                        } else if (anchorPos < manager.itemCount) {
+                            manager.scrollToPositionWithOffset(
+                                anchorPos,
+                                anchorTop - binding.recycler.paddingTop
+                            )
+                        }
                     }
                 }
             }
@@ -758,20 +764,9 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
-                // 记录删除前第一屏条目的位置作为锚点，刷新完成后精确还原，列表不跳动。
-                val lm = binding.recycler.layoutManager as? LinearLayoutManager
-                val first = lm?.findFirstVisibleItemPosition() ?: -1
-                pendingDeleteAnchor = null
-                if (first >= 0 && adapter.entryIdAt(first) != entry.id) {
-                    val anchorId = adapter.entryIdAt(first)
-                    val top = anchorId?.let { id ->
-                        lm?.findViewByPosition(first)?.top ?: 0
-                    } ?: 0
-                    if (anchorId != null) pendingDeleteAnchor = anchorId to top
-                }
-                // 先播放该条目收起动画，动画结束后才真正删除数据。
+                // 先播放该条目收起动画，动画结束后才真正删除数据；
+                // 锚点在收起完成时记录，避免动画过程中滚动被钳制后再次回弹。
                 animateRowRemoval(entry.id) {
-                    // 收起过程中其他条目已被平滑推上去，随后无动画刷新提交删除。
                     Thread { store.delete(entry.id) }.start()
                 }
             }
@@ -785,6 +780,7 @@ class MainActivity : AppCompatActivity() {
         val view = binding.recycler.findViewHolderForAdapterPosition(position)?.itemView
         val startHeight = view?.height ?: 0
         if (position < 0 || view == null || startHeight <= 0) {
+            pendingDeleteAnchor = captureDeleteAnchor(entryId)
             onEnd()
             return
         }
@@ -801,10 +797,22 @@ class MainActivity : AppCompatActivity() {
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     view.alpha = 1f
+                    // 收起完成后记录锚点：此时布局已因内容变矮稳定，删除后按它校正，零跳动。
+                    pendingDeleteAnchor = captureDeleteAnchor(entryId)
                     onEnd()
                 }
             })
             start()
         }
+    }
+
+    /** 记录被删行上方第一个可见行的位置与像素偏移；没有可用的上方行时返回 null。 */
+    private fun captureDeleteAnchor(deletedId: String): Pair<Int, Int>? {
+        val manager = binding.recycler.layoutManager as? LinearLayoutManager ?: return null
+        val deletedPos = adapter.positionOf(deletedId)
+        val first = manager.findFirstVisibleItemPosition()
+        if (deletedPos < 0 || first < 0 || first >= deletedPos) return null
+        val view = manager.findViewByPosition(first) ?: return null
+        return first to view.top
     }
 }
