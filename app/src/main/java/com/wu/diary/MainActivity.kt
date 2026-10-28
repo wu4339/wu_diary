@@ -766,8 +766,23 @@ class MainActivity : AppCompatActivity() {
             return
         }
         binding.recycler.stopScroll()
-        // 记录删除前的滚动像素偏移，删除完成后补回，确保上方内容不移动。
-        val savedOffset = binding.recycler.computeVerticalScrollOffset()
+
+        // 锚点：被删行上方最近的可见笔记及其屏幕位置。删除后让它停在原处，
+        // 这样上方内容不会移动，下方条目仍按动画上移。
+        var anchorId: String? = null
+        var anchorTop = 0
+        for (i in 0 until binding.recycler.childCount) {
+            val child = binding.recycler.getChildAt(i)
+            val childPos = binding.recycler.getChildAdapterPosition(child)
+            if (childPos in 0 until position) {
+                adapter.entryIdAt(childPos)?.let { id ->
+                    if (anchorId == null) {
+                        anchorId = id
+                        anchorTop = child.top
+                    }
+                }
+            }
+        }
         // 只收集可见的被删行下方条目，它们上移的距离等于被删行高度。
         val below = mutableListOf<View>()
         for (i in 0 until binding.recycler.childCount) {
@@ -786,28 +801,19 @@ class MainActivity : AppCompatActivity() {
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    // 保持下方条目的视觉位置不变，等布局更新完成的同一帧再清除位移，
-                    // 数据移除与视觉回位无缝衔接，画面上不会跳动或闪烁。
-                    binding.recycler.itemAnimator = null
-                    pendingRemovalScrollOffset = savedOffset
+                    // 数据更新后让锚点笔记保持原屏幕位置，同时清除视觉位移并恢复动画器。
                     binding.recycler.viewTreeObserver.addOnPreDrawListener(
                         object : ViewTreeObserver.OnPreDrawListener {
                             override fun onPreDraw(): Boolean {
                                 binding.recycler.viewTreeObserver.removeOnPreDrawListener(this)
-                                // 布局可能因删除重新锚定，这里把滚动偏移补回删除前的位置。
-                                pendingRemovalScrollOffset?.let { target ->
-                                    pendingRemovalScrollOffset = null
-                                    val delta =
-                                        target - binding.recycler.computeVerticalScrollOffset()
-                                    if (delta != 0) binding.recycler.scrollBy(0, delta)
-                                }
                                 below.forEach { child -> child.translationY = 0f }
                                 binding.recycler.itemAnimator = defaultItemAnimator
                                 return true
                             }
                         }
                     )
-                    removeEntry(entry.id)
+                    binding.recycler.itemAnimator = null
+                    removeEntry(entry.id, anchorId, anchorTop)
                 }
             })
             start()
@@ -815,12 +821,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
-    private fun removeEntry(entryId: String) {
+    private fun removeEntry(
+        entryId: String,
+        anchorId: String? = null,
+        anchorTop: Int = 0
+    ) {
         allEntries = allEntries.filterNot { it.id == entryId }
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
+        // 锚点笔记放在原来的屏幕位置：锚点在被删行上方，重新定位后上方内容固定不动。
+        if (anchorId != null) {
+            val newPos = adapter.positionOf(anchorId)
+            if (newPos >= 0) {
+                (binding.recycler.layoutManager as? LinearLayoutManager)
+                    ?.scrollToPositionWithOffset(
+                        newPos,
+                        anchorTop - binding.recycler.paddingTop
+                    )
+            }
+        }
         Thread { store.delete(entryId) }.start()
     }
 }
