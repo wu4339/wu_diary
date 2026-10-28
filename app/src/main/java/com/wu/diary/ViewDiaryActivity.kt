@@ -30,9 +30,9 @@ import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
-import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -501,10 +501,6 @@ class ViewDiaryActivity : AppCompatActivity() {
                     setPadding(0, dp(16), 0, dp(6))
                 }
             )
-            val chipRows = listOf(
-                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL },
-                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            )
             val chipViews = mutableListOf<Pair<String, TextView>>()
 
             fun refreshChips() {
@@ -521,9 +517,68 @@ class ViewDiaryActivity : AppCompatActivity() {
                 }
             }
 
-            // 现有标签分两行展示，方便一次看到更多可选项。
-            val split = (existingTags.size + 1) / 2
-            existingTags.forEachIndexed { index, tag ->
+            // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
+            val rowHeight = dp(40)
+            val chipArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            val chipScroll = ScrollView(this).apply {
+                isVerticalScrollBarEnabled = false
+                overScrollMode = View.OVER_SCROLL_NEVER
+                addView(chipArea)
+            }
+            container.addView(
+                chipScroll,
+                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, rowHeight * 3)
+            )
+
+            fun layoutChips() {
+                val width = chipArea.width
+                if (width <= 0 || chipArea.childCount > 0) return
+                var row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                var used = 0
+                chipViews.forEach { (_, chip) ->
+                    (chip.parent as? ViewGroup)?.removeView(chip)
+                    chip.measure(
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    val chipWidth = chip.measuredWidth + dp(8)
+                    if (used > 0 && used + chipWidth > width) {
+                        chipArea.addView(
+                            row,
+                            LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                rowHeight
+                            )
+                        )
+                        row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                        used = 0
+                    }
+                    row.addView(
+                        chip,
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { marginEnd = dp(8) }
+                    )
+                    used += chipWidth
+                }
+                if (row.childCount > 0) {
+                    chipArea.addView(
+                        row,
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            rowHeight
+                        )
+                    )
+                }
+                chipScroll.layoutParams = chipScroll.layoutParams.apply {
+                    height = rowHeight * minOf(3, chipArea.childCount)
+                }
+            }
+
+            chipArea.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> layoutChips() }
+
+            existingTags.forEach { tag ->
                 val chip = TextView(this).apply {
                     text = "#$tag"
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
@@ -537,18 +592,7 @@ class ViewDiaryActivity : AppCompatActivity() {
                         refreshChips()
                     }
                 }
-                chipRows[if (index < split) 0 else 1].addView(chip)
                 chipViews.add(tag to chip)
-            }
-            chipRows.forEachIndexed { rowIndex, chipRow ->
-                container.addView(
-                    HorizontalScrollView(this).apply {
-                        isHorizontalScrollBarEnabled = false
-                        overScrollMode = View.OVER_SCROLL_NEVER
-                        setPadding(0, 0, 0, dp(if (rowIndex == 0) 4 else 8))
-                        addView(chipRow)
-                    }
-                )
             }
             refreshChips()
         }

@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import com.wu.diary.data.Settings
 import kotlin.math.PI
+import kotlin.math.exp
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -23,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(587.33, 440.0)) }
+    private val deletedSamples: ShortArray by lazy { buildMarimba(doubleArrayOf(659.25, 523.25, 392.0)) }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：两段下行音，通用的删除提示音。 */
+    /** 删除：木琴下行三音，干净利落，和保存的上行音明显区分。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -80,6 +81,28 @@ object Feedback {
                 out[offset + i] = (wave * envelope * 0.95 * Short.MAX_VALUE).toInt().toShort()
             }
             offset += noteSamples
+        }
+        return out
+    }
+
+    /** 木琴感的下行三音：音符之间留出余音叠加，听起来更自然。 */
+    private fun buildMarimba(notes: DoubleArray): ShortArray {
+        val gap = (SAMPLE_RATE * 0.11).toInt()
+        val length = (SAMPLE_RATE * 0.32).toInt()
+        val total = gap * (notes.size - 1) + length
+        val out = ShortArray(total)
+        notes.forEachIndexed { index, freq ->
+            val start = index * gap
+            for (i in 0 until length) {
+                val t = i.toDouble() / SAMPLE_RATE
+                val attack = min(1.0, t / 0.004)
+                val envelope = attack * exp(-11.0 * t)
+                val wave = sin(2 * PI * freq * t) * 0.75 +
+                    sin(4 * PI * freq * t) * 0.18 +
+                    sin(6 * PI * freq * t) * 0.07
+                val value = (out[start + i] + wave * envelope * 0.85 * Short.MAX_VALUE)
+                out[start + i] = value.toInt().coerceIn(-32768, 32767).toShort()
+            }
         }
         return out
     }
