@@ -370,20 +370,32 @@ class MainActivity : AppCompatActivity() {
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
-        applyList()
-        // 新增笔记的位置处理：
-        // - 在可见区域内：保持原位，播放"新笔记淡入、其他笔记下移"的过渡动画；
-        // - 在可见区域上方（通常是列表顶部）：先回到顶部，新笔记随后在日期头下淡入；
-        // - 在可见区域下方（往旧日期添加）：直接定位到那条笔记。
-        if (addedId != null) {
-            val position = adapter.positionOf(addedId)
-            val lm = binding.recycler.layoutManager as? LinearLayoutManager
-            if (position >= 0 && lm != null) {
-                val first = lm.findFirstVisibleItemPosition()
-                val last = lm.findLastVisibleItemPosition()
-                when {
-                    position < first -> lm.scrollToPositionWithOffset(0, 0)
-                    position > last -> lm.scrollToPositionWithOffset(position, 0)
+
+        val lm = binding.recycler.layoutManager as? LinearLayoutManager
+        if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
+            // 列表不在顶部时分两步：
+            // 1) 先展示旧列表，定位到新笔记所属日期（通常是顶部）；
+            // 2) 稍等片刻再插入新笔记，播放淡入+下移动画。
+            applyList(excludeId = addedId)
+            lm.scrollToPositionWithOffset(0, 0)
+            binding.recycler.postDelayed({
+                applyList()
+                // 往旧日期添加时插入点可能在屏幕外，直接定位过去。
+                val pos = adapter.positionOf(addedId)
+                val last = (binding.recycler.layoutManager as? LinearLayoutManager)
+                    ?.findLastVisibleItemPosition() ?: -1
+                if (pos >= 0 && last >= 0 && pos > last) {
+                    (binding.recycler.layoutManager as? LinearLayoutManager)
+                        ?.scrollToPositionWithOffset(pos, 0)
+                }
+            }, 450)
+        } else {
+            applyList()
+            if (addedId != null && lm != null) {
+                val position = adapter.positionOf(addedId)
+                if (position >= 0) {
+                    val last = lm.findLastVisibleItemPosition()
+                    if (position > last) lm.scrollToPositionWithOffset(position, 0)
                 }
             }
         }
@@ -474,8 +486,8 @@ class MainActivity : AppCompatActivity() {
         applyList()
     }
 
-    private fun applyList() {
-        val entries = when {
+    private fun applyList(excludeId: String? = null) {
+        val base = when {
             activeTag != null -> allEntries.filter { activeTag in it.tags }
             calendarVisible -> allEntries.filter { entry ->
                 val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
@@ -485,6 +497,7 @@ class MainActivity : AppCompatActivity() {
             }
             else -> allEntries
         }
+        val entries = if (excludeId == null) base else base.filterNot { it.id == excludeId }
         adapter.submit(entries)
         displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
