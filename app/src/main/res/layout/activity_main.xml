@@ -51,7 +51,6 @@
                 android:layout_height="wrap_content"
                 android:background="@color/background"
                 app:elevation="0dp"
-                app:liftable="false"
                 app:liftOnScroll="false">
 
                 <LinearLayout
