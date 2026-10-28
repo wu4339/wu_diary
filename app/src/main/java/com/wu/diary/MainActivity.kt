@@ -383,6 +383,9 @@ class MainActivity : AppCompatActivity() {
     /** 重启应用后首次进入界面时回到顶部。 */
     private var firstResume = true
 
+    /** 删除后需要恢复的列表滚动像素偏移：保证屏幕顶部显示位置不变。 */
+    private var pendingRestoreScrollOffset: Int? = null
+
     private fun refresh() {
         if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
@@ -435,6 +438,16 @@ class MainActivity : AppCompatActivity() {
                                 ?.scrollToPositionWithOffset(position, 0)
                         }
                     }
+                }
+            }
+            // 删除笔记：把列表滚动像素偏移还原到删除前，屏幕顶部显示位置保持不变；
+            // 下方笔记的上移动画照常播放。
+            pendingRestoreScrollOffset?.let { target ->
+                pendingRestoreScrollOffset = null
+                binding.recycler.post {
+                    binding.recycler.stopScroll()
+                    val delta = target - binding.recycler.computeVerticalScrollOffset()
+                    if (delta != 0) binding.recycler.scrollBy(0, delta)
                 }
             }
         }
@@ -731,8 +744,10 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
-                // 交给 RecyclerView 自带的删除动画：该行淡出、下方笔记平移上移，
-                // 数据刷新沿用同一套差异更新，滚动位置由列表自己保持，不会跳动。
+                // 记录删除前的滚动像素偏移，刷新后还原，屏幕顶部显示位置不变。
+                binding.recycler.stopScroll()
+                pendingRestoreScrollOffset = binding.recycler.computeVerticalScrollOffset()
+                // 交给 RecyclerView 自带的删除动画：该行淡出、下方笔记平移上移。
                 Thread { store.delete(entry.id) }.start()
             }
             .setNegativeButton(R.string.cancel, null)
