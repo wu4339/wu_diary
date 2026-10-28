@@ -24,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildDrop() }
+    private val deletedSamples: ShortArray by lazy { buildTrashEmpty() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：一声清脆的水滴音，和保存的上行音明显区分。 */
+    /** 删除：回收站清空声，三次由重到轻的倾倒闷响。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -85,24 +85,46 @@ object Feedback {
         return out
     }
 
-    /** 水滴音：频率快速下坠，尾巴带一点混响感，听起来像一滴水落进水面。 */
-    private fun buildDrop(): ShortArray {
-        val total = (SAMPLE_RATE * 0.30).toInt()
-        val out = ShortArray(total)
-        var phase = 0.0
-        for (i in 0 until total) {
-            val t = i.toDouble() / SAMPLE_RATE
-            // 音高从高处快速滑到低处，模拟水滴的下坠。
-            val freq = 1000.0 * exp(-10.0 * t) + 180.0
-            phase += 2 * PI * freq / SAMPLE_RATE
-            val attack = min(1.0, t / 0.003)
-            val envelope = attack * (exp(-7.0 * t) * 0.85 + exp(-1.2 * t) * 0.15)
-            val wave = sin(phase) * 0.9 + sin(2 * phase) * 0.1
-            // 软限幅后拉满音量，保证删除时的提示音足够响。
-            val value = tanh(wave * envelope * 2.4) * 0.98
-            out[i] = (value * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+    /** 回收站清空声：三次由重到轻的低频"砰"声，夹杂纸张揉搓的沙沙声。 */
+    private fun buildTrashEmpty(): ShortArray {
+        val total = (SAMPLE_RATE * 0.46).toInt()
+        val random = Random(778899)
+        val mix = FloatArray(total)
+        val offsets = intArrayOf(0, (SAMPLE_RATE * 0.14).toInt(), (SAMPLE_RATE * 0.28).toInt())
+        val strengths = floatArrayOf(1.0f, 0.72f, 0.5f)
+        offsets.forEachIndexed { index, start ->
+            val strength = strengths[index]
+            // 低频闷响：音高快速下滑，像垃圾落进桶底。
+            val thudLen = (SAMPLE_RATE * 0.10).toInt()
+            var phase = 0.0
+            for (i in 0 until thudLen) {
+                val t = i.toDouble() / SAMPLE_RATE
+                val freq = 190.0 * exp(-9.0 * t) + 70.0
+                phase += 2 * PI * freq / SAMPLE_RATE
+                val envelope = min(1.0, t / 0.004) * exp(-14.0 * t)
+                val pos = start + i
+                if (pos < total) mix[pos] += (sin(phase) * envelope * strength * 1.1).toFloat()
+            }
+            // 揉搓纸张的沙沙声：带通噪声，音量快速衰减。
+            val rustleLen = (SAMPLE_RATE * 0.09).toInt()
+            var low = 0f
+            var lower = 0f
+            val rustleStart = start + (SAMPLE_RATE * 0.02).toInt()
+            for (i in 0 until rustleLen) {
+                val t = i.toFloat() / rustleLen
+                val cutoff = 1600f + 900f * sin(PI * t).toFloat()
+                val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
+                val noise = random.nextFloat() * 2f - 1f
+                low += coefficient * (noise - low)
+                lower += coefficient * 0.4f * (low - lower)
+                val envelope = (1f - t) * (1f - t)
+                val pos = rustleStart + i
+                if (pos < total) mix[pos] += (low - lower) * envelope * strength * 0.9f
+            }
         }
-        return out
+        return ShortArray(total) { i ->
+            (tanh(mix[i] * 1.6f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+        }
     }
 
     /** 翻书声：一团纸张摩擦的噪声，由轻到重再收尾，最后带一点页面落定的闷响。 */

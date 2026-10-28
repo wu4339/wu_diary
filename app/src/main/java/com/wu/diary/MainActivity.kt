@@ -116,10 +116,12 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        // 放慢插入/位移动画，让"新笔记淡入、其他笔记下移"的过程更清楚。
+        // 放慢插入/位移动画；关闭变化项的交叉淡入淡出，删除笔记时其他条目不再闪一下。
         (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
             addDuration = 220
             moveDuration = 260
+            changeDuration = 0
+            supportsChangeAnimations = false
         }
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
