@@ -389,6 +389,9 @@ class MainActivity : AppCompatActivity() {
     /** 常规条目动画器；删除时临时移除，避免布局更新时再叠加一层动画。 */
     private var defaultItemAnimator: DefaultItemAnimator? = null
 
+    /** 删除动画结束时需要补回的滚动偏移，保证删除后上方内容不下移。 */
+    private var pendingRemovalScrollOffset: Int? = null
+
     private fun refresh() {
         if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
@@ -763,6 +766,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
         binding.recycler.stopScroll()
+        // 记录删除前的滚动像素偏移，删除完成后补回，确保上方内容不移动。
+        val savedOffset = binding.recycler.computeVerticalScrollOffset()
         // 只收集可见的被删行下方条目，它们上移的距离等于被删行高度。
         val below = mutableListOf<View>()
         for (i in 0 until binding.recycler.childCount) {
@@ -784,10 +789,18 @@ class MainActivity : AppCompatActivity() {
                     // 保持下方条目的视觉位置不变，等布局更新完成的同一帧再清除位移，
                     // 数据移除与视觉回位无缝衔接，画面上不会跳动或闪烁。
                     binding.recycler.itemAnimator = null
+                    pendingRemovalScrollOffset = savedOffset
                     binding.recycler.viewTreeObserver.addOnPreDrawListener(
                         object : ViewTreeObserver.OnPreDrawListener {
                             override fun onPreDraw(): Boolean {
                                 binding.recycler.viewTreeObserver.removeOnPreDrawListener(this)
+                                // 布局可能因删除重新锚定，这里把滚动偏移补回删除前的位置。
+                                pendingRemovalScrollOffset?.let { target ->
+                                    pendingRemovalScrollOffset = null
+                                    val delta =
+                                        target - binding.recycler.computeVerticalScrollOffset()
+                                    if (delta != 0) binding.recycler.scrollBy(0, delta)
+                                }
                                 below.forEach { child -> child.translationY = 0f }
                                 binding.recycler.itemAnimator = defaultItemAnimator
                                 return true
