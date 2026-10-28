@@ -366,6 +366,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
         refresh()
+        // 应用打开时默认显示在最顶部：列表回到顶部，顶栏与日历展开。
+        if (firstResume) {
+            firstResume = false
+            binding.recycler.stopScroll()
+            (binding.recycler.layoutManager as? LinearLayoutManager)?.scrollToPosition(0)
+            binding.appBar.setExpanded(true, false)
+        }
     }
 
     /** 等待播放新增笔记动画期间不再响应其他刷新，避免动画被打断造成闪烁。 */
@@ -376,6 +383,9 @@ class MainActivity : AppCompatActivity() {
 
     /** 常规条目动画器（新增淡入、位移下移），删除刷新后恢复使用。 */
     private var defaultItemAnimator: DefaultItemAnimator? = null
+
+    /** 首次进入界面时回到顶部。 */
+    private var firstResume = true
 
     private fun refresh() {
         if (pendingRevealId != null) return
@@ -398,23 +408,30 @@ class MainActivity : AppCompatActivity() {
         if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
             pendingRevealId = addedId
             // 先等编辑页缩小动画（约220ms）播完，再分两步：
-            // 1) 回到顶部，显示新笔记所属日期；2) 稍等片刻插入新笔记，播放淡入+下移动画。
+            // 1) 停止惯性滚动，回到顶部（只含旧列表）；2) 列表稳定后再插入新笔记。
+            // 滚动与插入不放在同一次布局里，否则新条目可能不被挂载，要滑动一下才出现。
             binding.recycler.postDelayed({
                 applyList(excludeId = addedId)
-                (binding.recycler.layoutManager as? LinearLayoutManager)
-                    ?.scrollToPositionWithOffset(0, 0)
+                binding.recycler.post {
+                    binding.recycler.stopScroll()
+                    (binding.recycler.layoutManager as? LinearLayoutManager)
+                        ?.scrollToPositionWithOffset(0, 0)
+                }
                 binding.recycler.postDelayed({
                     pendingRevealId = null
                     applyList()
-                    // 往旧日期添加时插入点可能在屏幕外，直接定位过去。
-                    val pos = adapter.positionOf(addedId)
-                    val last = (binding.recycler.layoutManager as? LinearLayoutManager)
-                        ?.findLastVisibleItemPosition() ?: -1
-                    if (pos >= 0 && last >= 0 && pos > last) {
-                        (binding.recycler.layoutManager as? LinearLayoutManager)
-                            ?.scrollToPositionWithOffset(pos, 0)
+                    // 往旧日期添加时插入点可能在屏幕外，等布局完成后再定位过去。
+                    binding.recycler.post {
+                        val pos = adapter.positionOf(addedId)
+                        val last = (binding.recycler.layoutManager as? LinearLayoutManager)
+                            ?.findLastVisibleItemPosition() ?: -1
+                        if (pos >= 0 && last >= 0 && pos > last) {
+                            binding.recycler.stopScroll()
+                            (binding.recycler.layoutManager as? LinearLayoutManager)
+                                ?.scrollToPositionWithOffset(pos, 0)
+                        }
                     }
-                }, 450)
+                }, 350)
             }, 230)
         } else {
             applyList()
@@ -422,7 +439,14 @@ class MainActivity : AppCompatActivity() {
                 val position = adapter.positionOf(addedId)
                 if (position >= 0) {
                     val last = lm.findLastVisibleItemPosition()
-                    if (position > last) lm.scrollToPositionWithOffset(position, 0)
+                    if (position > last) {
+                        // 等插入布局完成后再滚动定位，避免同帧滚动+插入导致条目不显示。
+                        binding.recycler.post {
+                            binding.recycler.stopScroll()
+                            (binding.recycler.layoutManager as? LinearLayoutManager)
+                                ?.scrollToPositionWithOffset(position, 0)
+                        }
+                    }
                 }
             }
         }
