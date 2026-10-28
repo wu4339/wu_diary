@@ -205,6 +205,17 @@
             android:src="@drawable/ic_cut"
             app:tint="@color/text_primary" />
 
+        <ImageButton
+            android:id="@+id/btnList"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/add_list"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_list"
+            app:tint="@color/text_primary" />
+
         <Space
             android:layout_width="0dp"
             android:layout_height="1dp"

@@ -152,6 +152,8 @@ class EditDiaryActivity : AppCompatActivity() {
         binding.btnEditorTags.setOnClickListener { editTags() }
         binding.btnLocation.setOnClickListener { fetchLocation() }
         binding.btnCut.setOnClickListener { cutParagraph() }
+        binding.btnList.setOnClickListener { toggleListMarker() }
+        setupListContinuation()
 
         if (existing != null) {
             binding.editContent.setSelection(binding.editContent.text.length)
@@ -467,6 +469,51 @@ class EditDiaryActivity : AppCompatActivity() {
         text.delete(lineStart, deleteEnd)
         edit.setSelection(lineStart)
     }
+
+    /** 给光标所在行加上或去掉无序列表符号。 */
+    private fun toggleListMarker() {
+        val edit = binding.editContent
+        val text = edit.text
+        val cursor = edit.selectionStart.coerceIn(0, text.length)
+        val lineStart = text.lastIndexOf('\n', cursor - 1) + 1
+        if (text.startsWith("- ", lineStart)) {
+            text.delete(lineStart, lineStart + 2)
+            edit.setSelection((cursor - 2).coerceAtLeast(lineStart))
+        } else {
+            text.insert(lineStart, "- ")
+            edit.setSelection((cursor + 2).coerceAtMost(text.length))
+        }
+    }
+
+    /** 无序列表行回车后自动续写符号；空列表项回车则结束列表。 */
+    private fun setupListContinuation() {
+        var insertedNewline = false
+        binding.editContent.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, after: Int) {
+                insertedNewline =
+                    before == 0 && after == 1 && start > 0 && s?.get(start) == '\n'
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                if (!insertedNewline || s == null) return
+                insertedNewline = false
+                val cursor = binding.editContent.selectionStart
+                if (cursor <= 1) return
+                val prevStart = s.lastIndexOf('\n', cursor - 2) + 1
+                val prevLine = s.subSequence(prevStart, cursor - 1).toString()
+                val match = listLine.matchEntire(prevLine) ?: return
+                // 上一条是空列表项（只有 "- "）时不再续写，相当于结束列表。
+                if (match.groupValues[3].isBlank()) return
+                val marker = "${match.groupValues[1]}${match.groupValues[2]} "
+                s.insert(cursor, marker)
+                binding.editContent.setSelection(cursor + marker.length)
+            }
+        })
+    }
+
+    private val listLine = Regex("^(\\s*)([-*+])\\s+(.*)$")
 
     /** 获取当前位置坐标并插入到光标处。 */
     @SuppressLint("MissingPermission")
