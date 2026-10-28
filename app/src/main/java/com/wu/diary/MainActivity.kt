@@ -651,9 +651,9 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
-                store.delete(entry.id)
                 Feedback.deleted(this)
-                refresh()
+                // 删除涉及文件读写，放到后台线程，完成后广播会触发列表刷新。
+                Thread { store.delete(entry.id) }.start()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

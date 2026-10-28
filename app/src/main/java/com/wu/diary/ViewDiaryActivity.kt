@@ -628,22 +628,33 @@ class ViewDiaryActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
-                store.delete(current.id)
                 Feedback.deleted(this)
                 if (!randomReview) {
+                    // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
                     finish()
+                    Thread { store.delete(current.id) }.start()
                     return@setPositiveButton
                 }
                 // 随机回顾里删除后继续看下一篇；删的是最后一篇则回到上一篇。
                 val remaining = ids.filterNot { it == current.id }
                 if (remaining.isEmpty()) {
                     finish()
+                    Thread { store.delete(current.id) }.start()
                     return@setPositiveButton
                 }
                 ids = remaining
                 index = index.coerceAtMost(remaining.lastIndex)
-                load()
-                binding.scrollContent.scrollTo(0, 0)
+                val nextId = ids[index]
+                // 删除与读取下一篇在同一个后台线程顺序执行，避免读写竞争，也不阻塞界面。
+                Thread {
+                    store.delete(current.id)
+                    val next = store.load().find { it.id == nextId }
+                    runOnUiThread {
+                        entry = next
+                        if (next == null) finish() else render()
+                        binding.scrollContent.scrollTo(0, 0)
+                    }
+                }.start()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
