@@ -5,8 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.text.SpannableString
@@ -18,7 +16,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -119,13 +116,15 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        // 插入/位移动画放慢，让"新笔记淡入、其他笔记下移"更清楚；变化项不做交叉淡入淡出。
-        defaultItemAnimator = (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
+        // 新增笔记：淡入 + 其他笔记下移；删除笔记：被删行淡出 + 下方笔记平滑上移。
+        // 变化项不做交叉淡入淡出，避免无关笔记闪一下。
+        (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
             addDuration = 220
             moveDuration = 260
+            removeDuration = 220
             changeDuration = 0
             supportsChangeAnimations = false
-        } ?: DefaultItemAnimator()
+        }
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
             startActivity(EditDiaryActivity.intent(this, null, date))
@@ -381,17 +380,8 @@ class MainActivity : AppCompatActivity() {
     /** 等待播放新增笔记动画期间不再响应其他刷新，避免动画被打断造成闪烁。 */
     private var pendingRevealId: String? = null
 
-    /** 删除笔记后的那次刷新不做任何动画，其他条目保持原位。 */
-    private var skipListAnimation = false
-
-    /** 常规条目动画器（新增淡入、位移下移），删除刷新后恢复使用。 */
-    private var defaultItemAnimator: DefaultItemAnimator? = null
-
     /** 重启应用后首次进入界面时回到顶部。 */
     private var firstResume = true
-
-    /** 删除后用于恢复位置的锚点：被删行上方第一个可见行的位置及其距列表顶部的像素偏移。 */
-    private var pendingDeleteAnchor: Pair<Int, Int>? = null
 
     private fun refresh() {
         if (pendingRevealId != null) return
@@ -403,29 +393,6 @@ class MainActivity : AppCompatActivity() {
         if (calendarVisible) renderCalendar()
 
         val lm = binding.recycler.layoutManager as? LinearLayoutManager
-        // 删除后的刷新：临时移除条目动画器，被删条目直接消失，其他条目保持不动。
-        if (skipListAnimation) {
-            binding.recycler.itemAnimator = null
-            binding.recycler.post {
-                binding.recycler.itemAnimator = defaultItemAnimator
-                skipListAnimation = false
-                // 按锚点校正滚动像素差：锚点在删除行上方，位置不会变化，视觉上完全不跳动。
-                pendingDeleteAnchor?.let { (anchorPos, anchorTop) ->
-                    pendingDeleteAnchor = null
-                    (binding.recycler.layoutManager as? LinearLayoutManager)?.let { manager ->
-                        val view = manager.findViewByPosition(anchorPos)
-                        if (view != null) {
-                            binding.recycler.scrollBy(0, view.top - anchorTop)
-                        } else if (anchorPos < manager.itemCount) {
-                            manager.scrollToPositionWithOffset(
-                                anchorPos,
-                                anchorTop - binding.recycler.paddingTop
-                            )
-                        }
-                    }
-                }
-            }
-        }
         if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
             pendingRevealId = addedId
             // 先等编辑页缩小动画（约220ms）播完，再分两步：
@@ -764,55 +731,11 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
-                // 先播放该条目收起动画，动画结束后才真正删除数据；
-                // 锚点在收起完成时记录，避免动画过程中滚动被钳制后再次回弹。
-                animateRowRemoval(entry.id) {
-                    Thread { store.delete(entry.id) }.start()
-                }
+                // 交给 RecyclerView 自带的删除动画：该行淡出、下方笔记平移上移，
+                // 数据刷新沿用同一套差异更新，滚动位置由列表自己保持，不会跳动。
+                Thread { store.delete(entry.id) }.start()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
-    }
-
-    /** 把指定笔记的行平滑收起（高度归零 + 淡出），结束后回调执行删除。 */
-    private fun animateRowRemoval(entryId: String, onEnd: () -> Unit) {
-        val position = adapter.positionOf(entryId)
-        val view = binding.recycler.findViewHolderForAdapterPosition(position)?.itemView
-        val startHeight = view?.height ?: 0
-        if (position < 0 || view == null || startHeight <= 0) {
-            pendingDeleteAnchor = captureDeleteAnchor(entryId)
-            onEnd()
-            return
-        }
-        // 刷新提交时不做条目动画，避免收起动画后再闪一次。
-        skipListAnimation = true
-        ValueAnimator.ofInt(startHeight, 0).apply {
-            duration = 240
-            interpolator = DecelerateInterpolator()
-            addUpdateListener { anim ->
-                val height = anim.animatedValue as Int
-                view.layoutParams?.let { it.height = height; view.layoutParams = it }
-                view.alpha = height.toFloat() / startHeight
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    view.alpha = 1f
-                    // 收起完成后记录锚点：此时布局已因内容变矮稳定，删除后按它校正，零跳动。
-                    pendingDeleteAnchor = captureDeleteAnchor(entryId)
-                    onEnd()
-                }
-            })
-            start()
-        }
-    }
-
-    /** 记录被删行上方第一个可见行的位置与像素偏移；没有可用的上方行时返回 null。 */
-    private fun captureDeleteAnchor(deletedId: String): Pair<Int, Int>? {
-        val manager = binding.recycler.layoutManager as? LinearLayoutManager ?: return null
-        val deletedPos = adapter.positionOf(deletedId)
-        val first = manager.findFirstVisibleItemPosition()
-        if (deletedPos < 0 || first < 0 || first >= deletedPos) return null
-        val view = manager.findViewByPosition(first) ?: return null
-        return first to view.top
     }
 }
