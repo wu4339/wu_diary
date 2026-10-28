@@ -24,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildTrashLid() }
+    private val deletedSamples: ShortArray by lazy { buildTossAway() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：垃圾桶盖合上的"咔哒"声，一声干脆的合盖。 */
+    /** 删除：纸团丢进垃圾桶的"咻——啪"声，气流上扬 + 落底闷响。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -85,38 +85,46 @@ object Feedback {
         return out
     }
 
-    /** 垃圾桶盖合上声：短促的"咔"（高频敲击）+ 干脆的"哒"（中频快速下落），像盖子扣紧。 */
-    private fun buildTrashLid(): ShortArray {
-        val total = (SAMPLE_RATE * 0.22).toInt()
-        val random = Random(112233)
+    /** 丢纸团声："咻"（带通噪声气流上扬）接"啪"（低频落底闷响 + 短冲击）。 */
+    private fun buildTossAway(): ShortArray {
+        val total = (SAMPLE_RATE * 0.26).toInt()
+        val random = Random(4455)
         val mix = FloatArray(total)
 
-        fun click(start: Int, freq: Double, strength: Double, decay: Double) {
-            // 敲击瞬间的短噪声，让声音有"硬物相碰"的质感。
-            for (i in 0 until (SAMPLE_RATE * 0.006).toInt()) {
-                val pos = start + i
-                if (pos >= total) break
-                val envelope = 1.0 - i / (SAMPLE_RATE * 0.006).toDouble()
-                mix[pos] += ((random.nextDouble() * 2 - 1) * envelope * strength * 0.5).toFloat()
-            }
-            // 阻尼振荡：决定音色主体。
-            var phase = 0.0
-            for (i in 0 until (SAMPLE_RATE * 0.09).toInt()) {
-                val pos = start + i
-                if (pos >= total) break
-                val t = i.toDouble() / SAMPLE_RATE
-                phase += 2 * PI * freq / SAMPLE_RATE
-                val envelope = exp(-decay * t)
-                mix[pos] += (sin(phase) * envelope * strength).toFloat()
-            }
+        // 咻：带通噪声，中心频率从 400Hz 上扬到 2200Hz，音量渐强。
+        val whooshLen = (SAMPLE_RATE * 0.13).toInt()
+        var low = 0f
+        var lower = 0f
+        for (i in 0 until whooshLen) {
+            val t = i.toFloat() / whooshLen
+            val cutoff = 400f + 1800f * t
+            val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
+            val noise = random.nextFloat() * 2f - 1f
+            low += coefficient * (noise - low)
+            lower += coefficient * 0.4f * (low - lower)
+            mix[i] += (low - lower) * t * t * 1.6f
         }
 
-        // 第一声"咔"：清脆高频。
-        click(0, 950.0, 0.55, 60.0)
-        // 第二声"哒"：合盖落定的中低频主体，稍强。
-        click((SAMPLE_RATE * 0.045).toInt(), 430.0, 0.85, 34.0)
-        // 尾音：盖子扣紧的轻微回响。
-        click((SAMPLE_RATE * 0.115).toInt(), 680.0, 0.28, 55.0)
+        // 啪：落底闷响，音高快速下滑。
+        val impactStart = whooshLen
+        val thudLen = (SAMPLE_RATE * 0.11).toInt()
+        var phase = 0.0
+        for (i in 0 until thudLen) {
+            val t = i.toDouble() / SAMPLE_RATE
+            val freq = 170.0 * exp(-13.0 * t) + 65.0
+            phase += 2 * PI * freq / SAMPLE_RATE
+            val envelope = min(1.0, t / 0.002) * exp(-17.0 * t)
+            val pos = impactStart + i
+            if (pos < total) mix[pos] += (sin(phase) * envelope * 1.3).toFloat()
+        }
+
+        // 落底瞬间的短噪声冲击，增强质感。
+        for (i in 0 until (SAMPLE_RATE * 0.008).toInt()) {
+            val pos = impactStart + i
+            if (pos >= total) break
+            val envelope = 1.0 - i / (SAMPLE_RATE * 0.008).toDouble()
+            mix[pos] += ((random.nextDouble() * 2 - 1) * envelope * 0.4).toFloat()
+        }
 
         return ShortArray(total) { i ->
             (tanh(mix[i] * 1.7f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()

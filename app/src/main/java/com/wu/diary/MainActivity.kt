@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.text.SpannableString
@@ -16,6 +17,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -716,12 +718,42 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
-                // 删除走无动画刷新：被删条目直接移除，其他条目保持完全不动，不闪一下。
-                skipListAnimation = true
-                // 删除涉及文件读写，放到后台线程，完成后广播会触发列表刷新。
-                Thread { store.delete(entry.id) }.start()
+                // 先播放该条目收起动画，动画结束后才真正删除数据。
+                animateRowRemoval(entry.id) {
+                    // 收起过程中其他条目已被平滑推上去，随后无动画刷新提交删除。
+                    Thread { store.delete(entry.id) }.start()
+                }
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    /** 把指定笔记的行平滑收起（高度归零 + 淡出），结束后回调执行删除。 */
+    private fun animateRowRemoval(entryId: String, onEnd: () -> Unit) {
+        val position = adapter.positionOf(entryId)
+        val view = binding.recycler.findViewHolderForAdapterPosition(position)?.itemView
+        val startHeight = view?.height ?: 0
+        if (position < 0 || view == null || startHeight <= 0) {
+            onEnd()
+            return
+        }
+        // 刷新提交时不做条目动画，避免收起动画后再闪一次。
+        skipListAnimation = true
+        ValueAnimator.ofInt(startHeight, 0).apply {
+            duration = 240
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { anim ->
+                val height = anim.animatedValue as Int
+                view.layoutParams?.let { it.height = height; view.layoutParams = it }
+                view.alpha = height.toFloat() / startHeight
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    view.alpha = 1f
+                    onEnd()
+                }
+            })
+            start()
+        }
     }
 }
