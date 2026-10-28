@@ -342,7 +342,10 @@ class EditDiaryActivity : AppCompatActivity() {
             }
 
             // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
+            // 弹窗的自定义视图宽度在展示前是 0，这里按屏幕宽度估算内容宽度，保证标签一定能显示。
             val rowHeight = dp(40)
+            val contentWidth =
+                (minOf(resources.displayMetrics.widthPixels, dp(560)) - dp(88)).coerceAtLeast(dp(160))
             val chipArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             val chipScroll = ScrollView(this).apply {
                 isVerticalScrollBarEnabled = false
@@ -351,11 +354,10 @@ class EditDiaryActivity : AppCompatActivity() {
             }
             container.addView(
                 chipScroll,
-                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, rowHeight * 3)
+                LinearLayout.LayoutParams(contentWidth, rowHeight * 3)
             )
 
-            fun layoutChips() {
-                val width = chipArea.width
+            fun layoutChips(width: Int) {
                 if (width <= 0 || chipArea.childCount > 0) return
                 var row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 var used = 0
@@ -400,8 +402,6 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
             }
 
-            chipArea.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> layoutChips() }
-
             existingTags.forEach { tag ->
                 val chip = TextView(this).apply {
                     text = "#$tag"
@@ -418,6 +418,7 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
                 chipViews.add(tag to chip)
             }
+            layoutChips(contentWidth)
             refreshChips()
         }
 
