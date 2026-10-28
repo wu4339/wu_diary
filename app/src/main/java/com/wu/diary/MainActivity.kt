@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.text.SpannableString
@@ -16,6 +18,8 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -116,15 +120,14 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        // 新增笔记：淡入 + 其他笔记下移；删除笔记：被删行淡出 + 下方笔记平滑上移。
-        // 变化项不做交叉淡入淡出，避免无关笔记闪一下。
-        (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
+        // 新增笔记：淡入 + 其他笔记下移；变化项不做交叉淡入淡出，避免无关笔记闪一下。
+        // 删除笔记使用自定义的纯视觉动画，不经过列表动画器。
+        defaultItemAnimator = (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
             addDuration = 220
             moveDuration = 260
-            removeDuration = 220
             changeDuration = 0
             supportsChangeAnimations = false
-        }
+        } ?: DefaultItemAnimator()
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
             startActivity(EditDiaryActivity.intent(this, null, date))
@@ -383,8 +386,8 @@ class MainActivity : AppCompatActivity() {
     /** 重启应用后首次进入界面时回到顶部。 */
     private var firstResume = true
 
-    /** 删除后需要恢复的列表滚动像素偏移：保证屏幕顶部显示位置不变。 */
-    private var pendingRestoreScrollOffset: Int? = null
+    /** 常规条目动画器；删除时临时移除，避免布局更新时再叠加一层动画。 */
+    private var defaultItemAnimator: DefaultItemAnimator? = null
 
     private fun refresh() {
         if (pendingRevealId != null) return
@@ -438,16 +441,6 @@ class MainActivity : AppCompatActivity() {
                                 ?.scrollToPositionWithOffset(position, 0)
                         }
                     }
-                }
-            }
-            // 删除笔记：把列表滚动像素偏移还原到删除前，屏幕顶部显示位置保持不变；
-            // 下方笔记的上移动画照常播放。
-            pendingRestoreScrollOffset?.let { target ->
-                pendingRestoreScrollOffset = null
-                binding.recycler.post {
-                    binding.recycler.stopScroll()
-                    val delta = target - binding.recycler.computeVerticalScrollOffset()
-                    if (delta != 0) binding.recycler.scrollBy(0, delta)
                 }
             }
         }
@@ -744,13 +737,77 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
-                // 记录删除前的滚动像素偏移，刷新后还原，屏幕顶部显示位置不变。
-                binding.recycler.stopScroll()
-                pendingRestoreScrollOffset = binding.recycler.computeVerticalScrollOffset()
-                // 交给 RecyclerView 自带的删除动画：该行淡出、下方笔记平移上移。
-                Thread { store.delete(entry.id) }.start()
+                animateRemoval(entry)
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    /**
+     * 删除动画只改变视图的绘制位置，不改动列表布局：
+     * 被删行淡出，下方可见行整体上移，动画结束后才真正更新数据，
+     * 因此列表滚动位置（屏幕顶部内容）全程不变，也不会出现跳动。
+     */
+    private fun animateRemoval(entry: DiaryEntry) {
+        val manager = binding.recycler.layoutManager as? LinearLayoutManager
+        val position = adapter.positionOf(entry.id)
+        val holder = binding.recycler.findViewHolderForAdapterPosition(position)
+        if (manager == null || position < 0 || holder == null) {
+            removeEntry(entry.id)
+            return
+        }
+        val row = holder.itemView
+        val height = row.height
+        if (height <= 0) {
+            removeEntry(entry.id)
+            return
+        }
+        binding.recycler.stopScroll()
+        // 只收集可见的被删行下方条目，它们上移的距离等于被删行高度。
+        val below = mutableListOf<View>()
+        for (i in 0 until binding.recycler.childCount) {
+            val child = binding.recycler.getChildAt(i)
+            val childPosition = binding.recycler.getChildAdapterPosition(child)
+            if (childPosition > position) below.add(child)
+        }
+
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 240
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animator ->
+                val fraction = animator.animatedValue as Float
+                row.alpha = 1f - fraction
+                below.forEach { child -> child.translationY = -height * fraction }
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    // 保持下方条目的视觉位置不变，等布局更新完成的同一帧再清除位移，
+                    // 数据移除与视觉回位无缝衔接，画面上不会跳动或闪烁。
+                    binding.recycler.itemAnimator = null
+                    binding.recycler.viewTreeObserver.addOnPreDrawListener(
+                        object : ViewTreeObserver.OnPreDrawListener {
+                            override fun onPreDraw(): Boolean {
+                                binding.recycler.viewTreeObserver.removeOnPreDrawListener(this)
+                                below.forEach { child -> child.translationY = 0f }
+                                binding.recycler.itemAnimator = defaultItemAnimator
+                                return true
+                            }
+                        }
+                    )
+                    removeEntry(entry.id)
+                }
+            })
+            start()
+        }
+    }
+
+    /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
+    private fun removeEntry(entryId: String) {
+        allEntries = allEntries.filterNot { it.id == entryId }
+        binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
+        renderTags()
+        if (calendarVisible) renderCalendar()
+        applyList()
+        Thread { store.delete(entryId) }.start()
     }
 }
