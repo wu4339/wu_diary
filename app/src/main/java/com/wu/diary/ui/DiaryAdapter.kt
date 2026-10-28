@@ -18,6 +18,7 @@ import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -115,8 +116,10 @@ class DiaryAdapter(
         val body = listOf(entry.title.trim(), entry.content.trim())
             .filter { it.isNotEmpty() }
             .joinToString("\n")
-        binding.textBody.text = highlightBody(body, binding)
-        binding.textBody.isVisible = body.isNotEmpty()
+        val rendered = MarkdownText.render(body)
+        val display = rendered?.text ?: body
+        binding.textBody.text = highlightBody(display, binding)
+        binding.textBody.isVisible = display.isNotEmpty()
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
         binding.textBody.typeface = typeface

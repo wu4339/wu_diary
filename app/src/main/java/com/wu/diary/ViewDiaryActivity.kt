@@ -49,6 +49,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
+import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,6 +84,9 @@ class ViewDiaryActivity : AppCompatActivity() {
 
     /** 查看页字号缩放，用于标签色块。 */
     private var tagScale = 1f
+
+    /** 无序列表渲染后的文本，双击定位时用来把显示偏移换算回原文偏移。 */
+    private var renderedText: MarkdownText.Rendered? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -193,7 +197,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         val y = e.rawY - location[1] - target.totalPaddingTop
         if (y < 0 || text.isEmpty()) return -1
         val line = layout.getLineForVertical(y.toInt())
-        return layout.getOffsetForHorizontal(line, x).coerceIn(0, text.length)
+        val displayOffset = layout.getOffsetForHorizontal(line, x).coerceIn(0, text.length)
+        return MarkdownText.sourceOffset(renderedText, displayOffset)
     }
 
     override fun onResume() {
@@ -222,7 +227,9 @@ class ViewDiaryActivity : AppCompatActivity() {
         val text = listOf(current.title, current.content)
             .filter { it.isNotBlank() }
             .joinToString("\n")
-        binding.textContent.text = linkify(text)
+        val rendered = MarkdownText.render(text)
+        renderedText = rendered
+        binding.textContent.text = linkify(rendered?.text ?: text)
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
 

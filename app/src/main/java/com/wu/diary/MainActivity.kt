@@ -245,6 +245,12 @@ class MainActivity : AppCompatActivity() {
                         return true
                     }
                 }
+                // 上滑收起顶栏与日历，下滑重新展开（列表本身能滚动时也会自然触发）。
+                val dy = ev.y - swipeDownY
+                val dx = ev.x - swipeDownX
+                if (kotlin.math.abs(dy) > 56 * density && kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.5f) {
+                    binding.appBar.setExpanded(dy > 0, true)
+                }
             }
         }
         return super.dispatchTouchEvent(ev)
@@ -339,6 +345,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refresh() {
         allEntries = store.load().filter { !it.hidden }
+        binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
@@ -463,6 +470,7 @@ class MainActivity : AppCompatActivity() {
             selectedMonth = displayMonth
             selectedDay = today.get(Calendar.DAY_OF_MONTH)
             renderCalendar()
+            binding.appBar.setExpanded(true, false)
         }
         applyList()
     }
@@ -498,7 +506,8 @@ class MainActivity : AppCompatActivity() {
             clear()
             set(displayYear, displayMonth, 1)
         }
-        val leading = first.get(Calendar.DAY_OF_WEEK) - 1
+        // 一周从星期一开始，所以按 (星期几 - 星期一) 计算月初前的空格数。
+        val leading = (first.get(Calendar.DAY_OF_WEEK) + 5) % 7
         val daysInMonth = first.getActualMaximum(Calendar.DAY_OF_MONTH)
         val rows = (leading + daysInMonth + 6) / 7
 

@@ -405,7 +405,6 @@ class EditDiaryActivity : AppCompatActivity() {
                 text.delete(lineStart - 1, lineStart)
                 edit.setSelection((lineStart - 1).coerceIn(0, text.length))
             }
-            Toast.makeText(this, R.string.blank_line_removed, Toast.LENGTH_SHORT).show()
             return
         }
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -413,7 +412,6 @@ class EditDiaryActivity : AppCompatActivity() {
         val deleteEnd = if (lineEnd == -1) text.length else lineEnd + 1
         text.delete(lineStart, deleteEnd)
         edit.setSelection(lineStart)
-        Toast.makeText(this, R.string.paragraph_cut, Toast.LENGTH_SHORT).show()
     }
 
     /** 获取当前位置坐标并插入到光标处。 */

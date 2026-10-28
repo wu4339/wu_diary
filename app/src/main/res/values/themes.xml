@@ -8,6 +8,19 @@
         <item name="android:statusBarColor">@color/background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/background</item>
+        <!-- 所有提示弹窗统一使用圆角背景 -->
+        <item name="alertDialogTheme">@style/Theme.WuDiary.Dialog</item>
+        <item name="android:alertDialogTheme">@style/Theme.WuDiary.Dialog</item>
+    </style>
+
+    <style name="Theme.WuDiary.Dialog" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+        <item name="android:backgroundDimAmount">0.3</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
     </style>
 
     <style name="Theme.WuDiary.Editor" parent="Theme.WuDiary">

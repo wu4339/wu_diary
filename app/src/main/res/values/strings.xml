@@ -91,9 +91,7 @@
     <string name="pull_hint">下拉读取剪贴板</string>
     <string name="pull_release">松开读取剪贴板</string>
     <string name="cut_paragraph">剪切当前段落</string>
-    <string name="paragraph_cut">已剪切当前段落</string>
-    <string name="paragraph_empty">当前段落没有内容</string>
-    <string name="blank_line_removed">已删除空行</string>
+    <string name="note_count">共 %1$d 篇笔记</string>
     <string name="save_action">Save</string>
     <string name="backup_export">导出笔记</string>
     <string name="backup_export_desc">导出为 zip（Diary/notes/年-月-日.md + Diary/files）</string>
