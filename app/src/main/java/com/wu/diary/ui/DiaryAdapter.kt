@@ -111,7 +111,7 @@ class DiaryAdapter(
 
     /** 返回指定行位置对应的笔记 id，非笔记行返回 null。 */
     fun entryIdAt(position: Int): String? =
-        (rows.getOrNull(position) as? Row.Entry)?.entry.id
+        ((rows.getOrNull(position) as? Row.Entry)?.entry)?.id
 
     class DateViewHolder(val binding: ItemDateBinding) : RecyclerView.ViewHolder(binding.root)
     class EntryViewHolder(val binding: ItemDiaryBinding) : RecyclerView.ViewHolder(binding.root)
