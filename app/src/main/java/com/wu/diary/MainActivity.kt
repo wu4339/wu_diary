@@ -116,13 +116,13 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        // 放慢插入/位移动画；关闭变化项的交叉淡入淡出，删除笔记时其他条目不再闪一下。
-        (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
+        // 插入/位移动画放慢，让"新笔记淡入、其他笔记下移"更清楚；变化项不做交叉淡入淡出。
+        defaultItemAnimator = (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
             addDuration = 220
             moveDuration = 260
             changeDuration = 0
             supportsChangeAnimations = false
-        }
+        } ?: DefaultItemAnimator()
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
             startActivity(EditDiaryActivity.intent(this, null, date))
@@ -368,6 +368,12 @@ class MainActivity : AppCompatActivity() {
     /** 等待播放新增笔记动画期间不再响应其他刷新，避免动画被打断造成闪烁。 */
     private var pendingRevealId: String? = null
 
+    /** 删除笔记后的那次刷新不做任何动画，其他条目保持原位。 */
+    private var skipListAnimation = false
+
+    /** 常规条目动画器（新增淡入、位移下移），删除刷新后恢复使用。 */
+    private var defaultItemAnimator: DefaultItemAnimator? = null
+
     private fun refresh() {
         if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
@@ -378,6 +384,14 @@ class MainActivity : AppCompatActivity() {
         if (calendarVisible) renderCalendar()
 
         val lm = binding.recycler.layoutManager as? LinearLayoutManager
+        // 删除后的刷新：临时移除条目动画器，被删条目直接消失，其他条目保持不动。
+        if (skipListAnimation) {
+            binding.recycler.itemAnimator = null
+            binding.recycler.post {
+                binding.recycler.itemAnimator = defaultItemAnimator
+                skipListAnimation = false
+            }
+        }
         if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
             pendingRevealId = addedId
             // 先等编辑页缩小动画（约220ms）播完，再分两步：
@@ -702,6 +716,8 @@ class MainActivity : AppCompatActivity() {
             .setMessage(R.string.delete_confirm)
             .setPositiveButton(R.string.delete) { _, _ ->
                 Feedback.deleted(this)
+                // 删除走无动画刷新：被删条目直接移除，其他条目保持完全不动，不闪一下。
+                skipListAnimation = true
                 // 删除涉及文件读写，放到后台线程，完成后广播会触发列表刷新。
                 Thread { store.delete(entry.id) }.start()
             }

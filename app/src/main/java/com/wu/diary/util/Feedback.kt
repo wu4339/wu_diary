@@ -24,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
-    private val deletedSamples: ShortArray by lazy { buildTrashEmpty() }
+    private val deletedSamples: ShortArray by lazy { buildTrashLid() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：两段上行音。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：回收站清空声，三次由重到轻的倾倒闷响。 */
+    /** 删除：垃圾桶盖合上的"咔哒"声，一声干脆的合盖。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -85,45 +85,41 @@ object Feedback {
         return out
     }
 
-    /** 回收站清空声：三次由重到轻的低频"砰"声，夹杂纸张揉搓的沙沙声。 */
-    private fun buildTrashEmpty(): ShortArray {
-        val total = (SAMPLE_RATE * 0.46).toInt()
-        val random = Random(778899)
+    /** 垃圾桶盖合上声：短促的"咔"（高频敲击）+ 干脆的"哒"（中频快速下落），像盖子扣紧。 */
+    private fun buildTrashLid(): ShortArray {
+        val total = (SAMPLE_RATE * 0.22).toInt()
+        val random = Random(112233)
         val mix = FloatArray(total)
-        val offsets = intArrayOf(0, (SAMPLE_RATE * 0.14).toInt(), (SAMPLE_RATE * 0.28).toInt())
-        val strengths = floatArrayOf(1.0f, 0.72f, 0.5f)
-        offsets.forEachIndexed { index, start ->
-            val strength = strengths[index]
-            // 低频闷响：音高快速下滑，像垃圾落进桶底。
-            val thudLen = (SAMPLE_RATE * 0.10).toInt()
-            var phase = 0.0
-            for (i in 0 until thudLen) {
-                val t = i.toDouble() / SAMPLE_RATE
-                val freq = 190.0 * exp(-9.0 * t) + 70.0
-                phase += 2 * PI * freq / SAMPLE_RATE
-                val envelope = min(1.0, t / 0.004) * exp(-14.0 * t)
+
+        fun click(start: Int, freq: Double, strength: Double, decay: Double) {
+            // 敲击瞬间的短噪声，让声音有"硬物相碰"的质感。
+            for (i in 0 until (SAMPLE_RATE * 0.006).toInt()) {
                 val pos = start + i
-                if (pos < total) mix[pos] += (sin(phase) * envelope * strength * 1.1).toFloat()
+                if (pos >= total) break
+                val envelope = 1.0 - i / (SAMPLE_RATE * 0.006).toDouble()
+                mix[pos] += ((random.nextDouble() * 2 - 1) * envelope * strength * 0.5).toFloat()
             }
-            // 揉搓纸张的沙沙声：带通噪声，音量快速衰减。
-            val rustleLen = (SAMPLE_RATE * 0.09).toInt()
-            var low = 0f
-            var lower = 0f
-            val rustleStart = start + (SAMPLE_RATE * 0.02).toInt()
-            for (i in 0 until rustleLen) {
-                val t = i.toFloat() / rustleLen
-                val cutoff = 1600f + 900f * sin(PI * t).toFloat()
-                val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
-                val noise = random.nextFloat() * 2f - 1f
-                low += coefficient * (noise - low)
-                lower += coefficient * 0.4f * (low - lower)
-                val envelope = (1f - t) * (1f - t)
-                val pos = rustleStart + i
-                if (pos < total) mix[pos] += (low - lower) * envelope * strength * 0.9f
+            // 阻尼振荡：决定音色主体。
+            var phase = 0.0
+            for (i in 0 until (SAMPLE_RATE * 0.09).toInt()) {
+                val pos = start + i
+                if (pos >= total) break
+                val t = i.toDouble() / SAMPLE_RATE
+                phase += 2 * PI * freq / SAMPLE_RATE
+                val envelope = exp(-decay * t)
+                mix[pos] += (sin(phase) * envelope * strength).toFloat()
             }
         }
+
+        // 第一声"咔"：清脆高频。
+        click(0, 950.0, 0.55, 60.0)
+        // 第二声"哒"：合盖落定的中低频主体，稍强。
+        click((SAMPLE_RATE * 0.045).toInt(), 430.0, 0.85, 34.0)
+        // 尾音：盖子扣紧的轻微回响。
+        click((SAMPLE_RATE * 0.115).toInt(), 680.0, 0.28, 55.0)
+
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 1.6f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+            (tanh(mix[i] * 1.7f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 
