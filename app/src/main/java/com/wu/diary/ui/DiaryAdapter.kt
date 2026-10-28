@@ -109,9 +109,13 @@ class DiaryAdapter(
     fun positionOf(entryId: String): Int =
         rows.indexOfFirst { it is Row.Entry && it.entry.id == entryId }
 
-    /** 返回指定行位置对应的笔记 id，不是笔记行时返回 null。 */
-    fun entryIdAt(position: Int): String? =
-        ((rows.getOrNull(position) as? Row.Entry)?.entry)?.id
+    /** 该行是否是日期头。 */
+    fun isDateHeaderAt(position: Int): Boolean =
+        rows.getOrNull(position) is Row.DateHeader
+
+    /** 该行是否是所在日期分组的最后一条笔记（删除后日期头可能一并消失）。 */
+    fun isGroupEndAt(position: Int): Boolean =
+        (rows.getOrNull(position) as? Row.Entry)?.isGroupEnd == true
 
     class DateViewHolder(val binding: ItemDateBinding) : RecyclerView.ViewHolder(binding.root)
     class EntryViewHolder(val binding: ItemDiaryBinding) : RecyclerView.ViewHolder(binding.root)

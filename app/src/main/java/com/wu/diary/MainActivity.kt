@@ -767,20 +767,19 @@ class MainActivity : AppCompatActivity() {
         }
         binding.recycler.stopScroll()
 
-        // 锚点：被删行上方最近的可见笔记及其屏幕位置。删除后让它停在原处，
-        // 这样上方内容不会移动，下方条目仍按动画上移。
-        var anchorId: String? = null
+        // 锚点：被删行上方最靠上的可见行，用行位置记录（删除只发生在它下方，位置不会变）。
+        // 如果被删笔记是当天唯一一条，紧挨着的日期头也会消失，此时跳过它继续往上找。
+        var anchorPos = -1
         var anchorTop = 0
+        val headerRemoved =
+            position > 0 && adapter.isDateHeaderAt(position - 1) && adapter.isGroupEndAt(position)
         for (i in 0 until binding.recycler.childCount) {
             val child = binding.recycler.getChildAt(i)
             val childPos = binding.recycler.getChildAdapterPosition(child)
-            if (childPos in 0 until position) {
-                adapter.entryIdAt(childPos)?.let { id ->
-                    if (anchorId == null) {
-                        anchorId = id
-                        anchorTop = child.top
-                    }
-                }
+            if (childPos in 0 until position && !(headerRemoved && childPos == position - 1)) {
+                anchorPos = childPos
+                anchorTop = child.top
+                break
             }
         }
         // 只收集可见的被删行下方条目，它们上移的距离等于被删行高度。
@@ -813,7 +812,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     )
                     binding.recycler.itemAnimator = null
-                    removeEntry(entry.id, anchorId, anchorTop)
+                    removeEntry(entry.id, anchorPos, anchorTop)
                 }
             })
             start()
@@ -823,7 +822,7 @@ class MainActivity : AppCompatActivity() {
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
     private fun removeEntry(
         entryId: String,
-        anchorId: String? = null,
+        anchorPos: Int = -1,
         anchorTop: Int = 0
     ) {
         allEntries = allEntries.filterNot { it.id == entryId }
@@ -831,16 +830,13 @@ class MainActivity : AppCompatActivity() {
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
-        // 锚点笔记放在原来的屏幕位置：锚点在被删行上方，重新定位后上方内容固定不动。
-        if (anchorId != null) {
-            val newPos = adapter.positionOf(anchorId)
-            if (newPos >= 0) {
-                (binding.recycler.layoutManager as? LinearLayoutManager)
-                    ?.scrollToPositionWithOffset(
-                        newPos,
-                        anchorTop - binding.recycler.paddingTop
-                    )
-            }
+        // 锚点行位于被删行上方，删除不会改变它的行位置，直接按原位置回填即可。
+        if (anchorPos >= 0) {
+            (binding.recycler.layoutManager as? LinearLayoutManager)
+                ?.scrollToPositionWithOffset(
+                    anchorPos,
+                    anchorTop - binding.recycler.paddingTop
+                )
         }
         Thread { store.delete(entryId) }.start()
     }
