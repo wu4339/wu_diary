@@ -371,16 +371,19 @@ class MainActivity : AppCompatActivity() {
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
-        // 新增笔记：只有它不在可见区域内时才滚动过去；
-        // 已在可见区域时保持原位，播放"新笔记淡入、其他笔记下移"的过渡动画。
+        // 新增笔记的位置处理：
+        // - 在可见区域内：保持原位，播放"新笔记淡入、其他笔记下移"的过渡动画；
+        // - 在可见区域上方（通常是列表顶部）：先回到顶部，新笔记随后在日期头下淡入；
+        // - 在可见区域下方（往旧日期添加）：直接定位到那条笔记。
         if (addedId != null) {
             val position = adapter.positionOf(addedId)
             val lm = binding.recycler.layoutManager as? LinearLayoutManager
             if (position >= 0 && lm != null) {
                 val first = lm.findFirstVisibleItemPosition()
                 val last = lm.findLastVisibleItemPosition()
-                if (position < first || position > last) {
-                    lm.scrollToPositionWithOffset(position, 0)
+                when {
+                    position < first -> lm.scrollToPositionWithOffset(0, 0)
+                    position > last -> lm.scrollToPositionWithOffset(position, 0)
                 }
             }
         }
