@@ -202,6 +202,14 @@ class MainActivity : AppCompatActivity() {
 
     /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）；顶部下拉读取剪贴板。 */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        // 侧栏打开时，抽屉外的滑动不能再传给主列表（否则主界面会跟着滚动）；
+        // 这些触摸只用于“点侧栏外关闭抽屉”。
+        if (binding.drawerRoot.isDrawerOpen(binding.drawerPanel) && !isInsideDrawer(ev)) {
+            if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+                binding.drawerRoot.closeDrawer(binding.drawerPanel)
+            }
+            return true
+        }
         val density = resources.displayMetrics.density
         val drawerThreshold = 80 * density
         val pullThreshold = 72 * density
@@ -291,6 +299,13 @@ class MainActivity : AppCompatActivity() {
         cancel.action = MotionEvent.ACTION_CANCEL
         super.dispatchTouchEvent(cancel)
         cancel.recycle()
+    }
+
+    /** 触摸点是否落在左侧栏面板范围内。 */
+    private fun isInsideDrawer(ev: MotionEvent): Boolean {
+        val location = IntArray(2)
+        binding.drawerPanel.getLocationInWindow(location)
+        return ev.x >= location[0] && ev.x <= location[0] + binding.drawerPanel.width
     }
 
     /** 下拉过程中实时展示提示条高度与文案。 */

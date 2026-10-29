@@ -4,10 +4,17 @@
     android:height="48dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:fillColor="#3F51B5"
-        android:pathData="M4,3h13a2,2 0 0,1 2,2v14a2,2 0 0,1 -2,2H6a2,2 0 0,1 -2,-2V3z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M8.875,8.0625h5.25v1.125H8.875V8.0625zM8.875,10.6875h5.25V11.8125H8.875V10.6875zM8.875,13.3125h3.375v1.125H8.875V13.3125z" />
+    <!-- 图标内容整体缩到一半，避免在桌面显得过大。 -->
+    <group
+        android:pivotX="11.5"
+        android:pivotY="12"
+        android:scaleX="0.5"
+        android:scaleY="0.5">
+        <path
+            android:fillColor="#3F51B5"
+            android:pathData="M4,3h13a2,2 0 0,1 2,2v14a2,2 0 0,1 -2,2H6a2,2 0 0,1 -2,-2V3z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8.875,8.0625h5.25v1.125H8.875V8.0625zM8.875,10.6875h5.25V11.8125H8.875V10.6875zM8.875,13.3125h3.375v1.125H8.875V13.3125z" />
+    </group>
 </vector>

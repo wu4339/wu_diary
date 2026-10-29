@@ -4,6 +4,7 @@
     <string name="empty_title">这里还没有日记</string>
     <string name="empty_subtitle">点击 + 记录你的日记</string>
     <string name="add_diary">新建日记</string>
+    <string name="shortcut_new_note">写日记</string>
     <string name="hint_content">今天过得怎么样？</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>

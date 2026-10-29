@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 长按桌面图标：直接进入输入界面写一篇新日记。 -->
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher"
+        android:shortcutId="new_note"
+        android:shortcutLongLabel="@string/shortcut_new_note"
+        android:shortcutShortLabel="@string/shortcut_new_note">
+        <intent
+            android:action="com.wu.diary.action.NEW_NOTE"
+            android:targetClass="com.wu.diary.EditDiaryActivity"
+            android:targetPackage="com.wu.diary" />
+    </shortcut>
+</shortcuts>
