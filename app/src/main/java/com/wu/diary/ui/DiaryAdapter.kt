@@ -222,7 +222,7 @@ class DiaryAdapter(
             binding.imageStrip.orientation = LinearLayout.VERTICAL
             binding.imageStrip.gravity = Gravity.CENTER_HORIZONTAL
             val width = (metrics.widthPixels - 56 * metrics.density).toInt()
-            val height = width * 3 / 4 - (20 * metrics.density).toInt()
+            val height = width * 3 / 4 - (40 * metrics.density).toInt()
             entry.images.take(3).forEachIndexed { position, path ->
                 val image = ImageLoader.cardImage(binding.root.context, path, width, height)
                     ?: return@forEachIndexed
