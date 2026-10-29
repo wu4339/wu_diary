@@ -217,11 +217,25 @@ class MainActivity : AppCompatActivity() {
 
     /** 主界面任意位置向右滑动即可拉出左侧栏（不只限于屏幕边缘）；顶部下拉读取剪贴板。 */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        // 侧栏打开时，抽屉外的滑动不能再传给主列表（否则主界面会跟着滚动）；
-        // 这些触摸只用于“点侧栏外关闭抽屉”。
-        if (binding.drawerRoot.isDrawerOpen(binding.drawerPanel) && !isInsideDrawer(ev)) {
+        // 侧栏打开时由这里独占触摸：侧栏内开始的这一串手势只交给侧栏面板，
+        // 主界面（列表）完全收不到，因此上下滑动标签列表不会带动主界面。
+        if (binding.drawerRoot.isDrawerOpen(binding.drawerPanel)) {
             if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
-                binding.drawerRoot.closeDrawer(binding.drawerPanel)
+                drawerTouchActive = isInsideDrawer(ev)
+                if (!drawerTouchActive) binding.drawerRoot.closeDrawer(binding.drawerPanel)
+            }
+            if (drawerTouchActive) {
+                val location = IntArray(2)
+                binding.drawerPanel.getLocationInWindow(location)
+                val local = MotionEvent.obtain(ev)
+                local.offsetLocation(-location[0].toFloat(), -location[1].toFloat())
+                binding.drawerPanel.dispatchTouchEvent(local)
+                local.recycle()
+            }
+            if (ev.actionMasked == MotionEvent.ACTION_UP ||
+                ev.actionMasked == MotionEvent.ACTION_CANCEL
+            ) {
+                drawerTouchActive = false
             }
             return true
         }
@@ -315,6 +329,9 @@ class MainActivity : AppCompatActivity() {
         super.dispatchTouchEvent(cancel)
         cancel.recycle()
     }
+
+    /** 侧栏内的这一串手势是否正在进行（由 onDrawer 独占分发时使用）。 */
+    private var drawerTouchActive = false
 
     /** 触摸点是否落在左侧栏面板范围内。 */
     private fun isInsideDrawer(ev: MotionEvent): Boolean {
