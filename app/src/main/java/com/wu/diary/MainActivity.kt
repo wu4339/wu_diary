@@ -28,6 +28,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.appbar.AppBarLayout
@@ -164,6 +165,24 @@ class MainActivity : AppCompatActivity() {
                 if (!fabFrozen) syncFabBar()
             }
         )
+
+        // 侧栏展开时禁用主列表：抽屉内滚动标签列表时，事件不应该让后面的笔记列表一起滚动。
+        binding.drawerPanel.setOnTouchListener { _, _ -> true }
+        binding.drawerRoot.addDrawerListener(object : DrawerLayout.DrawerListener {
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+                binding.recycler.isEnabled = slideOffset <= 0f
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+                binding.recycler.isEnabled = false
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                binding.recycler.isEnabled = true
+            }
+
+            override fun onDrawerStateChanged(newState: Int) {}
+        })
 
         binding.btnSearch.setOnClickListener {
             binding.drawerRoot.closeDrawer(binding.drawerPanel)
