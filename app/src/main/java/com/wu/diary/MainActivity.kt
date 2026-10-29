@@ -587,6 +587,8 @@ class MainActivity : AppCompatActivity() {
         }
         val entries = if (excludeId == null) base else base.filterNot { it.id == excludeId }
         adapter.submit(entries)
+        // 分组末尾变化只影响分割线，等布局后直接改可见行，避免整行重绑造成闪动。
+        binding.recycler.post { adapter.refreshGroupDividers(binding.recycler) }
         displayedEntries = entries
         binding.emptyView.isVisible = entries.isEmpty()
         binding.recycler.isVisible = entries.isNotEmpty()
@@ -678,6 +680,10 @@ class MainActivity : AppCompatActivity() {
         val density = resources.displayMetrics.density
         val inMonth = month == displayMonth
         val isSelected = year == selectedYear && month == selectedMonth && dayOfMonth == selectedDay
+        val today = Calendar.getInstance()
+        val isToday = year == today.get(Calendar.YEAR) &&
+            month == today.get(Calendar.MONTH) &&
+            dayOfMonth == today.get(Calendar.DAY_OF_MONTH)
 
         val cell = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
@@ -685,7 +691,11 @@ class MainActivity : AppCompatActivity() {
         val inner = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            if (isSelected) setBackgroundResource(R.drawable.bg_day_selected)
+            // 选中用深一点的圆圈；今天用更浅的圆圈做弱提示。
+            when {
+                isSelected -> setBackgroundResource(R.drawable.bg_day_selected)
+                isToday -> setBackgroundResource(R.drawable.bg_day_today)
+            }
         }
         val size = (44 * density).toInt()
         cell.addView(inner, FrameLayout.LayoutParams(size, size, Gravity.CENTER))

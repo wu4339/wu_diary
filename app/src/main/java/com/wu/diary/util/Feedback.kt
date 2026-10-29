@@ -9,6 +9,7 @@ import android.os.Looper
 import com.wu.diary.data.Settings
 import kotlin.math.PI
 import kotlin.math.exp
+import kotlin.math.ln
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -19,15 +20,14 @@ import kotlin.random.Random
 object Feedback {
 
     private const val SAMPLE_RATE = 44100
-    private const val NOTE_SECONDS = 0.14
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private val savedSamples: ShortArray by lazy { buildNotes(doubleArrayOf(880.0, 1318.5)) }
+    private val savedSamples: ShortArray by lazy { buildBubbles() }
     private val deletedSamples: ShortArray by lazy { buildTossAway() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
-    /** 保存：两段上行音。 */
+    /** 保存：水泡上浮的冒泡声。 */
     fun saved(context: Context) = play(context, savedSamples)
 
     /** 删除：纸团丢进垃圾桶的"咻——啪"声，气流上扬 + 落底闷响。 */
@@ -68,21 +68,40 @@ object Feedback {
         }.start()
     }
 
-    private fun buildNotes(notes: DoubleArray): ShortArray {
-        val noteSamples = (SAMPLE_RATE * NOTE_SECONDS).toInt()
-        val out = ShortArray(noteSamples * notes.size)
-        var offset = 0
-        for (freq in notes) {
-            for (i in 0 until noteSamples) {
-                val fadeIn = min(1.0, i / (SAMPLE_RATE * 0.01))
-                val fadeOut = min(1.0, (noteSamples - i) / (SAMPLE_RATE * 0.04))
-                val envelope = min(fadeIn, fadeOut)
-                val wave = sin(2 * PI * freq * i / SAMPLE_RATE)
-                out[offset + i] = (wave * envelope * 0.95 * Short.MAX_VALUE).toInt().toShort()
+    /** 冒泡声：两个气泡先后上浮，音高快速上扬 + 指数衰减，像水里"噗噜"冒出。 */
+    private fun buildBubbles(): ShortArray {
+        val total = (SAMPLE_RATE * 0.32).toInt()
+        val mix = FloatArray(total)
+
+        // startSeconds 起播时间、fromHz→toHz 上扬音高、length 时长、gain 音量。
+        fun bubble(
+            startSeconds: Double,
+            fromHz: Double,
+            toHz: Double,
+            length: Double,
+            gain: Double
+        ) {
+            val start = (SAMPLE_RATE * startSeconds).toInt()
+            val count = (SAMPLE_RATE * length).toInt()
+            val grow = ln(toHz / fromHz) / length
+            var phase = 0.0
+            for (i in 0 until count) {
+                val position = start + i
+                if (position >= total) break
+                val t = i.toDouble() / SAMPLE_RATE
+                phase += 2 * PI * (fromHz * exp(grow * t)) / SAMPLE_RATE
+                val envelope = min(1.0, t / 0.004) * exp(-8.0 * t / length)
+                mix[position] += (sin(phase) * envelope * gain).toFloat()
             }
-            offset += noteSamples
         }
-        return out
+
+        bubble(0.0, 380.0, 1250.0, 0.16, 1.0)
+        bubble(0.11, 760.0, 2050.0, 0.11, 0.5)
+
+        return ShortArray(total) { i ->
+            (tanh(mix[i] * 1.25f) * 0.95f * Short.MAX_VALUE)
+                .toInt().coerceIn(-32768, 32767).toShort()
+        }
     }
 
     /** 丢纸团声："咻"（带通噪声气流上扬）接"啪"（低频落底闷响 + 短冲击）。 */

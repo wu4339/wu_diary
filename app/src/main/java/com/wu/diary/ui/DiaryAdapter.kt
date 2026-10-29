@@ -72,8 +72,16 @@ class DiaryAdapter(
                 }
             }
 
-            override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean =
-                rows[oldPos] == built[newPos]
+            override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean {
+                val old = rows[oldPos]
+                val new = built[newPos]
+                // 分组末尾只影响分割线样式，不算内容变化，避免删除后整行重绑闪一下。
+                return when {
+                    old is Row.Entry && new is Row.Entry -> old.entry == new.entry
+                    old is Row.DateHeader && new is Row.DateHeader -> old == new
+                    else -> false
+                }
+            }
         })
         rows.clear()
         rows.addAll(built)
@@ -186,17 +194,7 @@ class DiaryAdapter(
         if (showEntryTags) TagChips.render(binding.tagStrip, entry.tags, fontScale)
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
-        val dividerMargin = if (isGroupEnd) {
-            0
-        } else {
-            (24 * binding.root.resources.displayMetrics.density).toInt()
-        }
-        val dividerParams = binding.divider.layoutParams as ViewGroup.MarginLayoutParams
-        if (dividerParams.marginStart != dividerMargin) {
-            dividerParams.marginStart = dividerMargin
-            dividerParams.marginEnd = dividerMargin
-            binding.divider.layoutParams = dividerParams
-        }
+        applyGroupEnd(binding, isGroupEnd)
 
         binding.imageStrip.removeAllViews()
         binding.imageStrip.isVisible = entry.images.isNotEmpty()
@@ -213,6 +211,33 @@ class DiaryAdapter(
 
         binding.root.setOnClickListener { onClick(entry) }
         binding.root.setOnLongClickListener { onLongClick(entry); true }
+    }
+
+    /** 分组末尾的分割线贯通整屏，其他行两侧留出 24dp。 */
+    private fun applyGroupEnd(binding: ItemDiaryBinding, isGroupEnd: Boolean) {
+        val dividerMargin = if (isGroupEnd) {
+            0
+        } else {
+            (24 * binding.root.resources.displayMetrics.density).toInt()
+        }
+        val dividerParams = binding.divider.layoutParams as ViewGroup.MarginLayoutParams
+        if (dividerParams.marginStart != dividerMargin) {
+            dividerParams.marginStart = dividerMargin
+            dividerParams.marginEnd = dividerMargin
+            binding.divider.layoutParams = dividerParams
+        }
+    }
+
+    /** 只刷新可见行的分割线，用于分组末尾变化时不重绑整行。 */
+    fun refreshGroupDividers(recycler: RecyclerView) {
+        for (i in 0 until recycler.childCount) {
+            val holder = recycler.getChildViewHolder(recycler.getChildAt(i)) as? EntryViewHolder
+                ?: continue
+            val position = holder.bindingAdapterPosition
+            if (position < 0) continue
+            val row = rows.getOrNull(position) as? Row.Entry ?: continue
+            applyGroupEnd(holder.binding, row.isGroupEnd)
+        }
     }
 
     /** 搜索状态下把命中的关键词加亮。 */
