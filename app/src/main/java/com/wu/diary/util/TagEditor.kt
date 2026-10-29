@@ -68,7 +68,7 @@ object TagEditor {
 
             // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
             // 弹窗的自定义视图宽度在展示前是 0，这里按屏幕宽度估算内容宽度，保证标签一定能显示。
-            val rowHeight = dp(40)
+            val rowHeight = dp(36)
             val contentWidth =
                 (minOf(activity.resources.displayMetrics.widthPixels, dp(560)) - dp(88))
                     .coerceAtLeast(dp(160))
@@ -93,7 +93,7 @@ object TagEditor {
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
                     )
-                    val chipWidth = chip.measuredWidth + dp(8)
+                    val chipWidth = chip.measuredWidth + dp(6)
                     if (used > 0 && used + chipWidth > width) {
                         chipArea.addView(
                             row,
@@ -110,7 +110,7 @@ object TagEditor {
                         LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply { marginEnd = dp(8) }
+                        ).apply { marginEnd = dp(6) }
                     )
                     used += chipWidth
                 }
@@ -131,8 +131,8 @@ object TagEditor {
             existingTags.forEach { tag ->
                 val chip = TextView(activity).apply {
                     text = "#$tag"
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                    setPadding(dp(10), dp(8), dp(10), dp(8))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                    setPadding(dp(8), dp(6), dp(8), dp(6))
                     isClickable = true
                     setOnClickListener {
                         val selected = parseTags(input.text.toString()).toMutableList()
@@ -152,6 +152,8 @@ object TagEditor {
             .setTitle(R.string.tag_dialog_title)
             .setView(container)
             .setPositiveButton(R.string.save) { _, _ ->
+                // 添加标签与保存笔记使用同一个提示音。
+                Feedback.saved(activity)
                 onSaved(parseTags(input.text.toString()))
             }
             .setNegativeButton(R.string.cancel, null)
