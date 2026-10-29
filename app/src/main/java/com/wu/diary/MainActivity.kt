@@ -825,7 +825,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                             below.forEach { child -> child.translationY = 0f }
-                            v.itemAnimator = defaultItemAnimator
+                            binding.recycler.itemAnimator = defaultItemAnimator
                         }
                     }
                     binding.recycler.addOnLayoutChangeListener(watcher)
