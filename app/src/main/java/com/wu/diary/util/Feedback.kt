@@ -98,8 +98,9 @@ object Feedback {
         bubble(0.0, 380.0, 1250.0, 0.16, 1.0)
         bubble(0.11, 760.0, 2050.0, 0.11, 0.5)
 
+        // 增益翻倍后再用 tanh 软限幅，波形更满、更响，又不会破音。
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 1.25f) * 0.95f * Short.MAX_VALUE)
+            (tanh(mix[i] * 2.5f) * 0.95f * Short.MAX_VALUE)
                 .toInt().coerceIn(-32768, 32767).toShort()
         }
     }

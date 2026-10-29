@@ -71,9 +71,18 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
 
     private fun readEntries(day: String, doc: DocumentFile, images: Set<String>): List<DiaryEntry> {
         val markdown = readText(doc) ?: return emptyList()
-        return BackupManager.parse(day, markdown).mapIndexed { index, entry ->
+        val parsed = BackupManager.parse(day, markdown)
+        // id 只由当天时间戳决定：若带上当日序号，删除一条后同一天里
+        // 它后面的笔记序号全部位移，id 变化会让界面把整组当成删除+新增，
+        // 表现为删除完成后上方笔记闪一下。
+        val duplicateTimes = parsed.groupingBy { it.createdAt }.eachCount().filterValues { it > 1 }
+        val seen = mutableMapOf<Long, Int>()
+        return parsed.map { entry ->
+            val occurrence = duplicateTimes[entry.createdAt]?.let { seen.merge(entry.createdAt, 1, Int::plus) }
+            val id = if (occurrence != null) "ext-$day-${entry.createdAt}-$occurrence"
+            else "ext-$day-${entry.createdAt}"
             entry.copy(
-                id = "ext-$day-${entry.createdAt}-$index",
+                id = id,
                 images = entry.images.filter { it in images }.mapNotNull { cacheImage(it) }
             )
         }
