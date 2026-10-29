@@ -142,12 +142,58 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var swipeFromImages = false
 
     /**
-     * 整页范围识别双击；左右滑动切换只在随机回顾里启用，普通查看页不响应滑动。
+     * 整页范围识别双击；顶部下拉切换下一篇；左右滑动切换只在随机回顾里启用。
      */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         doubleTapDetector.onTouchEvent(ev)
+        if (handlePull(ev)) return true
         if (randomReview && handleSwipe(ev)) return true
         return super.dispatchTouchEvent(ev)
+    }
+
+    private var pullStartX = 0f
+    private var pullStartY = 0f
+    /** 本次手势是从页面顶部开始的纵向下拉。 */
+    private var pullActive = false
+    /** 下拉距离已经超过触发阈值。 */
+    private var pullReady = false
+
+    /** 内容位于顶部时向下拉过阈值，松手切到下一篇；返回 true 表示已切换。 */
+    private fun handlePull(ev: MotionEvent): Boolean {
+        val threshold = 72 * resources.displayMetrics.density
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                pullStartX = ev.x
+                pullStartY = ev.y
+                pullActive = binding.scrollContent.scrollY <= 0
+                pullReady = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (!pullActive) return false
+                val dy = ev.y - pullStartY
+                val dx = abs(ev.x - pullStartX)
+                // 只认纵向向下拖动；一旦向上或横向为主就放弃，避免抢走滚动和左右滑动。
+                if (dy <= 0 || dx > dy * 0.6f) {
+                    pullActive = false
+                    return false
+                }
+                if (dy > threshold) pullReady = true
+            }
+            MotionEvent.ACTION_UP -> {
+                val triggered = pullActive && pullReady
+                pullActive = false
+                pullReady = false
+                if (triggered && !flipping) {
+                    step(1, flip = true)
+                    return true
+                }
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                pullActive = false
+                pullReady = false
+            }
+        }
+        return false
     }
 
     /** 随机回顾：按横向拖动距离判断左右滑动，返回 true 表示已切换笔记。 */
