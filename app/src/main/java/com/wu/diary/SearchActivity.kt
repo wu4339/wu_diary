@@ -29,9 +29,13 @@ class SearchActivity : AppCompatActivity() {
     private var hasLocationFilter = false
     private var hasTagFilter = false
     private var noTagFilter = false
+    private var hasLinkFilter = false
 
     /** 笔记里插入的坐标形如“31.230416, 121.473701”。 */
     private val locationPattern = Regex("-?\\d{1,3}\\.\\d{4,}\\s*,\\s*-?\\d{1,3}\\.\\d{4,}")
+
+    /** 正文里的网址：http(s):// 或 www. 开头（Markdown 链接同样包含这类地址）。 */
+    private val linkPattern = Regex("(?i)(https?://|www\\.)")
 
     private val filterLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -40,6 +44,7 @@ class SearchActivity : AppCompatActivity() {
             hasLocationFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_LOCATION, false)
             hasTagFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_TAG, false)
             noTagFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_NO_TAG, false)
+            hasLinkFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_LINK, false)
             updateFilterIcon()
             showResults(binding.editSearch.text.toString())
         }
@@ -78,7 +83,8 @@ class SearchActivity : AppCompatActivity() {
                     hasImageFilter,
                     hasLocationFilter,
                     hasTagFilter,
-                    noTagFilter
+                    noTagFilter,
+                    hasLinkFilter
                 )
             )
         }
@@ -97,7 +103,8 @@ class SearchActivity : AppCompatActivity() {
 
     /** 有筛选条件时图标加深，提示当前已启用高级搜索。 */
     private fun updateFilterIcon() {
-        val active = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter
+        val active = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter ||
+            hasLinkFilter
         ImageViewCompat.setImageTintList(
             binding.btnFilter,
             ColorStateList.valueOf(
@@ -114,12 +121,14 @@ class SearchActivity : AppCompatActivity() {
         if (hasLocationFilter && !locationPattern.containsMatchIn(entry.content)) return false
         if (hasTagFilter && entry.tags.isEmpty()) return false
         if (noTagFilter && entry.tags.isNotEmpty()) return false
+        if (hasLinkFilter && !linkPattern.containsMatchIn(entry.content)) return false
         return true
     }
 
     private fun showResults(query: String) {
         val keyword = query.trim()
-        val filterActive = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter
+        val filterActive = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter ||
+            hasLinkFilter
         // 既没有关键词也没有筛选条件时保持空白，不预先列出全部笔记。
         val blank = keyword.isEmpty() && !filterActive
         results = if (blank) {
