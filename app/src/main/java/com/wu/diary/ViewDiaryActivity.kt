@@ -268,8 +268,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         val page = binding.scrollContent
         page.animate().cancel()
 
-        // 下拉切换一律播放翻页音，普通查看页也生效。
-        Feedback.pageTurn(this)
+        // 随机切换与保存用同一种提示音。
+        Feedback.saved(this)
         index = target
         load()
         page.scrollTo(0, 0)
@@ -488,8 +488,8 @@ class ViewDiaryActivity : AppCompatActivity() {
             }
             return
         }
-        // 随机回顾里切换笔记时播放翻书声。
-        if (randomReview) Feedback.pageTurn(this)
+        // 随机回顾里切换笔记时用保存同款提示音。
+        if (randomReview) Feedback.saved(this)
         // 随机回顾里左右滑动时用翻书效果切换，其他情况直接切换。
         if (flip && randomReview) {
             flipTo(target, delta)
