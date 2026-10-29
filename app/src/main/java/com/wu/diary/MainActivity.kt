@@ -143,16 +143,13 @@ class MainActivity : AppCompatActivity() {
             binding.drawerRoot.openDrawer(binding.drawerPanel)
         }
         binding.btnSettingsTop.setOnClickListener {
-            binding.drawerRoot.closeDrawer(binding.drawerPanel)
-            startActivity(Intent(this, SettingsActivity::class.java))
+            closeDrawerThen { startActivity(Intent(this, SettingsActivity::class.java)) }
         }
         binding.itemRandomReview.setOnClickListener {
-            binding.drawerRoot.closeDrawer(binding.drawerPanel)
-            reviewRandom()
+            closeDrawerThen { reviewRandom() }
         }
         binding.itemHiddenSpace.setOnClickListener {
-            binding.drawerRoot.closeDrawer(binding.drawerPanel)
-            startActivity(Intent(this, HiddenDiaryActivity::class.java))
+            closeDrawerThen { startActivity(Intent(this, HiddenDiaryActivity::class.java)) }
         }
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
@@ -166,27 +163,26 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
-        // 侧栏展开时禁用主列表：抽屉内滚动标签列表时，事件不应该让后面的笔记列表一起滚动。
+        // 侧栏打开时吞掉落到列表上的触摸。
+        // RecyclerView 自己重写了 onTouchEvent、不理会 isEnabled，图片条滚动会穿透过去，
+        // 这里用触摸监听直接消费，主列表就不会跟着侧栏里的滑动一起滚动。
+        binding.recycler.setOnTouchListener { _, _ ->
+            binding.drawerRoot.isDrawerVisible(binding.drawerPanel)
+        }
         binding.drawerPanel.setOnTouchListener { _, _ -> true }
         binding.drawerRoot.addDrawerListener(object : DrawerLayout.DrawerListener {
-            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-                binding.recycler.isEnabled = slideOffset <= 0f
-            }
-
-            override fun onDrawerOpened(drawerView: View) {
-                binding.recycler.isEnabled = false
-            }
-
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+            override fun onDrawerOpened(drawerView: View) {}
             override fun onDrawerClosed(drawerView: View) {
-                binding.recycler.isEnabled = true
+                val action = pendingDrawerAction
+                pendingDrawerAction = null
+                action?.invoke()
             }
-
             override fun onDrawerStateChanged(newState: Int) {}
         })
 
         binding.btnSearch.setOnClickListener {
-            binding.drawerRoot.closeDrawer(binding.drawerPanel)
-            startActivity(Intent(this, SearchActivity::class.java))
+            closeDrawerThen { startActivity(Intent(this, SearchActivity::class.java)) }
         }
 
         binding.tagFilterBar.setOnClickListener {
@@ -325,6 +321,19 @@ class MainActivity : AppCompatActivity() {
         val location = IntArray(2)
         binding.drawerPanel.getLocationInWindow(location)
         return ev.x >= location[0] && ev.x <= location[0] + binding.drawerPanel.width
+    }
+
+    /** 侧栏关闭后要执行的跳转，避免关闭动画还没结束就切页造成闪动。 */
+    private var pendingDrawerAction: (() -> Unit)? = null
+
+    /** 先收起侧栏，等收起动画结束再执行跳转。 */
+    private fun closeDrawerThen(action: () -> Unit) {
+        if (binding.drawerRoot.isDrawerOpen(binding.drawerPanel)) {
+            pendingDrawerAction = action
+            binding.drawerRoot.closeDrawer(binding.drawerPanel)
+        } else {
+            action()
+        }
     }
 
     /** 下拉过程中实时展示提示条高度与文案。 */
