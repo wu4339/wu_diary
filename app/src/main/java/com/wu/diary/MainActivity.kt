@@ -831,7 +831,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /** 长按笔记：从底部弹出操作菜单（复制 / 编辑 / 标签 / 删除）。 */
+    /** 长按笔记：从底部弹出操作菜单（编辑 / 复制 / 标签 / 隐藏 / 删除）。 */
     private fun showEntryMenu(entry: DiaryEntry) {
         val sheet = BottomSheetDialog(this)
         val menu = DialogNoteMenuBinding.inflate(layoutInflater)
@@ -841,7 +841,10 @@ class MainActivity : AppCompatActivity() {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
-        menu.itemHide.isVisible = false
+        menu.itemHide.setOnClickListener {
+            sheet.dismiss()
+            hideEntry(entry)
+        }
         menu.itemCopy.setOnClickListener {
             sheet.dismiss()
             copyEntry(entry)
@@ -884,6 +887,19 @@ class MainActivity : AppCompatActivity() {
             val appContext = applicationContext
             Thread { DiaryStore(appContext).save(edited) }.start()
         }
+    }
+
+    /** 长按隐藏：先从主列表移除，再在后台写存储，笔记进入隐藏空间。 */
+    private fun hideEntry(entry: DiaryEntry) {
+        val hidden = entry.copy(hidden = true, updatedAt = System.currentTimeMillis())
+        allEntries = allEntries.filterNot { it.id == entry.id }
+        binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
+        renderTags()
+        if (calendarVisible) renderCalendar()
+        applyList()
+        Toast.makeText(this, R.string.note_hidden, Toast.LENGTH_SHORT).show()
+        val appContext = applicationContext
+        Thread { DiaryStore(appContext).save(hidden) }.start()
     }
 
     private fun confirmDelete(entry: DiaryEntry) {
