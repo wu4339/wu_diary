@@ -121,8 +121,8 @@ object Feedback {
             low += coefficient * (noise - low)
             lower += coefficient * 0.4f * (low - lower)
             // 约 50ms 起音到峰值，随后顺势收尾。
-            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.8f)
-            mix[i] += (low - lower) * envelope * 2.2f
+            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.8)
+            mix[i] += ((low - lower) * envelope * 2.2).toFloat()
         }
         return ShortArray(total) { i ->
             (tanh(mix[i] * 2.5f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
