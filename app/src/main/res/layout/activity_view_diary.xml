@@ -6,13 +6,17 @@
     android:background="@color/background"
     android:orientation="vertical">
 
-    <ScrollView
-        android:id="@+id/scrollContent"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:overScrollMode="never"
-        android:scrollbars="none">
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/scrollContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never"
+            android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -174,7 +178,24 @@
                     android:textSize="17sp" />
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+
+        <TextView
+            android:id="@+id/pullHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="12dp"
+            android:alpha="0"
+            android:background="@drawable/bg_pull_hint"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="7dp"
+            android:text="@string/pull_random_hint"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:visibility="invisible" />
+    </FrameLayout>
 
     <View
         android:layout_width="match_parent"

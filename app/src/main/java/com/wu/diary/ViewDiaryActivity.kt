@@ -161,6 +161,8 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var pullReady = false
     /** 正在播放下拉跳转动画，期间不再响应手势。 */
     private var jumping = false
+    /** 提示文案当前是否处于“松手即可切换”的状态。 */
+    private var pullHintRelease = false
 
     /**
      * 内容位于顶部时向下拉：页面跟随手指下移（带阻尼），
@@ -185,16 +187,20 @@ class ViewDiaryActivity : AppCompatActivity() {
                 if (dy <= 0 || dx > dy * 0.6f) {
                     pullActive = false
                     binding.scrollContent.translationY = 0f
+                    hidePullHint()
                     return false
                 }
                 // 阻尼跟随：手指移动越多，页面下移越缓，最多 140dp。
                 binding.scrollContent.translationY = (dy * 0.5f).coerceAtMost(maxPull)
-                if (dy > threshold) pullReady = true
+                val ready = dy > threshold
+                if (ready) pullReady = true
+                showPullHint((dy.toFloat() / threshold).coerceIn(0f, 1f), ready)
             }
             MotionEvent.ACTION_UP -> {
                 val triggered = pullActive && pullReady
                 pullActive = false
                 pullReady = false
+                hidePullHint()
                 if (triggered) {
                     animatePullJump()
                     return true
@@ -205,6 +211,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             MotionEvent.ACTION_CANCEL -> {
                 pullActive = false
                 pullReady = false
+                hidePullHint()
                 resetPull()
             }
         }
@@ -222,7 +229,34 @@ class ViewDiaryActivity : AppCompatActivity() {
             .start()
     }
 
-    /** 松手后立即换成随机笔记，新内容快速上移淡入，避免滑出后等待的白屏。 */
+    /** 下拉时显示顶部提示：越拉越清楚，拉够后提示改为松手即切换。 */
+    private fun showPullHint(progress: Float, ready: Boolean) {
+        val hint = binding.pullHint
+        if (hint.visibility != View.VISIBLE) hint.visibility = View.VISIBLE
+        hint.alpha = progress
+        if (pullHintRelease != ready) {
+            pullHintRelease = ready
+            hint.text = getString(
+                if (ready) R.string.pull_random_release else R.string.pull_random_hint
+            )
+        }
+    }
+
+    private fun hidePullHint() {
+        pullHintRelease = false
+        val hint = binding.pullHint
+        if (hint.visibility != View.VISIBLE) return
+        hint.animate().cancel()
+        hint.animate()
+            .alpha(0f)
+            .setDuration(120)
+            .withEndAction {
+                if (!isFinishing && !isDestroyed) hint.visibility = View.INVISIBLE
+            }
+            .start()
+    }
+
+    /** 松手后立即换成随机笔记，新内容轻微上移，避免滑出后等待的白屏。 */
     private fun animatePullJump() {
         val target = randomOtherIndex() ?: run {
             // 只有一篇笔记：没有可跳转的目标，回弹即可。
@@ -233,7 +267,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         val page = binding.scrollContent
         page.animate().cancel()
 
-        if (randomReview) Feedback.pageTurn(this)
+        // 下拉切换一律播放翻页音，普通查看页也生效。
+        Feedback.pageTurn(this)
         index = target
         load()
         page.scrollTo(0, 0)

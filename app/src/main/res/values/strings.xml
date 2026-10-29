@@ -6,6 +6,8 @@
     <string name="add_diary">新建日记</string>
     <string name="shortcut_new_note">写日记</string>
     <string name="widget_new_note_desc">快速写日记</string>
+    <string name="pull_random_hint">继续下拉，随机看一篇</string>
+    <string name="pull_random_release">松手，随机看一篇</string>
     <string name="hint_content">今天过得怎么样？</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
