@@ -824,7 +824,12 @@ class MainActivity : AppCompatActivity() {
                                     if (delta != 0) v.scrollBy(0, delta)
                                 }
                             }
-                            below.forEach { child -> child.translationY = 0f }
+                            // 清除所有可见行的视觉位移和透明度，避免被回收复用的行残留 state。
+                            for (i in 0 until binding.recycler.childCount) {
+                                val child = binding.recycler.getChildAt(i)
+                                child.translationY = 0f
+                                child.alpha = 1f
+                            }
                             binding.recycler.itemAnimator = defaultItemAnimator
                         }
                     }
