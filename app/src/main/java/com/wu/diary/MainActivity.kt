@@ -442,56 +442,34 @@ class MainActivity : AppCompatActivity() {
         if (calendarVisible) renderCalendar()
 
         val lm = binding.recycler.layoutManager as? LinearLayoutManager
-        if (addedId != null && lm != null && lm.findFirstVisibleItemPosition() > 0) {
-            pendingRevealId = addedId
-            // 先等编辑页缩小动画（约220ms）播完，再分两步：
-            // 1) 停止惯性滚动，回到顶部（只含旧列表）；2) 列表稳定后再插入新笔记。
-            // 滚动与插入不放在同一次布局里，否则新条目可能不被挂载，要滑动一下才出现。
-            binding.recycler.postDelayed({
-                applyList(excludeId = addedId)
-                binding.recycler.post {
+        if (addedId == null) {
+            applyList()
+            return
+        }
+        pendingRevealId = addedId
+        // 立即回到顶部：在屏幕底部点保存时，若等动画播完再滚，用户回到界面
+        // 会先看到原来的底部内容再跳到顶部，表现为闪一下。这里在回到界面的
+        // 第一帧之前就置顶，之后新笔记再淡入。
+        if (lm != null && lm.findFirstVisibleItemPosition() > 0) {
+            binding.recycler.stopScroll()
+            lm.scrollToPositionWithOffset(0, 0)
+        }
+        // 等编辑页缩小动画（约220ms）播完再插入，避免插入动画与界面过渡叠加造成闪动。
+        binding.recycler.postDelayed({
+            pendingRevealId = null
+            applyList()
+            // 插入点可能在屏幕外（往旧日期添加时），等布局完成后再定位过去。
+            binding.recycler.post {
+                val position = adapter.positionOf(addedId)
+                val last = (binding.recycler.layoutManager as? LinearLayoutManager)
+                    ?.findLastVisibleItemPosition() ?: -1
+                if (position >= 0 && last >= 0 && position > last) {
                     binding.recycler.stopScroll()
                     (binding.recycler.layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(0, 0)
+                        ?.scrollToPositionWithOffset(position, 0)
                 }
-                binding.recycler.postDelayed({
-                    pendingRevealId = null
-                    applyList()
-                    // 往旧日期添加时插入点可能在屏幕外，等布局完成后再定位过去。
-                    binding.recycler.post {
-                        val pos = adapter.positionOf(addedId)
-                        val last = (binding.recycler.layoutManager as? LinearLayoutManager)
-                            ?.findLastVisibleItemPosition() ?: -1
-                        if (pos >= 0 && last >= 0 && pos > last) {
-                            binding.recycler.stopScroll()
-                            (binding.recycler.layoutManager as? LinearLayoutManager)
-                                ?.scrollToPositionWithOffset(pos, 0)
-                        }
-                    }
-                }, 350)
-            }, 230)
-        } else if (addedId == null) {
-            applyList()
-        } else {
-            // 回到主界面的瞬间列表保持稳定：先等编辑页缩小动画（约220ms）播完，
-            // 再让新笔记淡入，避免插入动画和界面过渡叠在一起闪一下文字。
-            pendingRevealId = addedId
-            binding.recycler.postDelayed({
-                pendingRevealId = null
-                applyList()
-                // 插入点可能在屏幕外（往旧日期添加时），等布局完成后再定位过去。
-                binding.recycler.post {
-                    val position = adapter.positionOf(addedId)
-                    val last = (binding.recycler.layoutManager as? LinearLayoutManager)
-                        ?.findLastVisibleItemPosition() ?: -1
-                    if (position >= 0 && last >= 0 && position > last) {
-                        binding.recycler.stopScroll()
-                        (binding.recycler.layoutManager as? LinearLayoutManager)
-                            ?.scrollToPositionWithOffset(position, 0)
-                    }
-                }
-            }, 230)
-        }
+            }
+        }, 230)
     }
 
     /** 侧栏标签列表：汇总所有笔记的标签。 */
@@ -579,8 +557,8 @@ class MainActivity : AppCompatActivity() {
         applyList()
     }
 
-    private fun applyList(excludeId: String? = null) {
-        val base = when {
+    private fun applyList() {
+        val entries = when {
             activeTag != null -> allEntries.filter { activeTag in it.tags }
             calendarVisible -> allEntries.filter { entry ->
                 val day = Calendar.getInstance().apply { timeInMillis = entry.createdAt }
@@ -590,7 +568,6 @@ class MainActivity : AppCompatActivity() {
             }
             else -> allEntries
         }
-        val entries = if (excludeId == null) base else base.filterNot { it.id == excludeId }
         adapter.submit(entries)
         // 分组末尾变化只影响分割线，等布局后直接改可见行，避免整行重绑造成闪动。
         binding.recycler.post { adapter.refreshGroupDividers(binding.recycler) }

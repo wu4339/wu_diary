@@ -105,27 +105,34 @@ object Feedback {
         }
     }
 
-    /** 嗖的一声：带通噪声的气流快速上扬飞走，收尾干净。 */
+    /** 嗖的一声：气流快速扫过，噪声与音高一起上扬再收回，像东西飞掠而过。 */
     private fun buildWhoosh(): ShortArray {
-        val total = (SAMPLE_RATE * 0.22).toInt()
-        val random = Random(4455)
+        val total = (SAMPLE_RATE * 0.30).toInt()
+        val random = Random(7788)
         val mix = FloatArray(total)
         var low = 0f
         var lower = 0f
+        var phase = 0.0
         for (i in 0 until total) {
-            val t = i.toFloat() / total
-            // 中心频率从 350Hz 上扬到 2800Hz，像东西"嗖"地飞出去。
-            val cutoff = 350f + 2450f * t
+            val t = i.toDouble() / total
+            // 扫频先快速上扬、后段收回，形成“嗖——”掠过的感觉。
+            val sweep = if (t < 0.55) t / 0.55 else (1.0 - t) / 0.45
+            val cutoff = 380.0 + 3000.0 * sweep
             val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
             val noise = random.nextFloat() * 2f - 1f
             low += coefficient * (noise - low)
-            lower += coefficient * 0.4f * (low - lower)
-            // 约 50ms 起音到峰值，随后顺势收尾。
-            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.8)
-            mix[i] += ((low - lower) * envelope * 2.2).toFloat()
+            lower += coefficient * 0.35f * (low - lower)
+            val band = low - lower
+            // 跟着扫频走的呼啸音高，让声音有实体感而不只是风噪。
+            val pitch = 260.0 + 900.0 * sweep
+            phase += 2 * PI * pitch / SAMPLE_RATE
+            val tone = sin(phase).toFloat() * 0.35f
+            // 约 50ms 起音，中段最强，末尾利落收住。
+            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.6)
+            mix[i] += ((band + tone) * envelope * 2.4).toFloat()
         }
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 2.5f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+            (tanh(mix[i] * 3.0f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 
