@@ -89,6 +89,13 @@ class Settings(context: Context) {
             prefs.edit().putBoolean(KEY_PREVIEW_TAGS, value).apply()
         }
 
+    /** 图片以全宽大图显示（true）或横向排列的小缩略图显示（false）。 */
+    var largeImages: Boolean
+        get() = prefs.getBoolean(KEY_LARGE_IMAGES, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_LARGE_IMAGES, value).apply()
+        }
+
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
         get() = prefs.getString(KEY_STORAGE_URI, null)
@@ -106,6 +113,7 @@ class Settings(context: Context) {
         private const val KEY_LINE_SPACING = "line_spacing"
         private const val KEY_READING_LINE_SPACING = "reading_line_spacing"
         private const val KEY_PREVIEW_TAGS = "preview_tags"
+        private const val KEY_LARGE_IMAGES = "large_images"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
 
         /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */

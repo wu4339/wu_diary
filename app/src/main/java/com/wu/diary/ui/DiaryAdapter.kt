@@ -32,6 +32,7 @@ class DiaryAdapter(
     private val previewLines: Int,
     private val lineSpacing: Float,
     private val showTags: Boolean,
+    private val largeImages: Boolean,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -198,15 +199,33 @@ class DiaryAdapter(
 
         binding.imageStrip.removeAllViews()
         binding.imageStrip.isVisible = entry.images.isNotEmpty()
-        val thumb = (78 * binding.root.resources.displayMetrics.density).toInt()
-        val gap = (8 * binding.root.resources.displayMetrics.density).toInt()
-        entry.images.take(3).forEach { path ->
-            val image = ImageView(binding.root.context).apply {
-                layoutParams = LinearLayout.LayoutParams(thumb, thumb).apply { rightMargin = gap }
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                setImageBitmap(ImageLoader.load(path, thumb))
+        val metrics = binding.root.resources.displayMetrics
+        if (largeImages) {
+            // 大图模式：图片按原图比例铺满整行，纵向排列，带圆角。
+            binding.imageStrip.orientation = LinearLayout.VERTICAL
+            val width = (metrics.widthPixels - 48 * metrics.density).toInt()
+            val maxHeight = (metrics.heightPixels * 0.7f).toInt()
+            entry.images.take(3).forEachIndexed { position, path ->
+                val image = ImageLoader.largeImage(binding.root.context, path, width, maxHeight)
+                    ?: return@forEachIndexed
+                if (position > 0) {
+                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                        (8 * metrics.density).toInt()
+                }
+                binding.imageStrip.addView(image)
             }
-            binding.imageStrip.addView(image)
+        } else {
+            binding.imageStrip.orientation = LinearLayout.HORIZONTAL
+            val thumb = (78 * metrics.density).toInt()
+            val gap = (8 * metrics.density).toInt()
+            entry.images.take(3).forEach { path ->
+                val image = ImageView(binding.root.context).apply {
+                    layoutParams = LinearLayout.LayoutParams(thumb, thumb).apply { rightMargin = gap }
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setImageBitmap(ImageLoader.load(path, thumb))
+                }
+                binding.imageStrip.addView(image)
+            }
         }
 
         binding.root.setOnClickListener { onClick(entry) }

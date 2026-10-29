@@ -72,6 +72,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowReadingFontSize.setOnClickListener { showReadingFontSizeDialog() }
         binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
+        binding.rowImageStyle.setOnClickListener { showImageStyleDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
         binding.rowReadingLineSpacing.setOnClickListener { showReadingLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
@@ -102,6 +103,7 @@ class SettingsActivity : AppCompatActivity() {
         updateReadingFontValue()
         updateFontFamilyValue()
         updatePreviewValue()
+        updateImageStyleValue()
         updateLineSpacingValue()
         updateReadingLineSpacingValue()
         updateStorageValue()
@@ -237,6 +239,29 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updatePreviewValue() {
         binding.textPreviewValue.text = lineLabel(settings.previewLines)
+    }
+
+    private fun updateImageStyleValue() {
+        binding.textImageStyleValue.text = getString(
+            if (settings.largeImages) R.string.image_style_large else R.string.image_style_small
+        )
+    }
+
+    /** 图片显示方式：小图（横向缩略图）/ 大图（全宽铺满），选中即生效。 */
+    private fun showImageStyleDialog() {
+        val labels = arrayOf(
+            getString(R.string.image_style_small),
+            getString(R.string.image_style_large)
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.image_style)
+            .setSingleChoiceItems(labels, if (settings.largeImages) 1 else 0) { dialog, which ->
+                settings.largeImages = which == 1
+                updateImageStyleValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun updateLineSpacingValue() {

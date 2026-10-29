@@ -464,8 +464,29 @@ class ViewDiaryActivity : AppCompatActivity() {
 
     private fun renderImages(current: DiaryEntry) {
         binding.imageStrip.removeAllViews()
-        binding.imageScroll.isVisible = current.images.isNotEmpty()
-        val density = resources.displayMetrics.density
+        binding.imageColumn.removeAllViews()
+        val large = Settings(this).largeImages
+        val hasImages = current.images.isNotEmpty()
+        binding.imageScroll.isVisible = !large && hasImages
+        binding.imageColumn.isVisible = large && hasImages
+        val metrics = resources.displayMetrics
+        val density = metrics.density
+        if (large) {
+            // 大图模式：每张图片按原图比例铺满正文宽度，纵向排列，带圆角。
+            val width = (metrics.widthPixels - 48 * density).toInt()
+            val maxHeight = (metrics.heightPixels * 0.7f).toInt()
+            current.images.forEachIndexed { position, path ->
+                val image = ImageLoader.largeImage(this, path, width, maxHeight)
+                    ?: return@forEachIndexed
+                if (position > 0) {
+                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                        (8 * density).toInt()
+                }
+                image.setOnClickListener { openImage(path) }
+                binding.imageColumn.addView(image)
+            }
+            return
+        }
         val size = (84 * density).toInt()
         val gap = (8 * density).toInt()
         current.images.forEach { path ->

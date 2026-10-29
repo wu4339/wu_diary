@@ -1,15 +1,40 @@
 package com.wu.diary.util
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.GradientDrawable
 import android.util.LruCache
+import android.view.ViewGroup
+import android.widget.ImageView
 import java.io.File
 
 /** 本地图片按需采样解码，避免大图整张进内存。 */
 object ImageLoader {
 
-    private val cache = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
+    // 大图模式会缓存整行宽度的图片，缓存给大一些，滚动时不必反复解码。
+    private val cache = object : LruCache<String, Bitmap>(16 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+    }
+
+    /**
+     * 大图模式的图片视图：按原图比例铺满给定宽度，圆角裁剪；
+     * 过长时限制高度并居中裁切。
+     */
+    fun largeImage(context: Context, path: String, widthPx: Int, maxHeightPx: Int): ImageView? {
+        val bitmap = load(path, widthPx) ?: return null
+        if (bitmap.width <= 0) return null
+        val exact = widthPx.toFloat() * bitmap.height / bitmap.width
+        val capped = exact > maxHeightPx
+        val height = if (capped) maxHeightPx else exact.toInt().coerceAtLeast(1)
+        return ImageView(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(widthPx, height)
+            scaleType = if (capped) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_XY
+            setImageBitmap(bitmap)
+            val radius = 14 * context.resources.displayMetrics.density
+            background = GradientDrawable().apply { cornerRadius = radius }
+            clipToOutline = true
+        }
     }
 
     fun load(path: String?, targetPx: Int): Bitmap? {
