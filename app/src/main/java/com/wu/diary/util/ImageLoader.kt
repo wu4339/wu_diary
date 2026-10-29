@@ -25,7 +25,7 @@ object ImageLoader {
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageBitmap(bitmap)
             // 中图卡片圆角比大图更小一些，看起来更方正。
-            val radius = 8 * context.resources.displayMetrics.density
+            val radius = 10 * context.resources.displayMetrics.density
             background = GradientDrawable().apply { cornerRadius = radius }
             clipToOutline = true
         }
