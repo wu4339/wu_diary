@@ -749,11 +749,12 @@ class MainActivity : AppCompatActivity() {
      */
     private fun animateRemoval(entry: DiaryEntry) {
         val recycler = binding.recycler
-        val manager = recycler.layoutManager as? LinearLayoutManager
-        val position = if (manager != null) adapter.positionOf(entry.id) else -1
+        val lm = recycler.layoutManager as? LinearLayoutManager
+            ?: run { removeEntry(entry.id); return }
+        val position = adapter.positionOf(entry.id)
         val holder = if (position >= 0) recycler.findViewHolderForAdapterPosition(position) else null
-        val row = holder?.itemView
-        if (row == null || row.height <= 0) {
+        val row = holder?.itemView ?: run { removeEntry(entry.id); return }
+        if (row.height <= 0) {
             removeEntry(entry.id)
             return
         }
@@ -807,7 +808,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     if (anchorPos >= 0) {
-                        manager.scrollToPositionWithOffset(
+                        lm.scrollToPositionWithOffset(
                             anchorPos,
                             anchorTop - recycler.paddingTop
                         )
@@ -815,7 +816,7 @@ class MainActivity : AppCompatActivity() {
                         // 被删行就是最上面一行：让下面一行顶上来补位。
                         val next = recycler.findViewHolderForAdapterPosition(position + 1)?.itemView
                         if (next != null) {
-                            manager.scrollToPositionWithOffset(
+                            lm.scrollToPositionWithOffset(
                                 position,
                                 next.top - shift - recycler.paddingTop
                             )
