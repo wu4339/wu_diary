@@ -1,0 +1,34 @@
+package com.wu.diary
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.Context
+import android.widget.RemoteViews
+
+/** 桌面小部件：一个"写日记"按钮，点一下直接进入快捷输入。 */
+class NoteWidgetProvider : AppWidgetProvider() {
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        appWidgetIds.forEach { appWidgetId ->
+            appWidgetManager.updateAppWidget(appWidgetId, buildViews(context))
+        }
+    }
+
+    private fun buildViews(context: Context): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.widget_new_note)
+        val intent = EditDiaryActivity.intent(context, null)
+        val pending = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widgetRoot, pending)
+        return views
+    }
+}

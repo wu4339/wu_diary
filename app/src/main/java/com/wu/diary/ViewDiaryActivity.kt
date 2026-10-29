@@ -236,7 +236,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         page.animate()
             .translationY(height)
             .alpha(0f)
-            .setDuration(170)
+            .setDuration(120)
             .setInterpolator(AccelerateInterpolator())
             .withEndAction {
                 if (isFinishing || isDestroyed) {
@@ -251,7 +251,7 @@ class ViewDiaryActivity : AppCompatActivity() {
                 page.alpha = 1f
                 page.animate()
                     .translationY(0f)
-                    .setDuration(200)
+                    .setDuration(150)
                     .setInterpolator(DecelerateInterpolator())
                     .withEndAction { jumping = false }
                     .start()
