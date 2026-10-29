@@ -134,6 +134,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.btnNext.setOnClickListener { step(1) }
         randomReview = intent.getBooleanExtra(EXTRA_RANDOM_REVIEW, false)
         binding.titleBox.isVisible = randomReview
+        // 关掉边缘拉伸，顶部下拉时改用自绘的跟随位移，避免两种效果叠在一起。
+        binding.scrollContent.overScrollMode = View.OVER_SCROLL_NEVER
     }
 
     private var swipeStartX = 0f
@@ -157,15 +159,22 @@ class ViewDiaryActivity : AppCompatActivity() {
     private var pullActive = false
     /** 下拉距离已经超过触发阈值。 */
     private var pullReady = false
+    /** 正在播放下拉跳转动画，期间不再响应手势。 */
+    private var jumping = false
 
-    /** 内容位于顶部时向下拉过阈值，松手切到下一篇；返回 true 表示已切换。 */
+    /**
+     * 内容位于顶部时向下拉：页面跟随手指下移（带阻尼），
+     * 松手超过阈值就随机跳到其他笔记，未超过则回弹。
+     */
     private fun handlePull(ev: MotionEvent): Boolean {
-        val threshold = 72 * resources.displayMetrics.density
+        val density = resources.displayMetrics.density
+        val threshold = 72 * density
+        val maxPull = 140 * density
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 pullStartX = ev.x
                 pullStartY = ev.y
-                pullActive = binding.scrollContent.scrollY <= 0
+                pullActive = binding.scrollContent.scrollY <= 0 && !jumping && !flipping
                 pullReady = false
             }
             MotionEvent.ACTION_MOVE -> {
@@ -175,25 +184,86 @@ class ViewDiaryActivity : AppCompatActivity() {
                 // 只认纵向向下拖动；一旦向上或横向为主就放弃，避免抢走滚动和左右滑动。
                 if (dy <= 0 || dx > dy * 0.6f) {
                     pullActive = false
+                    binding.scrollContent.translationY = 0f
                     return false
                 }
+                // 阻尼跟随：手指移动越多，页面下移越缓，最多 140dp。
+                binding.scrollContent.translationY = (dy * 0.5f).coerceAtMost(maxPull)
                 if (dy > threshold) pullReady = true
             }
             MotionEvent.ACTION_UP -> {
                 val triggered = pullActive && pullReady
                 pullActive = false
                 pullReady = false
-                if (triggered && !flipping) {
-                    step(1, flip = true)
+                if (triggered) {
+                    animatePullJump()
                     return true
                 }
+                // 没拉够：回弹到原位。
+                resetPull()
             }
             MotionEvent.ACTION_CANCEL -> {
                 pullActive = false
                 pullReady = false
+                resetPull()
             }
         }
         return false
+    }
+
+    private fun resetPull() {
+        val page = binding.scrollContent
+        if (page.translationY == 0f) return
+        page.animate().cancel()
+        page.animate()
+            .translationY(0f)
+            .setDuration(160)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+    }
+
+    /** 当前页向下滑出，换一篇随机笔记后从上方滑入。 */
+    private fun animatePullJump() {
+        val target = randomOtherIndex() ?: run {
+            // 只有一篇笔记：没有可跳转的目标，回弹即可。
+            resetPull()
+            return
+        }
+        jumping = true
+        val page = binding.scrollContent
+        page.animate().cancel()
+        val height = page.height.toFloat().coerceAtLeast(1f)
+        page.animate()
+            .translationY(height)
+            .alpha(0f)
+            .setDuration(170)
+            .setInterpolator(AccelerateInterpolator())
+            .withEndAction {
+                if (isFinishing || isDestroyed) {
+                    jumping = false
+                    return@withEndAction
+                }
+                if (randomReview) Feedback.pageTurn(this)
+                index = target
+                load()
+                page.scrollTo(0, 0)
+                page.translationY = -height
+                page.alpha = 1f
+                page.animate()
+                    .translationY(0f)
+                    .setDuration(200)
+                    .setInterpolator(DecelerateInterpolator())
+                    .withEndAction { jumping = false }
+                    .start()
+            }
+            .start()
+    }
+
+    /** 随机挑一篇不是当前笔记的笔记位置；只有一篇时返回 null。 */
+    private fun randomOtherIndex(): Int? {
+        if (ids.size <= 1) return null
+        val candidates = ids.indices.filter { it != index }
+        return candidates.random()
     }
 
     /** 随机回顾：按横向拖动距离判断左右滑动，返回 true 表示已切换笔记。 */
@@ -202,7 +272,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             MotionEvent.ACTION_DOWN -> {
                 swipeStartX = ev.x
                 swipeStartY = ev.y
-                swipeActive = true
+                swipeActive = !jumping && !flipping
                 swipeFromImages = isInImageStrip(ev)
             }
             MotionEvent.ACTION_MOVE -> {
@@ -383,7 +453,7 @@ class ViewDiaryActivity : AppCompatActivity() {
     }
 
     private fun step(delta: Int, flip: Boolean = false) {
-        if (flipping) return
+        if (flipping || jumping) return
         val target = index + delta
         if (target !in ids.indices) {
             if (randomReview) {
