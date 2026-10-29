@@ -163,8 +163,9 @@ class ViewDiaryActivity : AppCompatActivity() {
                 if (swipeActive) {
                     val dx = abs(ev.x - swipeStartX)
                     val dy = abs(ev.y - swipeStartY)
-                    // 纵向拖动用于滚动内容，不再当作左右切换。
-                    if (dy > dx * 1.2f && dy > ViewConfiguration.get(this).scaledTouchSlop) {
+                    // 纵向成分一接近横向就按滚动处理，不再当作左右切换。
+                    // 原来要求 dy > dx * 1.2，斜着下拉很容易被误判成横滑。
+                    if (dy > dx * 0.6f && dy > ViewConfiguration.get(this).scaledTouchSlop) {
                         swipeActive = false
                     }
                 }
@@ -174,7 +175,8 @@ class ViewDiaryActivity : AppCompatActivity() {
                     val dx = ev.x - swipeStartX
                     val dy = abs(ev.y - swipeStartY)
                     val threshold = 48 * resources.displayMetrics.density
-                    if (abs(dx) > threshold && abs(dx) > dy * 1.2f) {
+                    // 必须是非常明显的横向：水平位移远大于纵向，且纵向几乎没移动。
+                    if (abs(dx) > threshold && abs(dx) > dy * 1.5f && dy < threshold) {
                         swipeActive = false
                         step(if (dx < 0) 1 else -1, flip = true)
                         return true
