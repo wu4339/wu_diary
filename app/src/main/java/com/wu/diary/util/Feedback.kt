@@ -24,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildBubbles() }
-    private val deletedSamples: ShortArray by lazy { buildWhoosh() }
+    private val deletedSamples: ShortArray by lazy { buildRip() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：水泡上浮的冒泡声。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：嗖的一声，气流快速上扬飞走。 */
+    /** 删除：撕纸声，干脆利落。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -105,32 +105,38 @@ object Feedback {
         }
     }
 
-    /** 嗖的一声：音高从高处快速滑落，叠一层跟着滑动的气流噪声，像东西掠过。 */
-    private fun buildWhoosh(): ShortArray {
-        val total = (SAMPLE_RATE * 0.18).toInt()
-        val random = Random(2024)
+    /** 删除：撕掉一页纸的声音——高频纤维接连断裂的嘶啦声，收尾一声闷响。 */
+    private fun buildRip(): ShortArray {
+        val total = (SAMPLE_RATE * 0.16).toInt()
+        val random = Random(7719)
         val mix = FloatArray(total)
         var low = 0f
         var lower = 0f
-        var phase = 0.0
         for (i in 0 until total) {
-            val t = i.toDouble() / total
-            // 音高从 2400Hz 快速滑落到约 320Hz。
-            val pitch = 2400.0 * exp(-3.2 * t) + 320.0
-            phase += 2 * PI * pitch / SAMPLE_RATE
-            // 气流噪声的中心频率跟着音高走。
-            val cutoff = (pitch * 0.8).coerceIn(300.0, 6000.0)
+            val t = i.toDouble() / SAMPLE_RATE
+            val progress = i.toDouble() / total
+            // 撕裂噪声集中在高频，随进度略微抬高，像纸被越扯越薄。
+            val cutoff = (3200.0 + 2600.0 * progress).coerceAtMost(7000.0)
             val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
             val noise = random.nextFloat() * 2f - 1f
             low += coefficient * (noise - low)
-            lower += coefficient * 0.3f * (low - lower)
+            lower += coefficient * 0.75f * (low - lower)
             val band = low - lower
-            // 极快起音，随即利落衰减。
-            val envelope = min(1.0, t / 0.012) * exp(-4.5 * t)
-            mix[i] += ((sin(phase) * 0.55 + band * 1.2) * envelope * 1.6).toFloat()
+            // 纤维一根根崩断的颗粒感：一层快速抖动叠在噪声上。
+            val fiber = 0.55f + 0.45f * sin(2.0 * PI * 42.0 * t).toFloat()
+            val envelope = min(1.0, t / 0.008) * exp(-11.0 * t)
+            mix[i] += (band * fiber * envelope.toFloat() * 2.6f)
+        }
+        // 收尾的闷响：扯下来的那一页脱手落下。
+        val thumpStart = (total * 0.55).toInt()
+        for (i in thumpStart until total) {
+            val progress = (i - thumpStart).toDouble() / (total - thumpStart)
+            val freq = 120.0 - 60.0 * progress
+            val envelope = (1.0 - progress) * (1.0 - progress)
+            mix[i] += (sin(2 * PI * freq * i / SAMPLE_RATE) * envelope * 1.1).toFloat()
         }
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 2.6f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+            (tanh(mix[i] * 2.2f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 

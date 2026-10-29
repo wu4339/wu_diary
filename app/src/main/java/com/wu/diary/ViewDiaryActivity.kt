@@ -1,5 +1,7 @@
 package com.wu.diary
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.app.Dialog
 import android.content.BroadcastReceiver
 import android.content.ClipData
@@ -177,6 +179,8 @@ class ViewDiaryActivity : AppCompatActivity() {
             MotionEvent.ACTION_DOWN -> {
                 pullStartX = ev.x
                 pullStartY = ev.y
+                // 上一段回弹动画可能还在跑，先停掉，避免它继续改写 translationY。
+                if (!jumping) binding.scrollContent.animate().cancel()
                 pullActive = binding.scrollContent.scrollY <= 0 && !jumping && !flipping
                 pullReady = false
             }
@@ -281,7 +285,17 @@ class ViewDiaryActivity : AppCompatActivity() {
             .translationY(0f)
             .setDuration(110)
             .setInterpolator(DecelerateInterpolator())
-            .withEndAction { jumping = false }
+            .setListener(object : AnimatorListenerAdapter() {
+                // 动画被新的触摸打断时 withEndAction 不会执行，
+                // 这里结束和取消都清标志，避免 jumping 卡死导致之后再也无法下拉。
+                override fun onAnimationEnd(animation: Animator) {
+                    jumping = false
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    jumping = false
+                }
+            })
             .start()
     }
 
