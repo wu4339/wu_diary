@@ -388,11 +388,26 @@ class MainActivity : AppCompatActivity() {
     /** 常规条目动画器；删除时临时移除，避免布局更新时再叠加一层动画。 */
     private var defaultItemAnimator: DefaultItemAnimator? = null
 
+    /** 刚删除的笔记 id：存储快照里可能还会短暂存在，不能重新显示或被当成新增。 */
+    private val pendingDeletedIds = mutableSetOf<String>()
+
+    /** 新增笔记插入动画的有效时间窗：只有刚刚保存的笔记才回顶并定位过去。 */
+    private val revealWindowMs = 60_000L
+
     private fun refresh() {
         if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
-        allEntries = store.load().filter { !it.hidden }
-        val addedId = allEntries.firstOrNull { it.id !in previousIds }?.id
+        val loaded = store.load().filter { !it.hidden }
+        // 删除广播可能读到还没落盘的旧快照：把刚删除的笔记过滤掉，
+        // 否则它会被当成“新增”而触发回顶 + 定位，列表就会整体跳一下。
+        val known = loaded.map { it.id }.toSet()
+        pendingDeletedIds.retainAll(known)
+        allEntries = loaded.filterNot { it.id in pendingDeletedIds }
+        // 只有刚保存的笔记才走插入动画；删除等变更一律不动列表。
+        val now = System.currentTimeMillis()
+        val addedId = allEntries
+            .firstOrNull { it.id !in previousIds && now - it.updatedAt < revealWindowMs }
+            ?.id
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
@@ -834,6 +849,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
     private fun removeEntry(entryId: String) {
+        pendingDeletedIds.add(entryId)
         allEntries = allEntries.filterNot { it.id == entryId }
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
