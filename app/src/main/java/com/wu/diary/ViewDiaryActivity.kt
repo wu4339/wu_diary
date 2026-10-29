@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.Layout
@@ -34,6 +35,7 @@ import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -46,6 +48,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityViewDiaryBinding
@@ -100,6 +105,59 @@ class ViewDiaryActivity : AppCompatActivity() {
     /** 无序列表渲染后的文本，双击定位时用来把显示偏移换算回原文偏移。 */
     private var renderedText: MarkdownText.Rendered? = null
 
+    /** 中图模式下横向翻页的图片列表。 */
+    private var pagerPaths: List<String> = emptyList()
+    private var pagerCardWidth = 0
+    private var pagerCardHeight = 0
+    /** 当前高亮的页码圆点。 */
+    private var pagerDotPosition = 0
+
+    /** 中图模式：一页一张图片，左右滑动切换。 */
+    private inner class ImagePagerAdapter : RecyclerView.Adapter<ImagePagerAdapter.Holder>() {
+        class Holder(val box: FrameLayout) : RecyclerView.ViewHolder(box)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
+            val box = FrameLayout(parent.context).apply {
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+            return Holder(box)
+        }
+
+        override fun getItemCount(): Int = pagerPaths.size
+
+        override fun onBindViewHolder(holder: Holder, position: Int) {
+            val box = holder.box
+            box.removeAllViews()
+            val path = pagerPaths.getOrNull(position) ?: return
+            val image = ImageLoader.cardImage(
+                this@ViewDiaryActivity, path, pagerCardWidth, pagerCardHeight
+            ) ?: return
+            image.layoutParams = FrameLayout.LayoutParams(
+                pagerCardWidth,
+                pagerCardHeight,
+                Gravity.CENTER_HORIZONTAL
+            )
+            image.setOnClickListener { openImage(path) }
+            box.addView(image)
+        }
+    }
+
+    private val imagePagerAdapter = ImagePagerAdapter()
+
+    /** 翻页过程中把页码圆点同步到居中的那一张。 */
+    private val imagePagerScrollListener = object : RecyclerView.OnScrollListener() {
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            val position = nearestImagePosition()
+            if (position != pagerDotPosition) {
+                pagerDotPosition = position
+                renderDots(pagerPaths.size, position)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityViewDiaryBinding.inflate(layoutInflater)
@@ -139,6 +197,11 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.titleBox.isVisible = randomReview
         // 关掉边缘拉伸，顶部下拉时改用自绘的跟随位移，避免两种效果叠在一起。
         binding.scrollContent.overScrollMode = View.OVER_SCROLL_NEVER
+        // 中图模式下图片用横向分页：一页一张，滑动切换。
+        binding.imagePager.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
+        PagerSnapHelper().attachToRecyclerView(binding.imagePager)
+        binding.imagePager.adapter = imagePagerAdapter
+        binding.imagePager.addOnScrollListener(imagePagerScrollListener)
     }
 
     private var swipeStartX = 0f
@@ -467,55 +530,103 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.imageColumn.removeAllViews()
         val style = Settings(this).imageStyle
         val hasImages = current.images.isNotEmpty()
-        binding.imageColumn.gravity = Gravity.START
         binding.imageScroll.isVisible = style == Settings.IMAGE_SMALL && hasImages
-        binding.imageColumn.isVisible = style != Settings.IMAGE_SMALL && hasImages
+        binding.imageColumn.isVisible = style == Settings.IMAGE_LARGE && hasImages
+        binding.imagePagerBox.isVisible = style == Settings.IMAGE_MEDIUM && hasImages
         val metrics = resources.displayMetrics
         val density = metrics.density
-        if (style == Settings.IMAGE_MEDIUM) {
-            // 中图模式：不管原图多大都用同一块固定比例的圆角卡片，居中裁切。
-            binding.imageColumn.gravity = Gravity.CENTER_HORIZONTAL
-            val width = (metrics.widthPixels - 56 * density).toInt()
-            val height = width * 3 / 4 - (40 * density).toInt()
-            current.images.forEachIndexed { position, path ->
-                val image = ImageLoader.cardImage(this, path, width, height)
-                    ?: return@forEachIndexed
-                if (position > 0) {
-                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
-                        (8 * density).toInt()
+        val width = (metrics.widthPixels - 56 * density).toInt()
+        val height = width * 3 / 4 - (40 * density).toInt()
+        when (style) {
+            Settings.IMAGE_MEDIUM -> {
+                // 中图模式：一页一张固定比例的圆角卡片，左右滑动切换。
+                pagerPaths = current.images
+                pagerCardWidth = width
+                pagerCardHeight = height
+                pagerDotPosition = 0
+                imagePagerAdapter.notifyDataSetChanged()
+                binding.imagePager.scrollToPosition(0)
+                renderDots(current.images.size, 0)
+            }
+
+            Settings.IMAGE_LARGE -> {
+                // 大图模式：每张图片按原图比例铺满正文宽度，纵向排列，带圆角。
+                val maxHeight = (metrics.heightPixels * 0.7f).toInt()
+                current.images.forEachIndexed { position, path ->
+                    val image = ImageLoader.largeImage(
+                        this, path, (metrics.widthPixels - 48 * density).toInt(), maxHeight
+                    ) ?: return@forEachIndexed
+                    if (position > 0) {
+                        (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                            (8 * density).toInt()
+                    }
+                    image.setOnClickListener { openImage(path) }
+                    binding.imageColumn.addView(image)
                 }
-                image.setOnClickListener { openImage(path) }
-                binding.imageColumn.addView(image)
             }
-            return
-        }
-        if (style == Settings.IMAGE_LARGE) {
-            // 大图模式：每张图片按原图比例铺满正文宽度，纵向排列，带圆角。
-            val width = (metrics.widthPixels - 48 * density).toInt()
-            val maxHeight = (metrics.heightPixels * 0.7f).toInt()
-            current.images.forEachIndexed { position, path ->
-                val image = ImageLoader.largeImage(this, path, width, maxHeight)
-                    ?: return@forEachIndexed
-                if (position > 0) {
-                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
-                        (8 * density).toInt()
+
+            else -> {
+                val size = (84 * density).toInt()
+                val gap = (8 * density).toInt()
+                current.images.forEach { path ->
+                    val image = ImageView(this).apply {
+                        layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                            rightMargin = gap
+                        }
+                        scaleType = ImageView.ScaleType.CENTER_CROP
+                        setImageBitmap(ImageLoader.load(path, size))
+                    }
+                    image.setOnClickListener { openImage(path) }
+                    binding.imageStrip.addView(image)
                 }
-                image.setOnClickListener { openImage(path) }
-                binding.imageColumn.addView(image)
             }
-            return
         }
-        val size = (84 * density).toInt()
-        val gap = (8 * density).toInt()
-        current.images.forEach { path ->
-            val image = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = gap }
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                setImageBitmap(ImageLoader.load(path, size))
+    }
+
+    /** 页码圆点：当前页深色，其余浅灰；只有一张时不显示。 */
+    private fun renderDots(count: Int, selected: Int) {
+        binding.imageDots.removeAllViews()
+        binding.imageDots.isVisible = count > 1
+        if (count <= 1) return
+        val density = resources.displayMetrics.density
+        val size = (6 * density).toInt()
+        val margin = (3 * density).toInt()
+        val active = ContextCompat.getColor(this, R.color.text_primary)
+        val inactive = 0xFFDDDDDD.toInt()
+        for (i in 0 until count) {
+            val dot = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    marginStart = margin
+                    marginEnd = margin
+                }
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(if (i == selected) active else inactive)
+                }
             }
-            image.setOnClickListener { openImage(path) }
-            binding.imageStrip.addView(image)
+            binding.imageDots.addView(dot)
         }
+    }
+
+    /** 横向分页里离屏幕中线最近的那一页。 */
+    private fun nearestImagePosition(): Int {
+        val pager = binding.imagePager
+        if (pager.childCount == 0 || pager.width <= 0) return pagerDotPosition
+        val center = pager.width / 2
+        var best = 0
+        var bestDistance = Int.MAX_VALUE
+        for (i in 0 until pager.childCount) {
+            val child = pager.getChildAt(i)
+            val position = pager.getChildAdapterPosition(child)
+            if (position < 0) continue
+            val middle = (child.left + child.right) / 2
+            val distance = abs(middle - center)
+            if (distance < bestDistance) {
+                bestDistance = distance
+                best = position
+            }
+        }
+        return best
     }
 
     private fun updateNav() {
@@ -584,16 +695,20 @@ class ViewDiaryActivity : AppCompatActivity() {
             .start()
     }
 
-    /** 触摸起点是否落在图片横向列表上。 */
+    /** 触摸起点是否落在图片区域上（小图 / 中图翻页 / 大图）。 */
     private fun isInImageStrip(event: MotionEvent): Boolean {
-        val strip = binding.imageScroll
-        if (!strip.isVisible) return false
+        val target = when {
+            binding.imagePagerBox.isVisible -> binding.imagePagerBox
+            binding.imageScroll.isVisible -> binding.imageScroll
+            binding.imageColumn.isVisible -> binding.imageColumn
+            else -> return false
+        }
         val location = IntArray(2)
-        strip.getLocationOnScreen(location)
+        target.getLocationOnScreen(location)
         val x = event.rawX
         val y = event.rawY
-        return x >= location[0] && x <= location[0] + strip.width &&
-            y >= location[1] && y <= location[1] + strip.height
+        return x >= location[0] && x <= location[0] + target.width &&
+            y >= location[1] && y <= location[1] + target.height
     }
 
     private fun openEditor(cursor: Int = -1) {

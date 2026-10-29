@@ -167,6 +167,29 @@
                 </HorizontalScrollView>
 
                 <LinearLayout
+                    android:id="@+id/imagePagerBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/imagePager"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:overScrollMode="never" />
+
+                    <LinearLayout
+                        android:id="@+id/imageDots"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:orientation="horizontal" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/imageColumn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
