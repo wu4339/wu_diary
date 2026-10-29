@@ -221,7 +221,7 @@ class DiaryAdapter(
             // 中图模式：不论原图多大都用同一块固定比例的圆角卡片，居中裁切。
             binding.imageStrip.orientation = LinearLayout.VERTICAL
             binding.imageStrip.gravity = Gravity.CENTER_HORIZONTAL
-            val width = (metrics.widthPixels - 96 * metrics.density).toInt()
+            val width = (metrics.widthPixels - 66 * metrics.density).toInt()
             val height = width * 3 / 4
             entry.images.take(3).forEachIndexed { position, path ->
                 val image = ImageLoader.cardImage(binding.root.context, path, width, height)
