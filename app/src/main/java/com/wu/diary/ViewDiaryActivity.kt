@@ -112,23 +112,25 @@ class ViewDiaryActivity : AppCompatActivity() {
     /** 当前高亮的页码圆点。 */
     private var pagerDotPosition = 0
 
-    /** 中图模式：一页一张图片，左右滑动切换。 */
-    private inner class ImagePagerAdapter : RecyclerView.Adapter<ImagePagerAdapter.Holder>() {
-        class Holder(val box: FrameLayout) : RecyclerView.ViewHolder(box)
+    /** 中图模式横向翻页的单元格，只承载一张圆角卡片。 */
+    private class ImagePagerHolder(val box: FrameLayout) : RecyclerView.ViewHolder(box)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
+    /** 中图模式：一页一张图片，左右滑动切换。 */
+    private inner class ImagePagerAdapter : RecyclerView.Adapter<ImagePagerHolder>() {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImagePagerHolder {
             val box = FrameLayout(parent.context).apply {
                 layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             }
-            return Holder(box)
+            return ImagePagerHolder(box)
         }
 
         override fun getItemCount(): Int = pagerPaths.size
 
-        override fun onBindViewHolder(holder: Holder, position: Int) {
+        override fun onBindViewHolder(holder: ImagePagerHolder, position: Int) {
             val box = holder.box
             box.removeAllViews()
             val path = pagerPaths.getOrNull(position) ?: return
