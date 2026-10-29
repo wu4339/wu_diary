@@ -105,34 +105,32 @@ object Feedback {
         }
     }
 
-    /** 嗖的一声：气流快速扫过，噪声与音高一起上扬再收回，像东西飞掠而过。 */
+    /** 嗖的一声：音高从高处快速滑落，叠一层跟着滑动的气流噪声，像东西掠过。 */
     private fun buildWhoosh(): ShortArray {
-        val total = (SAMPLE_RATE * 0.30).toInt()
-        val random = Random(7788)
+        val total = (SAMPLE_RATE * 0.18).toInt()
+        val random = Random(2024)
         val mix = FloatArray(total)
         var low = 0f
         var lower = 0f
         var phase = 0.0
         for (i in 0 until total) {
             val t = i.toDouble() / total
-            // 扫频先快速上扬、后段收回，形成“嗖——”掠过的感觉。
-            val sweep = if (t < 0.55) t / 0.55 else (1.0 - t) / 0.45
-            val cutoff = 380.0 + 3000.0 * sweep
+            // 音高从 2400Hz 快速滑落到约 320Hz。
+            val pitch = 2400.0 * exp(-3.2 * t) + 320.0
+            phase += 2 * PI * pitch / SAMPLE_RATE
+            // 气流噪声的中心频率跟着音高走。
+            val cutoff = (pitch * 0.8).coerceIn(300.0, 6000.0)
             val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
             val noise = random.nextFloat() * 2f - 1f
             low += coefficient * (noise - low)
-            lower += coefficient * 0.35f * (low - lower)
+            lower += coefficient * 0.3f * (low - lower)
             val band = low - lower
-            // 跟着扫频走的呼啸音高，让声音有实体感而不只是风噪。
-            val pitch = 260.0 + 900.0 * sweep
-            phase += 2 * PI * pitch / SAMPLE_RATE
-            val tone = sin(phase).toFloat() * 0.35f
-            // 约 50ms 起音，中段最强，末尾利落收住。
-            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.6)
-            mix[i] += ((band + tone) * envelope * 2.4).toFloat()
+            // 极快起音，随即利落衰减。
+            val envelope = min(1.0, t / 0.012) * exp(-4.5 * t)
+            mix[i] += ((sin(phase) * 0.55 + band * 1.2) * envelope * 1.6).toFloat()
         }
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 3.0f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+            (tanh(mix[i] * 2.6f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 

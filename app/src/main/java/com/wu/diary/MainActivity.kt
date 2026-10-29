@@ -1,6 +1,7 @@
 package com.wu.diary
 
 import android.content.BroadcastReceiver
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -30,12 +31,15 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityMainBinding
+import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.TagEditor
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
@@ -115,7 +119,7 @@ class MainActivity : AppCompatActivity() {
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
                 startActivity(ViewDiaryActivity.intent(this, ids, index))
             },
-            onLongClick = { entry -> confirmDelete(entry) }
+            onLongClick = { entry -> showEntryMenu(entry) }
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
@@ -765,6 +769,61 @@ class MainActivity : AppCompatActivity() {
         startActivity(
             ViewDiaryActivity.intent(this, ids, start, randomReview = true)
         )
+    }
+
+    /** 长按笔记：从底部弹出操作菜单（复制 / 编辑 / 标签 / 删除）。 */
+    private fun showEntryMenu(entry: DiaryEntry) {
+        val sheet = BottomSheetDialog(this)
+        val menu = DialogNoteMenuBinding.inflate(layoutInflater)
+        // 底部弹窗自带圆角背景，去掉卡片背景避免出现双层白边。
+        menu.root.background = null
+        menu.root.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        menu.itemHide.isVisible = false
+        menu.itemCopy.setOnClickListener {
+            sheet.dismiss()
+            copyEntry(entry)
+        }
+        menu.itemTag.setOnClickListener {
+            sheet.dismiss()
+            editEntryTags(entry)
+        }
+        menu.itemEdit.setOnClickListener {
+            sheet.dismiss()
+            startActivity(EditDiaryActivity.intent(this, entry.id))
+        }
+        menu.itemDelete.setOnClickListener {
+            sheet.dismiss()
+            confirmDelete(entry)
+        }
+        sheet.setContentView(menu.root)
+        sheet.show()
+    }
+
+    /** 复制笔记正文到剪贴板。 */
+    private fun copyEntry(entry: DiaryEntry) {
+        val text = listOf(entry.title, entry.content)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+        if (text.isEmpty()) return
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("wu_diary", text))
+        Toast.makeText(this, R.string.note_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    /** 主界面直接改某篇笔记的标签：先更新列表，再后台写存储。 */
+    private fun editEntryTags(entry: DiaryEntry) {
+        TagEditor.show(this, entry.tags) { updated ->
+            if (updated == entry.tags) return@show
+            val edited = entry.copy(tags = updated, updatedAt = System.currentTimeMillis())
+            allEntries = allEntries.map { if (it.id == edited.id) edited else it }
+            renderTags()
+            applyList()
+            val appContext = applicationContext
+            Thread { DiaryStore(appContext).save(edited) }.start()
+        }
     }
 
     private fun confirmDelete(entry: DiaryEntry) {
