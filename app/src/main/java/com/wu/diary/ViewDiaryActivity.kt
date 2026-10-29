@@ -237,13 +237,13 @@ class ViewDiaryActivity : AppCompatActivity() {
         index = target
         load()
         page.scrollTo(0, 0)
-        // 不做滑出等待：直接换内容，再让新页面小幅上移淡入。
-        page.translationY = 24 * resources.displayMetrics.density
-        page.alpha = 0.2f
+        // 不做滑出等待，也不淡入：直接换内容后只做轻微上移，
+        // 内容全程不透明，切换过程中不会露出白底。
+        page.translationY = 10 * resources.displayMetrics.density
+        page.alpha = 1f
         page.animate()
             .translationY(0f)
-            .alpha(1f)
-            .setDuration(140)
+            .setDuration(110)
             .setInterpolator(DecelerateInterpolator())
             .withEndAction { jumping = false }
             .start()
