@@ -475,8 +475,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         if (style == Settings.IMAGE_MEDIUM) {
             // 中图模式：不管原图多大都用同一块固定比例的圆角卡片，居中裁切。
             binding.imageColumn.gravity = Gravity.CENTER_HORIZONTAL
-            val width = (metrics.widthPixels - 66 * density).toInt()
-            val height = width * 3 / 4
+            val width = (metrics.widthPixels - 56 * density).toInt()
+            val height = width * 3 / 4 - (20 * density).toInt()
             current.images.forEachIndexed { position, path ->
                 val image = ImageLoader.cardImage(this, path, width, height)
                     ?: return@forEachIndexed
