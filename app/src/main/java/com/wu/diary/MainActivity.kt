@@ -470,22 +470,27 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 350)
             }, 230)
-        } else {
+        } else if (addedId == null) {
             applyList()
-            if (addedId != null && lm != null) {
-                val position = adapter.positionOf(addedId)
-                if (position >= 0) {
-                    val last = lm.findLastVisibleItemPosition()
-                    if (position > last) {
-                        // 等插入布局完成后再滚动定位，避免同帧滚动+插入导致条目不显示。
-                        binding.recycler.post {
-                            binding.recycler.stopScroll()
-                            (binding.recycler.layoutManager as? LinearLayoutManager)
-                                ?.scrollToPositionWithOffset(position, 0)
-                        }
+        } else {
+            // 回到主界面的瞬间列表保持稳定：先等编辑页缩小动画（约220ms）播完，
+            // 再让新笔记淡入，避免插入动画和界面过渡叠在一起闪一下文字。
+            pendingRevealId = addedId
+            binding.recycler.postDelayed({
+                pendingRevealId = null
+                applyList()
+                // 插入点可能在屏幕外（往旧日期添加时），等布局完成后再定位过去。
+                binding.recycler.post {
+                    val position = adapter.positionOf(addedId)
+                    val last = (binding.recycler.layoutManager as? LinearLayoutManager)
+                        ?.findLastVisibleItemPosition() ?: -1
+                    if (position >= 0 && last >= 0 && position > last) {
+                        binding.recycler.stopScroll()
+                        (binding.recycler.layoutManager as? LinearLayoutManager)
+                            ?.scrollToPositionWithOffset(position, 0)
                     }
                 }
-            }
+            }, 230)
         }
     }
 

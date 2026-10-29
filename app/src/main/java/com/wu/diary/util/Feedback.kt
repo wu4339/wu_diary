@@ -24,13 +24,13 @@ object Feedback {
     private val handler = Handler(Looper.getMainLooper())
 
     private val savedSamples: ShortArray by lazy { buildBubbles() }
-    private val deletedSamples: ShortArray by lazy { buildTossAway() }
+    private val deletedSamples: ShortArray by lazy { buildWhoosh() }
     private val pageTurnSamples: ShortArray by lazy { buildPageTurn() }
 
     /** 保存：水泡上浮的冒泡声。 */
     fun saved(context: Context) = play(context, savedSamples)
 
-    /** 删除：纸团丢进垃圾桶的"咻——啪"声，气流上扬 + 落底闷响。 */
+    /** 删除：嗖的一声，气流快速上扬飞走。 */
     fun deleted(context: Context) = play(context, deletedSamples)
 
     /** 随机回顾翻页：纸张擦过的沙沙声。 */
@@ -98,56 +98,34 @@ object Feedback {
         bubble(0.0, 380.0, 1250.0, 0.16, 1.0)
         bubble(0.11, 760.0, 2050.0, 0.11, 0.5)
 
-        // 增益翻倍后再用 tanh 软限幅，波形更满、更响，又不会破音。
+        // 音量再放大一倍：tanh 输入继续翻倍，波形更满，软限幅防爆音。
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 2.5f) * 0.95f * Short.MAX_VALUE)
+            (tanh(mix[i] * 5.0f) * 0.95f * Short.MAX_VALUE)
                 .toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 
-    /** 丢纸团声："咻"（带通噪声气流上扬）接"啪"（低频落底闷响 + 短冲击）。 */
-    private fun buildTossAway(): ShortArray {
-        val total = (SAMPLE_RATE * 0.26).toInt()
+    /** 嗖的一声：带通噪声的气流快速上扬飞走，收尾干净。 */
+    private fun buildWhoosh(): ShortArray {
+        val total = (SAMPLE_RATE * 0.22).toInt()
         val random = Random(4455)
         val mix = FloatArray(total)
-
-        // 咻：带通噪声，中心频率从 400Hz 上扬到 2200Hz，音量渐强。
-        val whooshLen = (SAMPLE_RATE * 0.13).toInt()
         var low = 0f
         var lower = 0f
-        for (i in 0 until whooshLen) {
-            val t = i.toFloat() / whooshLen
-            val cutoff = 400f + 1800f * t
+        for (i in 0 until total) {
+            val t = i.toFloat() / total
+            // 中心频率从 350Hz 上扬到 2800Hz，像东西"嗖"地飞出去。
+            val cutoff = 350f + 2450f * t
             val coefficient = (2.0 * PI * cutoff / SAMPLE_RATE).toFloat().coerceIn(0.002f, 0.95f)
             val noise = random.nextFloat() * 2f - 1f
             low += coefficient * (noise - low)
             lower += coefficient * 0.4f * (low - lower)
-            mix[i] += (low - lower) * t * t * 1.6f
+            // 约 50ms 起音到峰值，随后顺势收尾。
+            val envelope = min(1.0, t / 0.05) * (1.0 - t).pow(1.8f)
+            mix[i] += (low - lower) * envelope * 2.2f
         }
-
-        // 啪：落底闷响，音高快速下滑。
-        val impactStart = whooshLen
-        val thudLen = (SAMPLE_RATE * 0.11).toInt()
-        var phase = 0.0
-        for (i in 0 until thudLen) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val freq = 170.0 * exp(-13.0 * t) + 65.0
-            phase += 2 * PI * freq / SAMPLE_RATE
-            val envelope = min(1.0, t / 0.002) * exp(-17.0 * t)
-            val pos = impactStart + i
-            if (pos < total) mix[pos] += (sin(phase) * envelope * 1.3).toFloat()
-        }
-
-        // 落底瞬间的短噪声冲击，增强质感。
-        for (i in 0 until (SAMPLE_RATE * 0.008).toInt()) {
-            val pos = impactStart + i
-            if (pos >= total) break
-            val envelope = 1.0 - i / (SAMPLE_RATE * 0.008).toDouble()
-            mix[pos] += ((random.nextDouble() * 2 - 1) * envelope * 0.4).toFloat()
-        }
-
         return ShortArray(total) { i ->
-            (tanh(mix[i] * 1.7f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+            (tanh(mix[i] * 2.5f) * 0.95f * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
         }
     }
 
