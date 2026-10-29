@@ -36,6 +36,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -325,14 +326,6 @@ class EditDiaryActivity : AppCompatActivity() {
         container.addView(input)
 
         if (existingTags.isNotEmpty()) {
-            container.addView(
-                TextView(this).apply {
-                    text = getString(R.string.existing_tags)
-                    setTextColor(ContextCompat.getColor(this@EditDiaryActivity, R.color.text_secondary))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                    setPadding(0, dp(16), 0, dp(6))
-                }
-            )
             val chipViews = mutableListOf<Pair<String, TextView>>()
 
             fun refreshChips() {
@@ -350,10 +343,8 @@ class EditDiaryActivity : AppCompatActivity() {
             }
 
             // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
-            // 弹窗的自定义视图宽度在展示前是 0，这里按屏幕宽度估算内容宽度，保证标签一定能显示。
+            // 宽度铺满弹窗内容区，等布局完成后再按真实宽度排版，避免行尾留下空白。
             val rowHeight = dp(32)
-            val contentWidth =
-                (minOf(resources.displayMetrics.widthPixels, dp(560)) - dp(88)).coerceAtLeast(dp(160))
             val chipArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             val chipScroll = ScrollView(this).apply {
                 isVerticalScrollBarEnabled = false
@@ -362,11 +353,15 @@ class EditDiaryActivity : AppCompatActivity() {
             }
             container.addView(
                 chipScroll,
-                LinearLayout.LayoutParams(contentWidth, rowHeight * 3)
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    rowHeight * 3
+                ).apply { topMargin = dp(10) }
             )
 
             fun layoutChips(width: Int) {
-                if (width <= 0 || chipArea.childCount > 0) return
+                if (width <= 0) return
+                chipArea.removeAllViews()
                 var row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 var used = 0
                 chipViews.forEach { (_, chip) ->
@@ -413,7 +408,7 @@ class EditDiaryActivity : AppCompatActivity() {
             existingTags.forEach { tag ->
                 val chip = TextView(this).apply {
                     text = "#$tag"
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                     setPadding(dp(6), dp(4), dp(6), dp(4))
                     isClickable = true
                     setOnClickListener {
@@ -426,7 +421,8 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
                 chipViews.add(tag to chip)
             }
-            layoutChips(contentWidth)
+            // 等弹窗内容完成布局后用真实宽度排版，行尾不会留下多余空白。
+            chipScroll.doOnLayout { layoutChips(it.width) }
             refreshChips()
         }
 
