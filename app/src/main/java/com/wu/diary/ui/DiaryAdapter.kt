@@ -105,13 +105,6 @@ class DiaryAdapter(
         return result
     }
 
-    /** 行的稳定标识：日期头按日期，笔记按 id，用于在刷新/删除前后跟踪同一行。 */
-    fun keyAt(position: Int): String? = when (val row = rows.getOrNull(position)) {
-        is Row.DateHeader -> "d|${row.year}|${row.day}"
-        is Row.Entry -> "e|${row.entry.id}"
-        null -> null
-    }
-
     /** 返回指定笔记在列表中的行位置，找不到时返回 -1。 */
     fun positionOf(entryId: String): Int =
         rows.indexOfFirst { it is Row.Entry && it.entry.id == entryId }

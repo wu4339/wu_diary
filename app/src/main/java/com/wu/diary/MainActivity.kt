@@ -18,7 +18,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -30,7 +29,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -745,9 +743,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 删除分两段：先只做视觉动画（被删行淡出、下方可见行上移），动画结束后才更新数据；
-     * 数据更新后在同一帧绘制前把每一行钉回动画结束时的位置，再平滑回到新的自然位置。
-     * 这样上方内容始终不动，也不会出现"删完后跳一下"。
+     * 删除分两步：先把被删行淡出、下方可见行上移（只改绘制位置，不改布局）；
+     * 动画结束后才删数据，并用挂起滚动把上方可见笔记钉在原屏幕位置，
+     * 因此上方内容不会移动，也不会出现删完后整体跳动。
      */
     private fun animateRemoval(entry: DiaryEntry) {
         val recycler = binding.recycler
@@ -789,73 +787,48 @@ class MainActivity : AppCompatActivity() {
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    row.alpha = 1f
-                    row.translationY = 0f
-                    // 按稳定标识记录此刻每一行的实际绘制位置，数据更新后就按它对齐。
-                    val drawn = HashMap<String, Int>()
+                    // 动画结束，下一帧就是最终布局：先清掉所有临时位移与透明度。
+                    for (i in 0 until recycler.childCount) {
+                        val child = recycler.getChildAt(i)
+                        child.translationY = 0f
+                        child.alpha = 1f
+                    }
+                    // 锚点：被删行上方最靠上的可见行。用挂起滚动把它的屏幕位置钉死，
+                    // 避免列表在更新数据后重新选锚点而整体上下滑动。
+                    var anchorPos = -1
+                    var anchorTop = 0
                     for (i in 0 until recycler.childCount) {
                         val child = recycler.getChildAt(i)
                         val childPosition = recycler.getChildAdapterPosition(child)
-                        if (childPosition < 0) continue
-                        val key = adapter.keyAt(childPosition) ?: continue
-                        drawn[key] = child.top + child.translationY.toInt()
+                        if (childPosition in 0 until position) {
+                            anchorPos = childPosition
+                            anchorTop = child.top
+                            break
+                        }
                     }
-                    commitRemoval(entry.id, drawn)
+                    if (anchorPos >= 0) {
+                        manager.scrollToPositionWithOffset(
+                            anchorPos,
+                            anchorTop - recycler.paddingTop
+                        )
+                    } else {
+                        // 被删行就是最上面一行：让下面一行顶上来补位。
+                        val next = recycler.findViewHolderForAdapterPosition(position + 1)?.itemView
+                        if (next != null) {
+                            manager.scrollToPositionWithOffset(
+                                position,
+                                next.top - shift - recycler.paddingTop
+                            )
+                        }
+                    }
+                    // 本次布局不要系统动画，等这帧布局绘制完成后再恢复。
+                    recycler.itemAnimator = null
+                    removeEntry(entry.id)
+                    recycler.post { recycler.itemAnimator = defaultItemAnimator }
                 }
             })
             start()
         }
-    }
-
-    /** 更新数据后，在下一帧绘制前把每行放回动画结束时的位置，再平滑归位。 */
-    private fun commitRemoval(entryId: String, drawn: Map<String, Int>) {
-        val recycler = binding.recycler
-        recycler.itemAnimator = null
-        val observer = recycler.viewTreeObserver
-        val listener = object : ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                if (observer.isAlive) observer.removeOnPreDrawListener(this)
-                val starts = LinkedHashMap<View, Float>()
-                for (i in 0 until recycler.childCount) {
-                    val child = recycler.getChildAt(i)
-                    val childPosition = recycler.getChildAdapterPosition(child)
-                    val key = if (childPosition >= 0) adapter.keyAt(childPosition) else null
-                    val old = if (key != null) drawn[key] else null
-                    val delta = if (old != null) (old - child.top).toFloat() else 0f
-                    child.alpha = 1f
-                    child.translationY = delta
-                    if (delta != 0f) starts[child] = delta
-                }
-                if (starts.isEmpty()) {
-                    recycler.itemAnimator = defaultItemAnimator
-                    return true
-                }
-                ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 150
-                    interpolator = DecelerateInterpolator()
-                    addUpdateListener { animator ->
-                        val fraction = animator.animatedValue as Float
-                        starts.forEach { (child, start) ->
-                            child.translationY = start * (1f - fraction)
-                        }
-                    }
-                    addListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            for (i in 0 until recycler.childCount) {
-                                val child = recycler.getChildAt(i)
-                                child.translationY = 0f
-                                child.alpha = 1f
-                            }
-                            recycler.itemAnimator = defaultItemAnimator
-                        }
-                    })
-                    start()
-                }
-                return true
-            }
-        }
-        observer.addOnPreDrawListener(listener)
-        removeEntry(entryId)
     }
 
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
