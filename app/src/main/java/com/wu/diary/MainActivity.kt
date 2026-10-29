@@ -156,10 +156,8 @@ class MainActivity : AppCompatActivity() {
         // 顶栏与日历收起时，底部悬浮按键一起下移淡出。
         binding.appBar.addOnOffsetChangedListener(
             AppBarLayout.OnOffsetChangedListener { _, verticalOffset ->
-                val total = binding.appBar.totalScrollRange.toFloat()
-                val fraction = if (total <= 0f) 0f else (-verticalOffset / total).coerceIn(0f, 1f)
-                binding.fabBar.alpha = 1f - fraction
-                binding.fabBar.translationY = binding.fabBar.height * fraction
+                appBarOffset = verticalOffset
+                if (!fabFrozen) syncFabBar()
             }
         )
 
@@ -216,6 +214,7 @@ class MainActivity : AppCompatActivity() {
                 pullAllowed = !calendarVisible &&
                     !binding.drawerRoot.isDrawerOpen(binding.drawerPanel) &&
                     !binding.recycler.canScrollVertically(-1)
+                unfreezeFabNow()
             }
             MotionEvent.ACTION_MOVE -> {
                 // 已经滑出侧栏的这一次手势不再传给列表，避免松手时误触打开笔记。
@@ -376,7 +375,37 @@ class MainActivity : AppCompatActivity() {
                 (binding.recycler.layoutManager as? LinearLayoutManager)?.scrollToPosition(0)
                 binding.appBar.setExpanded(true, false)
             }
+        } else {
+            // 从其他页面返回时，过渡中列表会重新布局，顶栏偏移可能出现瞬时变化，
+            // 先把悬浮按键状态冻结住，等界面稳定后再按真实偏移同步，避免闪一下。
+            fabFrozen = true
+            binding.recycler.removeCallbacks(unfreezeFab)
+            binding.recycler.postDelayed(unfreezeFab, 900)
         }
+    }
+
+    /** 返回主界面等过渡期间冻结悬浮按键的显隐，避免顶栏偏移瞬时变化让它闪一下。 */
+    private var fabFrozen = false
+    private var appBarOffset = 0
+
+    private val unfreezeFab = Runnable {
+        fabFrozen = false
+        syncFabBar()
+    }
+
+    /** 按顶栏收起比例同步底部悬浮按键的位置与透明度。 */
+    private fun syncFabBar() {
+        val total = binding.appBar.totalScrollRange.toFloat()
+        val fraction = if (total <= 0f) 0f else (-appBarOffset / total).coerceIn(0f, 1f)
+        binding.fabBar.alpha = 1f - fraction
+        binding.fabBar.translationY = binding.fabBar.height * fraction
+    }
+
+    /** 用户开始手势时立即解除冻结，保证滚动时悬浮按键照常隐藏。 */
+    private fun unfreezeFabNow() {
+        if (!fabFrozen) return
+        fabFrozen = false
+        binding.recycler.removeCallbacks(unfreezeFab)
     }
 
     /** 等待播放新增笔记动画期间不再响应其他刷新，避免动画被打断造成闪烁。 */
