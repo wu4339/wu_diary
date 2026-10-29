@@ -222,7 +222,7 @@ class ViewDiaryActivity : AppCompatActivity() {
             .start()
     }
 
-    /** 当前页向下滑出，换一篇随机笔记后从上方滑入。 */
+    /** 松手后立即换成随机笔记，新内容快速上移淡入，避免滑出后等待的白屏。 */
     private fun animatePullJump() {
         val target = randomOtherIndex() ?: run {
             // 只有一篇笔记：没有可跳转的目标，回弹即可。
@@ -232,30 +232,20 @@ class ViewDiaryActivity : AppCompatActivity() {
         jumping = true
         val page = binding.scrollContent
         page.animate().cancel()
-        val height = page.height.toFloat().coerceAtLeast(1f)
+
+        if (randomReview) Feedback.pageTurn(this)
+        index = target
+        load()
+        page.scrollTo(0, 0)
+        // 不做滑出等待：直接换内容，再让新页面小幅上移淡入。
+        page.translationY = 24 * resources.displayMetrics.density
+        page.alpha = 0.2f
         page.animate()
-            .translationY(height)
-            .alpha(0f)
-            .setDuration(120)
-            .setInterpolator(AccelerateInterpolator())
-            .withEndAction {
-                if (isFinishing || isDestroyed) {
-                    jumping = false
-                    return@withEndAction
-                }
-                if (randomReview) Feedback.pageTurn(this)
-                index = target
-                load()
-                page.scrollTo(0, 0)
-                page.translationY = -height
-                page.alpha = 1f
-                page.animate()
-                    .translationY(0f)
-                    .setDuration(150)
-                    .setInterpolator(DecelerateInterpolator())
-                    .withEndAction { jumping = false }
-                    .start()
-            }
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(140)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction { jumping = false }
             .start()
     }
 

@@ -50,6 +50,7 @@
         <activity
             android:name=".EditDiaryActivity"
             android:exported="true"
+            android:taskAffinity=""
             android:theme="@style/Theme.WuDiary.Editor"
             android:windowSoftInputMode="adjustResize" />
 
