@@ -24,7 +24,8 @@ object ImageLoader {
             layoutParams = ViewGroup.MarginLayoutParams(widthPx, heightPx)
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageBitmap(bitmap)
-            val radius = 14 * context.resources.displayMetrics.density
+            // 中图卡片圆角比大图更小一些，看起来更方正。
+            val radius = 8 * context.resources.displayMetrics.density
             background = GradientDrawable().apply { cornerRadius = radius }
             clipToOutline = true
         }
