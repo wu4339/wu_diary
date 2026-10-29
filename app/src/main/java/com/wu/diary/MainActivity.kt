@@ -18,7 +18,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -800,19 +799,37 @@ class MainActivity : AppCompatActivity() {
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    // 数据更新后让锚点笔记保持原屏幕位置，同时清除视觉位移并恢复动画器。
-                    binding.recycler.viewTreeObserver.addOnPreDrawListener(
-                        object : ViewTreeObserver.OnPreDrawListener {
-                            override fun onPreDraw(): Boolean {
-                                binding.recycler.viewTreeObserver.removeOnPreDrawListener(this)
-                                below.forEach { child -> child.translationY = 0f }
-                                binding.recycler.itemAnimator = defaultItemAnimator
-                                return true
-                            }
-                        }
-                    )
                     binding.recycler.itemAnimator = null
-                    removeEntry(entry.id, anchorPos, anchorTop)
+                    val manager = binding.recycler.layoutManager as? LinearLayoutManager
+                    // 等删除引起的布局真正完成后再收尾（布局回调在绘制前触发），
+                    // 避免提前复位导致"回落再上移"的跳动。
+                    val watcher = object : View.OnLayoutChangeListener {
+                        override fun onLayoutChange(
+                            v: View,
+                            left: Int,
+                            top: Int,
+                            right: Int,
+                            bottom: Int,
+                            oldLeft: Int,
+                            oldTop: Int,
+                            oldRight: Int,
+                            oldBottom: Int
+                        ) {
+                            v.removeOnLayoutChangeListener(this)
+                            // 先让锚点行回到原来的屏幕位置，上方内容完全不动。
+                            if (anchorPos >= 0) {
+                                val anchorView = manager?.findViewByPosition(anchorPos)
+                                if (anchorView != null) {
+                                    val delta = anchorView.top - anchorTop
+                                    if (delta != 0) v.scrollBy(0, delta)
+                                }
+                            }
+                            below.forEach { child -> child.translationY = 0f }
+                            v.itemAnimator = defaultItemAnimator
+                        }
+                    }
+                    binding.recycler.addOnLayoutChangeListener(watcher)
+                    removeEntry(entry.id)
                 }
             })
             start()
@@ -820,24 +837,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
-    private fun removeEntry(
-        entryId: String,
-        anchorPos: Int = -1,
-        anchorTop: Int = 0
-    ) {
+    private fun removeEntry(entryId: String) {
         allEntries = allEntries.filterNot { it.id == entryId }
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
-        // 锚点行位于被删行上方，删除不会改变它的行位置，直接按原位置回填即可。
-        if (anchorPos >= 0) {
-            (binding.recycler.layoutManager as? LinearLayoutManager)
-                ?.scrollToPositionWithOffset(
-                    anchorPos,
-                    anchorTop - binding.recycler.paddingTop
-                )
-        }
         Thread { store.delete(entryId) }.start()
     }
 }
