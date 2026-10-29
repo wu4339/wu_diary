@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
     private var appliedLineSpacing = 0f
     private var appliedShowTags = false
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
-    private var appliedLargeImages = false
+    private var appliedImageStyle = Settings.IMAGE_SMALL
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
         appliedFontFamily = settings.fontFamily
-        appliedLargeImages = settings.largeImages
+        appliedImageStyle = settings.imageStyle
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity() {
             lineSpacing = settings.lineSpacing,
             showTags = settings.previewTags,
             largeImages = settings.largeImages,
+            mediumImages = settings.mediumImages,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -427,7 +428,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags ||
-            appliedFontFamily != settings.fontFamily || appliedLargeImages != settings.largeImages
+            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle
         ) {
             recreate()
             return

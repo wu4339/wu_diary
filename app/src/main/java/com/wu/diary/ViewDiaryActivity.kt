@@ -465,13 +465,31 @@ class ViewDiaryActivity : AppCompatActivity() {
     private fun renderImages(current: DiaryEntry) {
         binding.imageStrip.removeAllViews()
         binding.imageColumn.removeAllViews()
-        val large = Settings(this).largeImages
+        val style = Settings(this).imageStyle
         val hasImages = current.images.isNotEmpty()
-        binding.imageScroll.isVisible = !large && hasImages
-        binding.imageColumn.isVisible = large && hasImages
+        binding.imageColumn.gravity = Gravity.START
+        binding.imageScroll.isVisible = style == Settings.IMAGE_SMALL && hasImages
+        binding.imageColumn.isVisible = style != Settings.IMAGE_SMALL && hasImages
         val metrics = resources.displayMetrics
         val density = metrics.density
-        if (large) {
+        if (style == Settings.IMAGE_MEDIUM) {
+            // 中图模式：不管原图多大都用同一块固定比例的圆角卡片，居中裁切。
+            binding.imageColumn.gravity = Gravity.CENTER_HORIZONTAL
+            val width = (metrics.widthPixels - 96 * density).toInt()
+            val height = width * 3 / 4
+            current.images.forEachIndexed { position, path ->
+                val image = ImageLoader.cardImage(this, path, width, height)
+                    ?: return@forEachIndexed
+                if (position > 0) {
+                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                        (8 * density).toInt()
+                }
+                image.setOnClickListener { openImage(path) }
+                binding.imageColumn.addView(image)
+            }
+            return
+        }
+        if (style == Settings.IMAGE_LARGE) {
             // 大图模式：每张图片按原图比例铺满正文宽度，纵向排列，带圆角。
             val width = (metrics.widthPixels - 48 * density).toInt()
             val maxHeight = (metrics.heightPixels * 0.7f).toInt()

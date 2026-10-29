@@ -5,6 +5,7 @@ import android.text.Spanned
 import android.graphics.Typeface
 import android.text.style.BackgroundColorSpan
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -33,6 +34,7 @@ class DiaryAdapter(
     private val lineSpacing: Float,
     private val showTags: Boolean,
     private val largeImages: Boolean,
+    private val mediumImages: Boolean,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -203,6 +205,7 @@ class DiaryAdapter(
         if (largeImages) {
             // 大图模式：图片按原图比例铺满整行，纵向排列，带圆角。
             binding.imageStrip.orientation = LinearLayout.VERTICAL
+            binding.imageStrip.gravity = Gravity.START
             val width = (metrics.widthPixels - 48 * metrics.density).toInt()
             val maxHeight = (metrics.heightPixels * 0.7f).toInt()
             entry.images.take(3).forEachIndexed { position, path ->
@@ -214,8 +217,24 @@ class DiaryAdapter(
                 }
                 binding.imageStrip.addView(image)
             }
+        } else if (mediumImages) {
+            // 中图模式：不论原图多大都用同一块固定比例的圆角卡片，居中裁切。
+            binding.imageStrip.orientation = LinearLayout.VERTICAL
+            binding.imageStrip.gravity = Gravity.CENTER_HORIZONTAL
+            val width = (metrics.widthPixels - 96 * metrics.density).toInt()
+            val height = width * 3 / 4
+            entry.images.take(3).forEachIndexed { position, path ->
+                val image = ImageLoader.cardImage(binding.root.context, path, width, height)
+                    ?: return@forEachIndexed
+                if (position > 0) {
+                    (image.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                        (8 * metrics.density).toInt()
+                }
+                binding.imageStrip.addView(image)
+            }
         } else {
             binding.imageStrip.orientation = LinearLayout.HORIZONTAL
+            binding.imageStrip.gravity = Gravity.START
             val thumb = (78 * metrics.density).toInt()
             val gap = (8 * metrics.density).toInt()
             entry.images.take(3).forEach { path ->

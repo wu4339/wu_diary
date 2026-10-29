@@ -242,21 +242,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateImageStyleValue() {
-        binding.textImageStyleValue.text = getString(
-            if (settings.largeImages) R.string.image_style_large else R.string.image_style_small
-        )
+        val labelRes = when (settings.imageStyle) {
+            Settings.IMAGE_LARGE -> R.string.image_style_large
+            Settings.IMAGE_MEDIUM -> R.string.image_style_medium
+            else -> R.string.image_style_small
+        }
+        binding.textImageStyleValue.text = getString(labelRes)
     }
 
-    /** 图片显示方式：小图（横向缩略图）/ 大图（全宽铺满），选中即生效。 */
+    /** 图片显示方式：小图 / 中图 / 大图，选中即生效。 */
     private fun showImageStyleDialog() {
+        val styles = intArrayOf(Settings.IMAGE_SMALL, Settings.IMAGE_MEDIUM, Settings.IMAGE_LARGE)
         val labels = arrayOf(
             getString(R.string.image_style_small),
+            getString(R.string.image_style_medium),
             getString(R.string.image_style_large)
         )
+        val checked = styles.indexOf(settings.imageStyle).coerceAtLeast(0)
         AlertDialog.Builder(this)
             .setTitle(R.string.image_style)
-            .setSingleChoiceItems(labels, if (settings.largeImages) 1 else 0) { dialog, which ->
-                settings.largeImages = which == 1
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.imageStyle = styles[which]
                 updateImageStyleValue()
                 dialog.dismiss()
             }

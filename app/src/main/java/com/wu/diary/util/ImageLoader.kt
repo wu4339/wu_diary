@@ -17,6 +17,19 @@ object ImageLoader {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
     }
 
+    /** 中图模式：固定尺寸的圆角卡片，不管原图多大都居中裁切铺满同一块区域。 */
+    fun cardImage(context: Context, path: String, widthPx: Int, heightPx: Int): ImageView? {
+        val bitmap = load(path, widthPx) ?: return null
+        return ImageView(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(widthPx, heightPx)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageBitmap(bitmap)
+            val radius = 14 * context.resources.displayMetrics.density
+            background = GradientDrawable().apply { cornerRadius = radius }
+            clipToOutline = true
+        }
+    }
+
     /**
      * 大图模式的图片视图：按原图比例铺满给定宽度，圆角裁剪；
      * 过长时限制高度并居中裁切。

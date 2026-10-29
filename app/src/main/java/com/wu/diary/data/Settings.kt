@@ -89,12 +89,28 @@ class Settings(context: Context) {
             prefs.edit().putBoolean(KEY_PREVIEW_TAGS, value).apply()
         }
 
-    /** 图片以全宽大图显示（true）或横向排列的小缩略图显示（false）。 */
-    var largeImages: Boolean
-        get() = prefs.getBoolean(KEY_LARGE_IMAGES, false)
-        set(value) {
-            prefs.edit().putBoolean(KEY_LARGE_IMAGES, value).apply()
+    /** 图片显示方式：IMAGE_SMALL 小图、IMAGE_MEDIUM 中图、IMAGE_LARGE 大图。 */
+    var imageStyle: Int
+        get() {
+            if (prefs.contains(KEY_IMAGE_STYLE)) {
+                return prefs.getInt(KEY_IMAGE_STYLE, IMAGE_SMALL).coerceIn(IMAGE_SMALL, IMAGE_LARGE)
+            }
+            // 兼容更早的版本：当时只区分大图 / 小图。
+            val legacy = if (prefs.getBoolean(KEY_LARGE_IMAGES, false)) IMAGE_LARGE else IMAGE_SMALL
+            prefs.edit().putInt(KEY_IMAGE_STYLE, legacy).apply()
+            return legacy
         }
+        set(value) {
+            prefs.edit().putInt(KEY_IMAGE_STYLE, value.coerceIn(IMAGE_SMALL, IMAGE_LARGE)).apply()
+        }
+
+    /** 大图模式：图片全宽铺满。 */
+    val largeImages: Boolean
+        get() = imageStyle == IMAGE_LARGE
+
+    /** 中图模式：固定比例的圆角卡片。 */
+    val mediumImages: Boolean
+        get() = imageStyle == IMAGE_MEDIUM
 
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
@@ -114,6 +130,7 @@ class Settings(context: Context) {
         private const val KEY_READING_LINE_SPACING = "reading_line_spacing"
         private const val KEY_PREVIEW_TAGS = "preview_tags"
         private const val KEY_LARGE_IMAGES = "large_images"
+        private const val KEY_IMAGE_STYLE = "image_style"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
 
         /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */
@@ -121,6 +138,11 @@ class Settings(context: Context) {
 
         /** 查看 / 编辑页正文的基准字号（sp）。 */
         private const val READING_BASE_SP = 17f
+
+        /** 图片显示方式：小图（横向缩略图）、中图（固定比例卡片）、大图（全宽）。 */
+        const val IMAGE_SMALL = 0
+        const val IMAGE_MEDIUM = 1
+        const val IMAGE_LARGE = 2
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

@@ -24,7 +24,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
     private var appliedLineSpacing = 0f
     private var appliedShowTags = false
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
-    private var appliedLargeImages = false
+    private var appliedImageStyle = Settings.IMAGE_SMALL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +38,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
         appliedLineSpacing = settings.lineSpacing
         appliedShowTags = settings.previewTags
         appliedFontFamily = settings.fontFamily
-        appliedLargeImages = settings.largeImages
+        appliedImageStyle = settings.imageStyle
 
         adapter = DiaryAdapter(
             typeface = settings.typeface,
@@ -47,6 +47,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
             lineSpacing = settings.lineSpacing,
             showTags = settings.previewTags,
             largeImages = settings.largeImages,
+            mediumImages = settings.mediumImages,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -63,7 +64,7 @@ class HiddenDiaryActivity : AppCompatActivity() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags ||
-            appliedFontFamily != settings.fontFamily || appliedLargeImages != settings.largeImages
+            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle
         ) {
             recreate()
             return
