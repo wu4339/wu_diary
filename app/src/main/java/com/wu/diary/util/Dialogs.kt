@@ -1,22 +1,36 @@
 package com.wu.diary.util
 
 import android.app.Activity
-import androidx.appcompat.app.AlertDialog
+import android.app.Dialog
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.view.LayoutInflater
+import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import com.wu.diary.R
 
-/** 删除确认弹窗：比系统默认更窄、更高，确认按钮直接执行 [onConfirm]。 */
+/** 删除确认弹窗：白色圆角卡片，标题 + 说明 + 并排的取消 / 删除按钮。 */
 fun showDeleteConfirm(activity: Activity, onConfirm: () -> Unit) {
-    val dialog = AlertDialog.Builder(activity)
-        .setMessage(R.string.delete_confirm)
-        .setPositiveButton(R.string.delete) { _, _ -> onConfirm() }
-        .setNegativeButton(R.string.cancel, null)
-        .create()
+    val dialog = Dialog(activity)
+    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+    val content = LayoutInflater.from(activity).inflate(R.layout.dialog_delete_confirm, null)
+    dialog.setContentView(content)
+    content.findViewById<View>(R.id.btnDeleteCancel).setOnClickListener { dialog.dismiss() }
+    content.findViewById<View>(R.id.btnDeleteConfirm).setOnClickListener {
+        dialog.dismiss()
+        onConfirm()
+    }
+    dialog.window?.apply {
+        setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        setDimAmount(0.35f)
+    }
     dialog.setOnShowListener {
-        val density = activity.resources.displayMetrics.density
-        dialog.window?.setLayout(
-            (236 * density).toInt(),
-            (216 * density).toInt()
-        )
+        // 卡片宽度比屏幕窄一点，位置由系统居中。
+        val metrics = activity.resources.displayMetrics
+        val width = metrics.widthPixels - (72 * metrics.density).toInt()
+        dialog.window?.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
     }
     dialog.show()
 }
