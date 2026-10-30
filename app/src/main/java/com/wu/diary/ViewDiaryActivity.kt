@@ -525,8 +525,9 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.isVisible = text.isNotEmpty()
 
         TagChips.render(binding.tagStrip, current.tags, tagScale) { editTags() }
-        // 定位与标签图标固定显示，有标签时色块接在后面。
+        // 有标签后标签图标隐藏，位置换成标签色块。
         binding.tagStrip.isVisible = current.tags.isNotEmpty()
+        binding.btnTags.isVisible = current.tags.isEmpty()
 
         // 已有坐标就打开地图；还没有坐标时先记录当前位置，记完再点才打开地图。
         val geo = GeoPoint.find(text)

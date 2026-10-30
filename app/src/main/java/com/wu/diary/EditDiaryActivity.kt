@@ -265,10 +265,11 @@ class EditDiaryActivity : BaseActivity() {
         binding.scrollContent.requestChildRectangleOnScreen(edit, rect, false)
     }
 
-    /** 日期行下面的操作行：定位与标签图标固定显示，选中标签后色块也排在同一行。 */
+    /** 日期行下面的操作行：定位图标固定显示；有标签后标签图标隐藏，位置换成标签色块。 */
     private fun renderEditorTags() {
         TagChips.render(binding.tagStrip, tags, tagScale) { editTags() }
         binding.tagStrip.isVisible = tags.isNotEmpty()
+        binding.btnEditorTags.isVisible = tags.isEmpty()
     }
 
     private fun renderImages() {
