@@ -128,6 +128,15 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
+        // 滑动列表时收起底部悬浮按键，停下后淡入回来。
+        binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recycler: RecyclerView, newState: Int) {
+                when (newState) {
+                    RecyclerView.SCROLL_STATE_DRAGGING -> hideFabForScroll()
+                    RecyclerView.SCROLL_STATE_IDLE -> showFabAfterScroll()
+                }
+            }
+        })
         // 新增笔记：淡入 + 其他笔记下移；变化项不做交叉淡入淡出，避免无关笔记闪一下。
         // 删除笔记使用自定义的纯视觉动画，不经过列表动画器。
         defaultItemAnimator = (binding.recycler.itemAnimator as? DefaultItemAnimator)?.apply {
@@ -463,10 +472,42 @@ class MainActivity : AppCompatActivity() {
 
     /** 按顶栏收起比例同步底部悬浮按键的位置与透明度。 */
     private fun syncFabBar() {
-        val total = binding.appBar.totalScrollRange.toFloat()
-        val fraction = if (total <= 0f) 0f else (-appBarOffset / total).coerceIn(0f, 1f)
+        if (fabHiddenByScroll) return
+        val fraction = fabRestFraction()
         binding.fabBar.alpha = 1f - fraction
         binding.fabBar.translationY = binding.fabBar.height * fraction
+    }
+
+    /** 顶栏收起比例决定悬浮按键静止时的位置与透明度。 */
+    private fun fabRestFraction(): Float {
+        val total = binding.appBar.totalScrollRange.toFloat()
+        return if (total <= 0f) 0f else (-appBarOffset / total).coerceIn(0f, 1f)
+    }
+
+    /** 手势滑动期间隐藏底部悬浮按键，停止滚动后再淡入回来。 */
+    private var fabHiddenByScroll = false
+
+    private fun hideFabForScroll() {
+        unfreezeFabNow()
+        fabHiddenByScroll = true
+        binding.fabBar.animate().cancel()
+        binding.fabBar.animate()
+            .translationY(binding.fabBar.height.toFloat())
+            .alpha(0f)
+            .setDuration(160L)
+            .start()
+    }
+
+    private fun showFabAfterScroll() {
+        if (!fabHiddenByScroll) return
+        fabHiddenByScroll = false
+        binding.fabBar.animate().cancel()
+        // 按顶栏当前的收起比例回到静止位置；顶栏收起时本来就该隐藏。
+        binding.fabBar.animate()
+            .translationY(binding.fabBar.height * fabRestFraction())
+            .alpha(1f - fabRestFraction())
+            .setDuration(200L)
+            .start()
     }
 
     /** 用户开始手势时立即解除冻结，保证滚动时悬浮按键照常隐藏。 */
