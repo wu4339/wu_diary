@@ -62,7 +62,7 @@ class SearchActivity : BaseActivity() {
             fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
-            showTags = settings.previewTags,
+            tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             onClick = { entry ->

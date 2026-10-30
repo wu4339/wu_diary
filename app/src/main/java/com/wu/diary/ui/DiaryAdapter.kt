@@ -36,7 +36,7 @@ class DiaryAdapter(
     private val fontScale: Float,
     private val previewLines: Int,
     private val lineSpacing: Float,
-    private val showTags: Boolean,
+    private val tagStyle: Int,
     private val largeImages: Boolean,
     private val mediumImages: Boolean,
     private val onClick: (DiaryEntry) -> Unit,
@@ -196,10 +196,17 @@ class DiaryAdapter(
         binding.textBody.breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
         binding.textBody.hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
 
-        // 预览标签与查看/编辑页一致，使用带光晕的标签色块。
-        val showEntryTags = showTags && entry.tags.isNotEmpty()
-        binding.tagScroll.isVisible = showEntryTags
-        if (showEntryTags) TagChips.render(binding.tagStrip, entry.tags, fontScale)
+        // 预览标签与查看/编辑页一致，使用带光晕的标签色块；位置跟随设置。
+        val showEntryTags = tagStyle != Settings.TAG_HIDDEN && entry.tags.isNotEmpty()
+        binding.tagScroll.isVisible = showEntryTags && tagStyle == Settings.TAG_TOP
+        binding.tagScrollBottom.isVisible = showEntryTags && tagStyle == Settings.TAG_BOTTOM
+        if (showEntryTags) {
+            if (tagStyle == Settings.TAG_TOP) {
+                TagChips.render(binding.tagStrip, entry.tags, fontScale)
+            } else {
+                TagChips.render(binding.tagStripBottom, entry.tags, fontScale)
+            }
+        }
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
         applyGroupEnd(binding, isGroupEnd)

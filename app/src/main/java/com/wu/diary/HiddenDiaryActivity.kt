@@ -21,7 +21,7 @@ class HiddenDiaryActivity : BaseActivity() {
     private var appliedScale = 1f
     private var appliedLines = 0
     private var appliedLineSpacing = 0f
-    private var appliedShowTags = false
+    private var appliedTagStyle = 0
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var appliedImageStyle = Settings.IMAGE_SMALL
 
@@ -35,7 +35,7 @@ class HiddenDiaryActivity : BaseActivity() {
         appliedScale = settings.previewScale
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
-        appliedShowTags = settings.previewTags
+        appliedTagStyle = settings.tagStyle
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
 
@@ -44,7 +44,7 @@ class HiddenDiaryActivity : BaseActivity() {
             fontScale = settings.previewScale,
             previewLines = settings.previewLines,
             lineSpacing = settings.lineSpacing,
-            showTags = settings.previewTags,
+            tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             onClick = { entry ->
@@ -62,7 +62,7 @@ class HiddenDiaryActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
-            appliedLineSpacing != settings.lineSpacing || appliedShowTags != settings.previewTags ||
+            appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle
         ) {
             recreate()

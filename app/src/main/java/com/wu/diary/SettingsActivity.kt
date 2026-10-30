@@ -80,11 +80,7 @@ class SettingsActivity : BaseActivity() {
             settings.soundEnabled = !settings.soundEnabled
             binding.switchSound.isChecked = settings.soundEnabled
         }
-        binding.switchPreviewTags.isChecked = settings.previewTags
-        binding.rowPreviewTags.setOnClickListener {
-            settings.previewTags = !settings.previewTags
-            binding.switchPreviewTags.isChecked = settings.previewTags
-        }
+        binding.rowPreviewTags.setOnClickListener { showTagStyleDialog() }
         binding.switchDoubleTap.isChecked = settings.doubleTapEdit
         binding.rowDoubleTap.setOnClickListener {
             settings.doubleTapEdit = !settings.doubleTapEdit
@@ -103,6 +99,7 @@ class SettingsActivity : BaseActivity() {
         updateReadingFontValue()
         updateFontFamilyValue()
         updatePreviewValue()
+        updateTagStyleValue()
         updateImageStyleValue()
         updateTransitionStyleValue()
         updateLineSpacingValue()
@@ -293,6 +290,35 @@ class SettingsActivity : BaseActivity() {
             .setSingleChoiceItems(labels, checked) { dialog, which ->
                 settings.transitionStyle = styles[which]
                 updateTransitionStyleValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateTagStyleValue() {
+        val labelRes = when (settings.tagStyle) {
+            Settings.TAG_BOTTOM -> R.string.tag_style_bottom
+            Settings.TAG_HIDDEN -> R.string.tag_style_hidden
+            else -> R.string.tag_style_top
+        }
+        binding.textTagStyleValue.text = getString(labelRes)
+    }
+
+    /** 主界面标签位置：笔记顶部 / 笔记底部 / 不显示。 */
+    private fun showTagStyleDialog() {
+        val styles = intArrayOf(Settings.TAG_TOP, Settings.TAG_BOTTOM, Settings.TAG_HIDDEN)
+        val labels = arrayOf(
+            getString(R.string.tag_style_top),
+            getString(R.string.tag_style_bottom),
+            getString(R.string.tag_style_hidden)
+        )
+        val checked = styles.indexOf(settings.tagStyle).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.preview_tags)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.tagStyle = styles[which]
+                updateTagStyleValue()
                 dialog.dismiss()
             }
             .setNegativeButton(android.R.string.cancel, null)

@@ -82,11 +82,19 @@ class Settings(context: Context) {
             prefs.edit().putFloat(KEY_READING_LINE_SPACING, value).apply()
         }
 
-    /** 列表预览时是否显示笔记标签。 */
-    var previewTags: Boolean
-        get() = prefs.getBoolean(KEY_PREVIEW_TAGS, false)
+    /** 主界面预览时标签的位置：TAG_TOP 顶部、TAG_BOTTOM 底部、TAG_HIDDEN 不显示。 */
+    var tagStyle: Int
+        get() {
+            if (prefs.contains(KEY_TAG_STYLE)) {
+                return prefs.getInt(KEY_TAG_STYLE, TAG_TOP).coerceIn(TAG_TOP, TAG_HIDDEN)
+            }
+            // 兼容旧版本：当时只有「显示 / 不显示标签」开关。
+            val legacy = if (prefs.getBoolean(KEY_PREVIEW_TAGS, false)) TAG_TOP else TAG_HIDDEN
+            prefs.edit().putInt(KEY_TAG_STYLE, legacy).apply()
+            return legacy
+        }
         set(value) {
-            prefs.edit().putBoolean(KEY_PREVIEW_TAGS, value).apply()
+            prefs.edit().putInt(KEY_TAG_STYLE, value.coerceIn(TAG_TOP, TAG_HIDDEN)).apply()
         }
 
     /** 图片显示方式：IMAGE_SMALL 小图、IMAGE_MEDIUM 中图、IMAGE_LARGE 大图。 */
@@ -139,6 +147,7 @@ class Settings(context: Context) {
         private const val KEY_LINE_SPACING = "line_spacing"
         private const val KEY_READING_LINE_SPACING = "reading_line_spacing"
         private const val KEY_PREVIEW_TAGS = "preview_tags"
+        private const val KEY_TAG_STYLE = "tag_style"
         private const val KEY_LARGE_IMAGES = "large_images"
         private const val KEY_IMAGE_STYLE = "image_style"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
@@ -158,6 +167,11 @@ class Settings(context: Context) {
         /** 打开 / 关闭页面的切换效果：右侧滑出、原地展开。 */
         const val TRANSITION_SLIDE = 0
         const val TRANSITION_EXPAND = 1
+
+        /** 主界面标签位置：笔记顶部、笔记底部、不显示。 */
+        const val TAG_TOP = 0
+        const val TAG_BOTTOM = 1
+        const val TAG_HIDDEN = 2
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")
