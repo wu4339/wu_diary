@@ -18,6 +18,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Layout
 import android.text.SpannableString
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
@@ -516,7 +517,7 @@ class ViewDiaryActivity : BaseActivity() {
         updateNav()
     }
 
-    /** 识别正文里的网址，并换成点击时优先用对应 App 打开的 span。 */
+    /** 识别正文里的网址，并换成点击时优先用对应 App 打开的 span；坐标同样加下划线可点击。 */
     private fun linkify(text: String): SpannableString {
         val spannable = SpannableString(text)
         Linkify.addLinks(spannable, Linkify.WEB_URLS)
@@ -536,6 +537,19 @@ class ViewDiaryActivity : BaseActivity() {
                     ds.isUnderlineText = false
                 }
             }, start, end, flags)
+        }
+        // 坐标文本加下划线，点按用地图打开。
+        GeoPoint.findAll(spannable.toString()).forEach { match ->
+            spannable.setSpan(object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    GeoPoint.openMap(this@ViewDiaryActivity, match.lat, match.lng)
+                }
+
+                override fun updateDrawState(ds: TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.isUnderlineText = true
+                }
+            }, match.start, match.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         return spannable
     }
