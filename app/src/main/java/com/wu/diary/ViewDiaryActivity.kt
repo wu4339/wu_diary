@@ -1,7 +1,9 @@
 package com.wu.diary
 
+import android.Manifest
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.BroadcastReceiver
 import android.content.ClipData
@@ -9,13 +11,19 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Layout
 import android.text.SpannableString
 import android.text.Spanned
@@ -44,6 +52,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -107,6 +116,18 @@ class ViewDiaryActivity : BaseActivity() {
 
     /** 查看页字号缩放，用于标签色块。 */
     private var tagScale = 1f
+
+    /** 正在等待定位回调，避免重复发起请求。 */
+    private var locationWaiting = false
+
+    private val requestLocation =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            if (result.values.any { it }) {
+                fetchCurrentLocation()
+            } else {
+                Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
 
     /** 无序列表渲染后的文本，双击定位时用来把显示偏移换算回原文偏移。 */
     private var renderedText: MarkdownText.Rendered? = null
@@ -507,11 +528,14 @@ class ViewDiaryActivity : BaseActivity() {
         // 定位与标签图标固定显示，有标签时色块接在后面。
         binding.tagStrip.isVisible = current.tags.isNotEmpty()
 
-        // 点定位图标：笔记里有坐标就用地图打开，没有则提示。
+        // 笔记已有坐标就打开地图看位置；没有坐标则获取当前位置后在地图上查看。
         val geo = GeoPoint.find(text)
         binding.btnViewGeo.setOnClickListener {
-            geo?.let { (lat, lng) -> GeoPoint.openMap(this, lat, lng) }
-                ?: Toast.makeText(this, R.string.no_location, Toast.LENGTH_SHORT).show()
+            if (geo != null) {
+                GeoPoint.openMap(this, geo.first, geo.second)
+            } else {
+                fetchCurrentLocation()
+            }
         }
 
         renderImages(current)
@@ -1031,6 +1055,86 @@ class ViewDiaryActivity : BaseActivity() {
             }
         }
         dialog.show()
+    }
+
+    /** 笔记还没有坐标：取当前位置后直接用地图查看。 */
+    @SuppressLint("MissingPermission")
+    private fun fetchCurrentLocation() {
+        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
+            requestLocation.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+            return
+        }
+
+        val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val providers = buildList {
+            if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                add(LocationManager.GPS_PROVIDER)
+            }
+            if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                add(LocationManager.NETWORK_PROVIDER)
+            }
+        }
+        if (providers.isEmpty()) {
+            Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        var lastKnown: Location? = null
+        providers.forEach { provider ->
+            val location = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
+                ?: return@forEach
+            val current = lastKnown
+            if (current == null || location.time > current.time) lastKnown = location
+        }
+        lastKnown?.let {
+            GeoPoint.openMap(this, it.latitude, it.longitude)
+            return
+        }
+
+        if (locationWaiting) return
+        locationWaiting = true
+        Toast.makeText(this, R.string.location_fetching, Toast.LENGTH_SHORT).show()
+
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                if (!locationWaiting) return
+                locationWaiting = false
+                manager.removeUpdates(this)
+                GeoPoint.openMap(this@ViewDiaryActivity, location.latitude, location.longitude)
+            }
+
+            override fun onProviderEnabled(provider: String) {}
+
+            override fun onProviderDisabled(provider: String) {}
+
+            @Suppress("DEPRECATION")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+        }
+        runCatching {
+            manager.requestLocationUpdates(
+                providers.first(),
+                0L,
+                0f,
+                listener,
+                Looper.getMainLooper()
+            )
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (!locationWaiting) return@postDelayed
+                locationWaiting = false
+                manager.removeUpdates(listener)
+                Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+            }, 15000L)
+        }.onFailure {
+            locationWaiting = false
+            Toast.makeText(this, R.string.location_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** 查看页里直接给当前笔记加/删标签，保存后立即刷新标签行。 */

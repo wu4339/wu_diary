@@ -42,6 +42,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -171,7 +172,11 @@ class EditDiaryActivity : BaseActivity() {
         }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
-        binding.btnEditorGeo.setOnClickListener { fetchLocation() }
+        // 笔记已有坐标就打开地图看位置；没有坐标则获取当前位置并插入。
+        binding.btnEditorGeo.setOnClickListener {
+            val geo = GeoPoint.find(binding.editContent.text?.toString().orEmpty())
+            if (geo != null) GeoPoint.openMap(this, geo.first, geo.second) else fetchLocation()
+        }
         binding.btnVideo.setOnClickListener { pickVideo.launch("video/*") }
         binding.btnTag.setOnClickListener { editTags() }
         binding.btnEditorTags.setOnClickListener { editTags() }
