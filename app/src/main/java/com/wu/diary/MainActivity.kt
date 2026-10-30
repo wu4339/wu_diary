@@ -515,7 +515,24 @@ class MainActivity : BaseActivity() {
     private fun refresh() {
         if (pendingRevealId != null) return
         val previousIds = allEntries.map { it.id }.toSet()
-        val loaded = store.load().filter { !it.hidden }
+        val token = ++refreshToken
+        // 读取存储可能是慢速的外部文档目录遍历，放到后台线程，
+        // 否则会卡住主线程，删除笔记后退出查看页的动画会被拖住好几秒。
+        val appContext = applicationContext
+        Thread {
+            val loaded = DiaryStore(appContext).load().filter { !it.hidden }
+            runOnUiThread {
+                if (token != refreshToken || isDestroyed) return@runOnUiThread
+                applyLoaded(previousIds, loaded)
+            }
+        }.start()
+    }
+
+    /** 刷新序号：连续触发时只应用最后一次读到的数据。 */
+    private var refreshToken = 0
+
+    /** 把后台读到的笔记应用到界面。 */
+    private fun applyLoaded(previousIds: Set<String>, loaded: List<DiaryEntry>) {
         // 删除广播可能读到还没落盘的旧快照：把刚删除的笔记过滤掉，
         // 否则它会被当成“新增”而触发回顶 + 定位，列表就会整体跳一下。
         val known = loaded.map { it.id }.toSet()

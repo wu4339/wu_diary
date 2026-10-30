@@ -30,7 +30,7 @@ object GeoName {
         }.start()
     }
 
-    /** 依次拼上市、区、路、门牌和小区/POI 名，重复的部分跳过。 */
+    /** 依次拼上市、区、路、门牌号和小区/POI 名，重复的部分跳过。 */
     private fun compose(address: android.location.Address): String {
         val parts = mutableListOf<String>()
         fun add(part: String?) {
@@ -40,6 +40,12 @@ object GeoName {
         add(address.locality ?: address.subAdminArea ?: address.adminArea)
         add(address.subLocality)
         add(address.thoroughfare)
+        // 门牌号：纯数字时补上「号」，拼成「文三路293号xx大厦」。
+        add(
+            address.subThoroughfare?.let { number ->
+                if (number.all(Char::isDigit)) "$number号" else number
+            }
+        )
         add(address.featureName)
         return parts.joinToString("")
     }
