@@ -180,13 +180,14 @@ class DiaryAdapter(
         val rendered = MarkdownText.render(body)
         val display = rendered?.text ?: body
         val styled = highlightBody(display, binding)
-        if (rendered != null) MarkdownText.style(styled, rendered)
+        // 先定好字号与字体再渲染列表，悬挂缩进需要按真实显示宽度测量。
+        binding.textBody.typeface = typeface
+        binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
+        if (rendered != null) MarkdownText.style(styled, rendered, binding.textBody.paint)
         binding.textBody.text = styled
         binding.textBody.isVisible = display.isNotEmpty()
         binding.textBody.maxLines =
             if (previewLines == Settings.PREVIEW_ALL) Int.MAX_VALUE else previewLines
-        binding.textBody.typeface = typeface
-        binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
         binding.textBody.setLineSpacing(
             lineSpacing * binding.root.resources.displayMetrics.density,
             1f

@@ -495,7 +495,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         val rendered = MarkdownText.render(text)
         renderedText = rendered
         val styled = linkify(rendered?.text ?: text)
-        if (rendered != null) MarkdownText.style(styled, rendered)
+        if (rendered != null) MarkdownText.style(styled, rendered, binding.textContent.paint)
         binding.textContent.text = styled
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()

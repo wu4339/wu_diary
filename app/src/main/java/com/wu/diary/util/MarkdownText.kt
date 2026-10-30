@@ -2,8 +2,10 @@ package com.wu.diary.util
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.text.Layout
 import android.text.Spannable
 import android.text.Spanned
+import android.text.style.LeadingMarginSpan
 import android.text.style.ReplacementSpan
 
 /**
@@ -74,8 +76,13 @@ object MarkdownText {
         return offsets[displayOffset.coerceIn(0, offsets.lastIndex)]
     }
 
-    /** 把列表符号画成大小随正文变化的灰色圆点，效果接近 Obsidian。 */
-    fun style(spannable: Spannable, rendered: Rendered) {
+    /**
+     * 把列表符号画成大小随正文变化的灰色圆点，效果接近 Obsidian；
+     * 列表项正文超过一行时，折行后的每行左侧留出与正文起点相同的宽度（悬挂缩进）。
+     * [measure] 需要是与显示文本同字号、同字体的画笔，用于测量缩进宽度。
+     */
+    fun style(spannable: Spannable, rendered: Rendered, measure: Paint) {
+        val text = spannable.toString()
         rendered.bullets.forEach { (start, depth) ->
             if (start >= spannable.length) return@forEach
             spannable.setSpan(
@@ -84,6 +91,41 @@ object MarkdownText {
                 start + 1,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
+            // 圆点所在行：从行首（含原有缩进与全角空格）到行尾都挂上缩进边距。
+            val lineStart = text.lastIndexOf('\n', start - 1) + 1
+            val lineEnd = text.indexOf('\n', start).let { if (it == -1) text.length else it }
+            // 首行已有缩进与圆点占位（额外边距为 0），折行后补上同样的前缀宽度。
+            val margin = measure.measureText(text, lineStart, start) +
+                measure.measureText(text, start + 1, start + 2) +
+                measure.textSize * if (depth == 0) 0.62f else 0.50f
+            spannable.setSpan(
+                HangingMargin(margin),
+                lineStart,
+                lineEnd,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+    }
+
+    /** 列表项的悬挂缩进：首行靠缩进与圆点占位，折行后的行左侧留出相同宽度。 */
+    private class HangingMargin(private val marginPx: Float) : LeadingMarginSpan {
+        override fun getLeadingMargin(first: Boolean): Int =
+            if (first) 0 else marginPx.toInt()
+
+        override fun drawLeadingMargin(
+            c: Canvas,
+            p: Paint,
+            x: Int,
+            dir: Int,
+            top: Int,
+            baseline: Int,
+            bottom: Int,
+            text: CharSequence,
+            start: Int,
+            end: Int,
+            first: Boolean,
+            layout: Layout?
+        ) {
         }
     }
 
