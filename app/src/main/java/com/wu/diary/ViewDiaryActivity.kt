@@ -690,7 +690,10 @@ class ViewDiaryActivity : AppCompatActivity() {
         video.setVideoPath(path)
         video.setOnPreparedListener { video.start() }
         dialog.setContentView(box)
-        dialog.setOnDismissListener { video.stopPlayback() }
+        dialog.setOnDismissListener {
+            video.stopPlayback()
+            exitImmersiveFullscreen()
+        }
         applyFullscreenDialog(dialog)
         dialog.show()
     }
@@ -857,22 +860,37 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
         image.setOnClickListener { dialog.dismiss() }
         dialog.setContentView(image)
+        dialog.setOnDismissListener { exitImmersiveFullscreen() }
         applyFullscreenDialog(dialog)
         dialog.show()
     }
 
     /** 全屏黑底弹窗：铺满整屏并隐藏系统栏，图片/视频真正占满整个屏幕。 */
+    @Suppress("DEPRECATION")
     private fun applyFullscreenDialog(dialog: Dialog) {
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.BLACK))
-            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-            WindowCompat.setDecorFitsSystemWindows(this, false)
-            statusBarColor = Color.BLACK
-            navigationBarColor = Color.BLACK
-        }
+        // Dialog 是子窗口，盖不住查看页自己的浅色状态栏，先让本页进入沉浸式全屏。
+        enterImmersiveFullscreen()
+        val window = dialog.window ?: return
+        window.setBackgroundDrawable(ColorDrawable(Color.BLACK))
+        window.decorView.setBackgroundColor(Color.BLACK)
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        // 隐藏状态栏：旧系统靠窗口标记，新系统也认这个标记。
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+
+        // 经典沉浸式标志位，各版本与定制 ROM 都能生效。
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+
         dialog.setOnShowListener {
-            val window = dialog.window ?: return@setOnShowListener
             window.setLayout(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT
@@ -887,6 +905,38 @@ class ViewDiaryActivity : AppCompatActivity() {
                 isAppearanceLightNavigationBars = false
             }
         }
+    }
+
+    /** 进入全屏查看时隐藏系统栏，让界面真正铺满整屏。 */
+    @Suppress("DEPRECATION")
+    private fun enterImmersiveFullscreen() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    }
+
+    /** 关闭全屏查看后恢复系统栏，状态栏回到主题的浅色背景与深色图标。 */
+    @Suppress("DEPRECATION")
+    private fun exitImmersiveFullscreen() {
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            show(WindowInsetsCompat.Type.systemBars())
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = false
+        }
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
     }
 
     private fun showMenu() {
