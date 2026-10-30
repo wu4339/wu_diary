@@ -172,7 +172,7 @@ class EditDiaryActivity : BaseActivity() {
         }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
-        // 笔记已有坐标就打开地图看位置；没有坐标则获取当前位置并插入。
+        // 已有坐标就打开地图；还没有坐标时先插入当前位置，插入后再点才打开地图。
         binding.btnEditorGeo.setOnClickListener {
             val geo = GeoPoint.find(binding.editContent.text?.toString().orEmpty())
             if (geo != null) GeoPoint.openMap(this, geo.first, geo.second) else fetchLocation()

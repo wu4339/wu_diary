@@ -528,7 +528,7 @@ class ViewDiaryActivity : BaseActivity() {
         // 定位与标签图标固定显示，有标签时色块接在后面。
         binding.tagStrip.isVisible = current.tags.isNotEmpty()
 
-        // 笔记已有坐标就打开地图看位置；没有坐标则获取当前位置后在地图上查看。
+        // 已有坐标就打开地图；还没有坐标时先记录当前位置，记完再点才打开地图。
         val geo = GeoPoint.find(text)
         binding.btnViewGeo.setOnClickListener {
             if (geo != null) {
@@ -1057,7 +1057,25 @@ class ViewDiaryActivity : BaseActivity() {
         dialog.show()
     }
 
-    /** 笔记还没有坐标：取当前位置后直接用地图查看。 */
+    /** 笔记还没有坐标：把当前位置记到笔记末尾，之后点定位图标就能打开地图。 */
+    private fun recordLocation(lat: Double, lng: Double) {
+        val current = entry ?: return
+        val coordinate = getString(
+            R.string.location_coordinate,
+            String.format(Locale.US, "%.6f, %.6f", lat, lng)
+        )
+        val content = current.content.trimEnd()
+        val updated = current.copy(
+            content = if (content.isEmpty()) coordinate else "$content\n$coordinate",
+            updatedAt = System.currentTimeMillis()
+        )
+        store.save(updated)
+        entry = updated
+        render()
+        Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+    }
+
+    /** 笔记还没有坐标：取当前位置后记到笔记里。 */
     @SuppressLint("MissingPermission")
     private fun fetchCurrentLocation() {
         val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -1094,7 +1112,7 @@ class ViewDiaryActivity : BaseActivity() {
             if (current == null || location.time > current.time) lastKnown = location
         }
         lastKnown?.let {
-            GeoPoint.openMap(this, it.latitude, it.longitude)
+            recordLocation(it.latitude, it.longitude)
             return
         }
 
@@ -1107,7 +1125,7 @@ class ViewDiaryActivity : BaseActivity() {
                 if (!locationWaiting) return
                 locationWaiting = false
                 manager.removeUpdates(this)
-                GeoPoint.openMap(this@ViewDiaryActivity, location.latitude, location.longitude)
+                recordLocation(location.latitude, location.longitude)
             }
 
             override fun onProviderEnabled(provider: String) {}
