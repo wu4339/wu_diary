@@ -13,6 +13,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySearchBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
+import com.wu.diary.util.GeoPoint
 
 /** 独立的搜索界面：输入关键词过滤笔记，命中内容高亮，点击进入浏览页。 */
 class SearchActivity : BaseActivity() {
@@ -29,9 +30,6 @@ class SearchActivity : BaseActivity() {
     private var hasTagFilter = false
     private var noTagFilter = false
     private var hasLinkFilter = false
-
-    /** 笔记里插入的坐标形如“31.230416, 121.473701”。 */
-    private val locationPattern = Regex("-?\\d{1,3}\\.\\d{4,}\\s*,\\s*-?\\d{1,3}\\.\\d{4,}")
 
     /** 正文里的网址：http(s):// 或 www. 开头（Markdown 链接同样包含这类地址）。 */
     private val linkPattern = Regex("(?i)(https?://|www\\.)")
@@ -119,7 +117,7 @@ class SearchActivity : BaseActivity() {
 
     private fun matchFilters(entry: DiaryEntry): Boolean {
         if (hasImageFilter && entry.images.isEmpty()) return false
-        if (hasLocationFilter && !locationPattern.containsMatchIn(entry.content)) return false
+        if (hasLocationFilter && GeoPoint.findAll(entry.content).isEmpty()) return false
         if (hasTagFilter && entry.tags.isEmpty()) return false
         if (noTagFilter && entry.tags.isNotEmpty()) return false
         if (hasLinkFilter && !linkPattern.containsMatchIn(entry.content)) return false
