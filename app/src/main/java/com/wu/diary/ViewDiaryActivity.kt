@@ -471,9 +471,14 @@ class ViewDiaryActivity : BaseActivity() {
         load()
     }
 
+    /** 正在删除并关闭本页：期间忽略数据变更广播，避免主线程又去读盘拖慢退出。 */
+    private var closing = false
+
     /** 后台保存/删除完成后的广播：重新读取数据，保证查看页内容最新。 */
     private val dataChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            // 删除当前笔记时会先广播再关闭页面，这时再读盘会让退出动画卡住好几秒。
+            if (closing) return
             load()
         }
     }
@@ -1312,21 +1317,19 @@ class ViewDiaryActivity : BaseActivity() {
         val current = entry ?: return
         showDeleteConfirm(this) {
             Feedback.deleted(this)
-            // 先广播出去，主界面收到后立刻把这条笔记从列表移除，返回时已经看不到它。
-            DiaryStore.notifyDeleted(this, current.id)
-            if (!randomReview) {
-                // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
-                finish()
-                Thread { store.delete(current.id) }.start()
-                return@showDeleteConfirm
-            }
             // 随机回顾里删除后继续看下一篇；删的是最后一篇则回到上一篇。
             val remaining = ids.filterNot { it == current.id }
-            if (remaining.isEmpty()) {
+            val leaving = !randomReview || remaining.isEmpty()
+            // 页面马上要关闭：先标记，收到的数据变更广播就不会再触发读盘。
+            closing = leaving
+            if (leaving) {
+                // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
                 finish()
+                DiaryStore.notifyDeleted(this, current.id)
                 Thread { store.delete(current.id) }.start()
                 return@showDeleteConfirm
             }
+            DiaryStore.notifyDeleted(this, current.id)
             ids = remaining
             index = index.coerceAtMost(remaining.lastIndex)
             val nextId = ids[index]
