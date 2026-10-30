@@ -175,13 +175,8 @@ class EditDiaryActivity : BaseActivity() {
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
         // 已有坐标就打开地图；还没有坐标时先插入当前位置，插入后再点才打开地图。
         binding.btnEditorGeo.setOnClickListener {
-            val text = binding.editContent.text?.toString().orEmpty()
-            val match = GeoPoint.findAll(text).firstOrNull()
-            if (match != null) {
-                GeoPoint.openMap(this, match.lat, match.lng, GeoPoint.labelBefore(text, match))
-            } else {
-                fetchLocation()
-            }
+            val match = GeoPoint.findAll(binding.editContent.text?.toString().orEmpty()).firstOrNull()
+            if (match != null) GeoPoint.openMap(this, match.lat, match.lng) else fetchLocation()
         }
         binding.btnVideo.setOnClickListener { pickVideo.launch("video/*") }
         binding.btnTag.setOnClickListener { editTags() }

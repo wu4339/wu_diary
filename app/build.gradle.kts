@@ -11,8 +11,8 @@ android {
         applicationId = "com.wu.diary"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1164
-        versionName = "1.1.64"
+        versionCode = 1165
+        versionName = "1.1.65"
     }
 
     // 固定签名，避免每次 CI 构建用随机 debug key 导致覆盖安装时报签名不一致

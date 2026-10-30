@@ -531,12 +531,10 @@ class ViewDiaryActivity : BaseActivity() {
         binding.btnTags.isVisible = current.tags.isEmpty()
 
         // 已有坐标就打开地图；还没有坐标时先记录当前位置，记完再点才打开地图。
-        val geoMatch = GeoPoint.findAll(text).firstOrNull()
-        val geo = geoMatch?.let { it.lat to it.lng }
-        val geoLabel = geoMatch?.let { GeoPoint.labelBefore(text, it) }
+        val geo = GeoPoint.findAll(text).firstOrNull()?.let { it.lat to it.lng }
         binding.btnViewGeo.setOnClickListener {
             if (geo != null) {
-                GeoPoint.openMap(this, geo.first, geo.second, geoLabel)
+                GeoPoint.openMap(this, geo.first, geo.second)
             } else {
                 fetchCurrentLocation()
             }
@@ -569,16 +567,10 @@ class ViewDiaryActivity : BaseActivity() {
             }, start, end, flags)
         }
         // 坐标文本加下划线，点按用地图打开。
-        val plain = spannable.toString()
-        GeoPoint.findAll(plain).forEach { match ->
+        GeoPoint.findAll(spannable.toString()).forEach { match ->
             spannable.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) {
-                    GeoPoint.openMap(
-                        this@ViewDiaryActivity,
-                        match.lat,
-                        match.lng,
-                        GeoPoint.labelBefore(plain, match)
-                    )
+                    GeoPoint.openMap(this@ViewDiaryActivity, match.lat, match.lng)
                 }
 
                 override fun updateDrawState(ds: TextPaint) {
