@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 打开页面：新页面从屏幕右侧滑入。 -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="260"
+    android:fromXDelta="100%p"
+    android:interpolator="@android:interpolator/decelerate_quart"
+    android:toXDelta="0" />

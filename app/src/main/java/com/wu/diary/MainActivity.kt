@@ -25,7 +25,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
@@ -43,7 +42,7 @@ import com.wu.diary.util.Feedback
 import com.wu.diary.util.TagEditor
 import java.util.Calendar
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: DiaryStore
@@ -148,9 +147,6 @@ class MainActivity : AppCompatActivity() {
         binding.fabAdd.setOnClickListener {
             val date = if (calendarVisible) selectedDateMillis() else null
             startActivity(EditDiaryActivity.intent(this, null, date))
-            // 编辑页像从列表里展开：主界面原位不动，编辑页放大进入。
-            @Suppress("DEPRECATION")
-            overridePendingTransition(R.anim.editor_grow_in, 0)
         }
         binding.btnMenu.setOnClickListener {
             binding.drawerRoot.openDrawer(binding.drawerPanel)

@@ -4,12 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.wu.diary.databinding.ActivitySearchFilterBinding
 
 /** 高级搜索筛选页：包含图片、包含定位、有标签、无标签、包含链接。改动即时回传给搜索页。 */
-class SearchFilterActivity : AppCompatActivity() {
+class SearchFilterActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySearchFilterBinding
 

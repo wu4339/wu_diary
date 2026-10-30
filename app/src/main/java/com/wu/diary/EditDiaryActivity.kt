@@ -34,7 +34,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
@@ -52,7 +51,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-class EditDiaryActivity : AppCompatActivity() {
+class EditDiaryActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_ID = "entry_id"
@@ -751,13 +750,10 @@ class EditDiaryActivity : AppCompatActivity() {
             // 带上最新内容，查看页首帧即渲染新内容，避免旧内容闪现。
             viewIntent.putExtra(ViewDiaryActivity.EXTRA_FOCUS_ENTRY, entry.toJson().toString())
             startActivity(viewIntent)
+            // 保存后直接去查看页：只播放「打开查看页」的进入动画，不再播放关闭动画。
+            skipCloseTransitionOnce()
         }
         finish()
-        // 新建笔记：编辑页缩小淡出退场，露出下方主界面，列表播放新笔记插入动画。
-        if (existing == null) {
-            @Suppress("DEPRECATION")
-            overridePendingTransition(0, R.anim.editor_shrink_out)
-        }
         // 页面已关闭，用 Application Context 写入，避免继续持有正在销毁的 Activity。
         val appContext = applicationContext
         Thread { DiaryStore(appContext).save(entry) }.start()

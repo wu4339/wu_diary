@@ -1,7 +1,6 @@
 package com.wu.diary
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.wu.diary.data.DiaryStore
@@ -11,7 +10,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
 
 /** 隐藏空间：集中展示所有已隐藏的笔记。 */
-class HiddenDiaryActivity : AppCompatActivity() {
+class HiddenDiaryActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHiddenDiaryBinding
     private lateinit var store: DiaryStore

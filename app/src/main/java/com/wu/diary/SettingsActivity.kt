@@ -10,7 +10,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.ExternalDiaryStore
@@ -18,7 +17,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySettingsBinding
 import com.wu.diary.util.BackupManager
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var settings: Settings
@@ -73,6 +72,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowImageStyle.setOnClickListener { showImageStyleDialog() }
+        binding.rowTransitionStyle.setOnClickListener { showTransitionStyleDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
         binding.rowReadingLineSpacing.setOnClickListener { showReadingLineSpacingDialog() }
         binding.switchSound.isChecked = settings.soundEnabled
@@ -104,6 +104,7 @@ class SettingsActivity : AppCompatActivity() {
         updateFontFamilyValue()
         updatePreviewValue()
         updateImageStyleValue()
+        updateTransitionStyleValue()
         updateLineSpacingValue()
         updateReadingLineSpacingValue()
         updateStorageValue()
@@ -264,6 +265,34 @@ class SettingsActivity : AppCompatActivity() {
             .setSingleChoiceItems(labels, checked) { dialog, which ->
                 settings.imageStyle = styles[which]
                 updateImageStyleValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateTransitionStyleValue() {
+        val labelRes = if (settings.transitionStyle == Settings.TRANSITION_EXPAND) {
+            R.string.transition_style_expand
+        } else {
+            R.string.transition_style_slide
+        }
+        binding.textTransitionStyleValue.text = getString(labelRes)
+    }
+
+    /** 切换效果：滑出（右侧滑入滑出）/ 展开（原地缩放淡入淡出），选中即生效。 */
+    private fun showTransitionStyleDialog() {
+        val styles = intArrayOf(Settings.TRANSITION_SLIDE, Settings.TRANSITION_EXPAND)
+        val labels = arrayOf(
+            getString(R.string.transition_style_slide),
+            getString(R.string.transition_style_expand)
+        )
+        val checked = styles.indexOf(settings.transitionStyle).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.transition_style)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.transitionStyle = styles[which]
+                updateTransitionStyleValue()
                 dialog.dismiss()
             }
             .setNegativeButton(android.R.string.cancel, null)

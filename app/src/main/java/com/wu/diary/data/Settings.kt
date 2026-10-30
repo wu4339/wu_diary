@@ -119,6 +119,16 @@ class Settings(context: Context) {
             prefs.edit().putString(KEY_STORAGE_URI, value).apply()
         }
 
+    /** 打开 / 关闭页面的切换效果：TRANSITION_SLIDE 右侧滑出、TRANSITION_EXPAND 原地展开。 */
+    var transitionStyle: Int
+        get() = prefs.getInt(KEY_TRANSITION_STYLE, TRANSITION_SLIDE)
+            .coerceIn(TRANSITION_SLIDE, TRANSITION_EXPAND)
+        set(value) {
+            prefs.edit()
+                .putInt(KEY_TRANSITION_STYLE, value.coerceIn(TRANSITION_SLIDE, TRANSITION_EXPAND))
+                .apply()
+        }
+
     companion object {
         private const val KEY_FONT_FAMILY = "font_family"
         private const val KEY_FONT_SP = "font_sp"
@@ -132,6 +142,7 @@ class Settings(context: Context) {
         private const val KEY_LARGE_IMAGES = "large_images"
         private const val KEY_IMAGE_STYLE = "image_style"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
+        private const val KEY_TRANSITION_STYLE = "transition_style"
 
         /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */
         private const val PREVIEW_BASE_SP = 16f
@@ -143,6 +154,10 @@ class Settings(context: Context) {
         const val IMAGE_SMALL = 0
         const val IMAGE_MEDIUM = 1
         const val IMAGE_LARGE = 2
+
+        /** 打开 / 关闭页面的切换效果：右侧滑出、原地展开。 */
+        const val TRANSITION_SLIDE = 0
+        const val TRANSITION_EXPAND = 1
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

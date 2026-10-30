@@ -44,7 +44,6 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -72,7 +71,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 /** 只读的笔记浏览页：支持上一篇/下一篇、编辑、删除，图片可点开大图。 */
-class ViewDiaryActivity : AppCompatActivity() {
+class ViewDiaryActivity : BaseActivity() {
 
     companion object {
         private const val EXTRA_IDS = "entry_ids"

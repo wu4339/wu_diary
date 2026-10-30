@@ -3,7 +3,6 @@ package com.wu.diary
 import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
@@ -16,7 +15,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
 
 /** 独立的搜索界面：输入关键词过滤笔记，命中内容高亮，点击进入浏览页。 */
-class SearchActivity : AppCompatActivity() {
+class SearchActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySearchBinding
     private lateinit var adapter: DiaryAdapter
