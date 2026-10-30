@@ -60,6 +60,7 @@ import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
 import org.json.JSONObject
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
 import com.wu.diary.util.MarkdownText
@@ -502,6 +503,13 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.isVisible = text.isNotEmpty()
 
         TagChips.render(binding.tagStrip, current.tags, tagScale)
+
+        // 正文里有定位坐标时，标签前面显示定位图标，点按用地图打开。
+        val geo = GeoPoint.find(text)
+        binding.btnViewGeo.isVisible = geo != null
+        binding.btnViewGeo.setOnClickListener {
+            geo?.let { (lat, lng) -> GeoPoint.openMap(this, lat, lng) }
+        }
 
         renderImages(current)
         renderVideos(current)

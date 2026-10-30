@@ -93,6 +93,18 @@
                 android:orientation="horizontal">
 
                 <ImageButton
+                    android:id="@+id/btnEditorGeo"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/open_map"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_location"
+                    android:visibility="gone"
+                    app:tint="@color/text_secondary" />
+
+                <ImageButton
                     android:id="@+id/btnEditorTags"
                     android:layout_width="18dp"
                     android:layout_height="18dp"

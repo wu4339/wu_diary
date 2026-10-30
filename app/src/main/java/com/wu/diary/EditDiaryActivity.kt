@@ -42,6 +42,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -159,6 +160,7 @@ class EditDiaryActivity : BaseActivity() {
         renderImages()
         renderVideos()
         renderEditorTags()
+        updateGeoButton()
         setupCursorVisibility()
 
         binding.btnClose.setOnClickListener { finish() }
@@ -171,6 +173,10 @@ class EditDiaryActivity : BaseActivity() {
         }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
+        binding.btnEditorGeo.setOnClickListener {
+            GeoPoint.find(binding.editContent.text?.toString().orEmpty())
+                ?.let { (lat, lng) -> GeoPoint.openMap(this, lat, lng) }
+        }
         binding.btnVideo.setOnClickListener { pickVideo.launch("video/*") }
         binding.btnTag.setOnClickListener { editTags() }
         binding.btnEditorTags.setOnClickListener { editTags() }
@@ -232,6 +238,7 @@ class EditDiaryActivity : BaseActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
+                updateGeoButton()
                 binding.editContent.post { scrollCursorIntoView() }
             }
         })
@@ -262,6 +269,12 @@ class EditDiaryActivity : BaseActivity() {
     /** 编辑页展示当前笔记已选的标签。 */
     private fun renderEditorTags() {
         TagChips.render(binding.tagStrip, tags, tagScale)
+    }
+
+    /** 正文里有定位坐标时，标签前面显示定位图标，点按用地图 App 打开。 */
+    private fun updateGeoButton() {
+        binding.btnEditorGeo.isVisible =
+            GeoPoint.find(binding.editContent.text?.toString().orEmpty()) != null
     }
 
     private fun renderImages() {
