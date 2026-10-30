@@ -503,11 +503,12 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
 
-        TagChips.render(binding.tagStrip, current.tags, tagScale)
-        // 没有标签时不占位，日期行下的内容直接接上去。
-        binding.tagRow.isVisible = current.tags.isNotEmpty()
+        TagChips.render(binding.tagStrip, current.tags, tagScale) { editTags() }
+        // 没有标签时显示标签图标，选中标签后图标换成标签色块。
+        binding.tagStrip.isVisible = current.tags.isNotEmpty()
+        binding.btnTags.isVisible = current.tags.isEmpty()
 
-        // 正文里有定位坐标时，标签前面显示定位图标，点按用地图打开。
+        // 正文里有定位坐标时，日期下面操作行的定位图标可点，用地图 App 打开。
         val geo = GeoPoint.find(text)
         binding.btnViewGeo.isVisible = geo != null
         binding.btnViewGeo.setOnClickListener {

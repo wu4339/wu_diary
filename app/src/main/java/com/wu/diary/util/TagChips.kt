@@ -15,15 +15,25 @@ object TagChips {
     /** 标签主色（淡紫）。 */
     private const val ACCENT = 0xFF7C6CE6.toInt()
 
-    /** 在容器里重绘全部标签色块。 */
-    fun render(container: LinearLayout, tags: List<String>, scale: Float) {
+    /** 在容器里重绘全部标签色块；传入 onClick 后点按色块会回调对应标签。 */
+    fun render(
+        container: LinearLayout,
+        tags: List<String>,
+        scale: Float,
+        onClick: ((String) -> Unit)? = null
+    ) {
         container.removeAllViews()
         tags.forEach { tag ->
-            container.addView(createChip(container, tag, scale))
+            container.addView(createChip(container, tag, scale, onClick))
         }
     }
 
-    private fun createChip(container: LinearLayout, tag: String, scale: Float): TextView {
+    private fun createChip(
+        container: LinearLayout,
+        tag: String,
+        scale: Float,
+        onClick: ((String) -> Unit)?
+    ): TextView {
         val density = container.resources.displayMetrics.density
         return TextView(container.context).apply {
             text = "#$tag"
@@ -54,6 +64,10 @@ object TagChips {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 marginEnd = (6 * density).toInt()
+            }
+            if (onClick != null) {
+                isClickable = true
+                setOnClickListener { onClick(tag) }
             }
         }
     }

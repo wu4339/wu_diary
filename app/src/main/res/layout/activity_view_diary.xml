@@ -116,48 +116,52 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="18sp" />
 
-                    <ImageButton
-                        android:id="@+id/btnViewGeo"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:baselineAlignBottom="true"
-                        android:layout_gravity="bottom"
-                        android:layout_marginStart="8dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/open_map"
-                        android:scaleType="centerInside"
-                        android:src="@drawable/ic_location"
-                        android:visibility="gone"
-                        app:tint="@color/text_secondary" />
-
-                    <ImageButton
-                        android:id="@+id/btnTags"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:baselineAlignBottom="true"
-                        android:layout_gravity="bottom"
-                        android:layout_marginStart="8dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/add_tag"
-                        android:scaleType="centerInside"
-                        android:src="@drawable/ic_tag"
-                        app:tint="@color/text_secondary" />
                 </LinearLayout>
 
                 <HorizontalScrollView
-                    android:id="@+id/tagRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="10dp"
                     android:clipToPadding="false"
                     android:scrollbars="none">
 
                     <LinearLayout
-                        android:id="@+id/tagStrip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal" />
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/btnViewGeo"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_icon_tile"
+                            android:contentDescription="@string/open_map"
+                            android:padding="10dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_location"
+                            app:tint="@color/text_body" />
+
+                        <ImageButton
+                            android:id="@+id/btnTags"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_icon_tile"
+                            android:contentDescription="@string/add_tag"
+                            android:padding="10dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_tag"
+                            app:tint="@color/text_body" />
+
+                        <LinearLayout
+                            android:id="@+id/tagStrip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal" />
+                    </LinearLayout>
                 </HorizontalScrollView>
 
                 <HorizontalScrollView
