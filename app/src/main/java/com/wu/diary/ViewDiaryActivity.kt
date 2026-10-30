@@ -504,6 +504,8 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.isVisible = text.isNotEmpty()
 
         TagChips.render(binding.tagStrip, current.tags, tagScale)
+        // 没有标签时不占位，日期行下的内容直接接上去。
+        binding.tagRow.isVisible = current.tags.isNotEmpty()
 
         // 正文里有定位坐标时，标签前面显示定位图标，点按用地图打开。
         val geo = GeoPoint.find(text)

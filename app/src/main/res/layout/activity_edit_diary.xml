@@ -96,42 +96,36 @@
                     android:src="@drawable/ic_location"
                     android:visibility="gone"
                     app:tint="@color/text_secondary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="6dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
 
                 <ImageButton
                     android:id="@+id/btnEditorTags"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/add_tag"
                     android:scaleType="centerInside"
                     android:src="@drawable/ic_tag"
                     app:tint="@color/text_secondary" />
-
-                <HorizontalScrollView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:clipToPadding="false"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:id="@+id/tagStrip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal" />
-                </HorizontalScrollView>
             </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/editorTagRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="6dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/tagStrip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
 
             <HorizontalScrollView
                 android:id="@+id/imageScroll"

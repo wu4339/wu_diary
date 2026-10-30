@@ -266,9 +266,10 @@ class EditDiaryActivity : BaseActivity() {
         binding.scrollContent.requestChildRectangleOnScreen(edit, rect, false)
     }
 
-    /** 编辑页展示当前笔记已选的标签。 */
+    /** 编辑页展示当前笔记已选的标签；没有标签时整行不占位。 */
     private fun renderEditorTags() {
         TagChips.render(binding.tagStrip, tags, tagScale)
+        binding.editorTagRow.isVisible = tags.isNotEmpty()
     }
 
     /** 正文里有定位坐标时，标签前面显示定位图标，点按用地图 App 打开。 */
