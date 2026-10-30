@@ -1,5 +1,7 @@
 package com.wu.diary.ui
 
+import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import android.text.SpannableString
 import android.text.Spanned
 import android.graphics.Typeface
@@ -8,6 +10,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
@@ -22,6 +25,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
+import com.wu.diary.util.VideoLoader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -200,7 +204,7 @@ class DiaryAdapter(
         applyGroupEnd(binding, isGroupEnd)
 
         binding.imageStrip.removeAllViews()
-        binding.imageStrip.isVisible = entry.images.isNotEmpty()
+        binding.imageStrip.isVisible = entry.images.isNotEmpty() || entry.videos.isNotEmpty()
         val metrics = binding.root.resources.displayMetrics
         if (largeImages) {
             // 大图模式：图片按原图比例铺满整行，纵向排列，带圆角。
@@ -221,8 +225,8 @@ class DiaryAdapter(
             // 中图模式：不论原图多大都用同一块固定比例的圆角卡片，预览只显示第一张。
             binding.imageStrip.orientation = LinearLayout.VERTICAL
             binding.imageStrip.gravity = Gravity.CENTER_HORIZONTAL
-            val width = (metrics.widthPixels - 52 * metrics.density).toInt()
-            val height = width * 3 / 4 - (40 * metrics.density).toInt()
+            val width = (metrics.widthPixels - 50 * metrics.density).toInt()
+            val height = width * 3 / 4 - (44 * metrics.density).toInt()
             entry.images.take(1).forEachIndexed { position, path ->
                 val image = ImageLoader.cardImage(binding.root.context, path, width, height)
                     ?: return@forEachIndexed
@@ -247,8 +251,75 @@ class DiaryAdapter(
             }
         }
 
+        // 带视频的笔记在预览里补上视频缩略图：中图模式只在没有图片时显示一张，
+        // 大图模式接在图片下方，小图模式接在图片缩略图后面。
+        if (entry.videos.isNotEmpty()) {
+            when {
+                mediumImages -> {
+                    if (entry.images.isEmpty()) {
+                        val width = (metrics.widthPixels - 50 * metrics.density).toInt()
+                        val height = width * 3 / 4 - (44 * metrics.density).toInt()
+                        entry.videos.take(1).forEach { path ->
+                            binding.imageStrip.addView(
+                                videoCell(binding.root.context, path, width, height, 10f)
+                            )
+                        }
+                    }
+                }
+
+                largeImages -> {
+                    val width = (metrics.widthPixels - 48 * metrics.density).toInt()
+                    entry.videos.take(1).forEach { path ->
+                        val cell = videoCell(binding.root.context, path, width, width * 9 / 16, 14f)
+                        if (binding.imageStrip.childCount > 0) {
+                            (cell.layoutParams as ViewGroup.MarginLayoutParams).topMargin =
+                                (8 * metrics.density).toInt()
+                        }
+                        binding.imageStrip.addView(cell)
+                    }
+                }
+
+                else -> {
+                    val width = (78 * metrics.density).toInt()
+                    val gap = (8 * metrics.density).toInt()
+                    entry.videos.take(3).forEach { path ->
+                        val cell = videoCell(binding.root.context, path, width, width * 9 / 16, 8f)
+                        (cell.layoutParams as ViewGroup.MarginLayoutParams).rightMargin = gap
+                        binding.imageStrip.addView(cell)
+                    }
+                }
+            }
+        }
+
         binding.root.setOnClickListener { onClick(entry) }
         binding.root.setOnLongClickListener { onLongClick(entry); true }
+    }
+
+    /** 预览用的视频封面卡片：封面帧 + 居中播放角标，圆角与对应图片模式一致。 */
+    private fun videoCell(context: Context, path: String, widthPx: Int, heightPx: Int, radiusDp: Float): FrameLayout {
+        val density = context.resources.displayMetrics.density
+        val box = FrameLayout(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(widthPx, heightPx)
+            background = GradientDrawable().apply { cornerRadius = radiusDp * density }
+            clipToOutline = true
+        }
+        val thumb = ImageView(context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageBitmap(VideoLoader.thumbnail(path, widthPx))
+        }
+        val play = ImageView(context).apply {
+            val size = (20 * density).toInt()
+            layoutParams = FrameLayout.LayoutParams(size, size, Gravity.CENTER)
+            background = ContextCompat.getDrawable(context, R.drawable.bg_play_badge)
+            setImageResource(R.drawable.ic_play)
+        }
+        box.addView(thumb)
+        box.addView(play)
+        return box
     }
 
     /** 分组末尾的分割线贯通整屏，其他行两侧留出 24dp。 */

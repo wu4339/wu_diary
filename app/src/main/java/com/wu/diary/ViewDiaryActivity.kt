@@ -541,8 +541,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.imagePagerBox.isVisible = style == Settings.IMAGE_MEDIUM && hasImages
         val metrics = resources.displayMetrics
         val density = metrics.density
-        val width = (metrics.widthPixels - 52 * density).toInt()
-        val height = width * 3 / 4 - (40 * density).toInt()
+        val width = (metrics.widthPixels - 50 * density).toInt()
+        val height = width * 3 / 4 - (44 * density).toInt()
         when (style) {
             Settings.IMAGE_MEDIUM -> {
                 // 中图模式：一页一张固定比例的圆角卡片，左右滑动切换。
@@ -604,8 +604,8 @@ class ViewDiaryActivity : AppCompatActivity() {
         when (style) {
             Settings.IMAGE_MEDIUM -> {
                 // 中图模式：视频卡片与图片卡片同尺寸、同圆角，纵向排列。
-                val width = (metrics.widthPixels - 52 * density).toInt()
-                val height = width * 3 / 4 - dp(40)
+                val width = (metrics.widthPixels - 50 * density).toInt()
+                val height = width * 3 / 4 - dp(44)
                 current.videos.forEach { path ->
                     binding.videoColumn.addView(videoCard(path, width, height, 10))
                 }
