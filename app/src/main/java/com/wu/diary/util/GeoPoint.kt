@@ -44,12 +44,12 @@ object GeoPoint {
             }
     }
 
-    /** 正文里的记录格式：📍地名(30.2700，120.1500)；地名取不到时写「当前位置」。 */
+    /** 正文里的记录格式：📍地名(30.270010，120.150020)；地名取不到时写「当前位置」。 */
     fun recordLine(context: Context, name: String?, lat: Double, lng: Double): String {
         val place = name?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.location_current)
-        val latText = String.format(Locale.US, "%.4f", lat)
-        val lngText = String.format(Locale.US, "%.4f", lng)
+        val latText = String.format(Locale.US, "%.6f", lat)
+        val lngText = String.format(Locale.US, "%.6f", lng)
         return context.getString(R.string.location_record, place, latText, lngText)
     }
 
