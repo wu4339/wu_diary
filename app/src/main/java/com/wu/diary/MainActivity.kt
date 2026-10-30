@@ -40,6 +40,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.TagEditor
+import com.wu.diary.util.showDeleteConfirm
 import java.util.Calendar
 
 class MainActivity : BaseActivity() {
@@ -81,6 +82,8 @@ class MainActivity : BaseActivity() {
     /** 后台保存完成后通知刷新，避免刚编辑完回到列表时读到写入中的文件。 */
     private val dataChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            // 删除广播带着 id：先把这条笔记从列表拿掉，不必等磁盘读回，返回主界面时已经消失。
+            intent?.getStringExtra(DiaryStore.EXTRA_DELETED_ID)?.let { dropEntryNow(it) }
             refresh()
         }
     }
@@ -925,14 +928,10 @@ class MainActivity : BaseActivity() {
     }
 
     private fun confirmDelete(entry: DiaryEntry) {
-        AlertDialog.Builder(this)
-            .setMessage(R.string.delete_confirm)
-            .setPositiveButton(R.string.delete) { _, _ ->
-                Feedback.deleted(this)
-                animateRemoval(entry)
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        showDeleteConfirm(this) {
+            Feedback.deleted(this)
+            animateRemoval(entry)
+        }
     }
 
     /**
@@ -1027,12 +1026,18 @@ class MainActivity : BaseActivity() {
 
     /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
     private fun removeEntry(entryId: String) {
+        dropEntryNow(entryId)
+        Thread { store.delete(entryId) }.start()
+    }
+
+    /** 立即从列表里拿掉某条笔记，不做磁盘读写。 */
+    private fun dropEntryNow(entryId: String) {
         pendingDeletedIds.add(entryId)
+        if (allEntries.none { it.id == entryId }) return
         allEntries = allEntries.filterNot { it.id == entryId }
         binding.textNoteCount.text = getString(R.string.note_count, allEntries.size)
         renderTags()
         if (calendarVisible) renderCalendar()
         applyList()
-        Thread { store.delete(entryId) }.start()
     }
 }

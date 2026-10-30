@@ -65,6 +65,7 @@ import com.wu.diary.util.LinkOpener
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
+import com.wu.diary.util.showDeleteConfirm
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -1161,38 +1162,36 @@ class ViewDiaryActivity : BaseActivity() {
 
     private fun confirmDelete() {
         val current = entry ?: return
-        AlertDialog.Builder(this)
-            .setMessage(R.string.delete_confirm)
-            .setPositiveButton(R.string.delete) { _, _ ->
-                Feedback.deleted(this)
-                if (!randomReview) {
-                    // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
-                    finish()
-                    Thread { store.delete(current.id) }.start()
-                    return@setPositiveButton
-                }
-                // 随机回顾里删除后继续看下一篇；删的是最后一篇则回到上一篇。
-                val remaining = ids.filterNot { it == current.id }
-                if (remaining.isEmpty()) {
-                    finish()
-                    Thread { store.delete(current.id) }.start()
-                    return@setPositiveButton
-                }
-                ids = remaining
-                index = index.coerceAtMost(remaining.lastIndex)
-                val nextId = ids[index]
-                // 删除与读取下一篇在同一个后台线程顺序执行，避免读写竞争，也不阻塞界面。
-                Thread {
-                    store.delete(current.id)
-                    val next = store.load().find { it.id == nextId }
-                    runOnUiThread {
-                        entry = next
-                        if (next == null) finish() else render()
-                        binding.scrollContent.scrollTo(0, 0)
-                    }
-                }.start()
+        showDeleteConfirm(this) {
+            Feedback.deleted(this)
+            // 先广播出去，主界面收到后立刻把这条笔记从列表移除，返回时已经看不到它。
+            DiaryStore.notifyDeleted(this, current.id)
+            if (!randomReview) {
+                // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
+                finish()
+                Thread { store.delete(current.id) }.start()
+                return@showDeleteConfirm
             }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+            // 随机回顾里删除后继续看下一篇；删的是最后一篇则回到上一篇。
+            val remaining = ids.filterNot { it == current.id }
+            if (remaining.isEmpty()) {
+                finish()
+                Thread { store.delete(current.id) }.start()
+                return@showDeleteConfirm
+            }
+            ids = remaining
+            index = index.coerceAtMost(remaining.lastIndex)
+            val nextId = ids[index]
+            // 删除与读取下一篇在同一个后台线程顺序执行，避免读写竞争，也不阻塞界面。
+            Thread {
+                store.delete(current.id)
+                val next = store.load().find { it.id == nextId }
+                runOnUiThread {
+                    entry = next
+                    if (next == null) finish() else render()
+                    binding.scrollContent.scrollTo(0, 0)
+                }
+            }.start()
+        }
     }
 }

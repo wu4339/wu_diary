@@ -44,7 +44,7 @@ class DiaryStore(private val context: Context) {
         val externalStore = external
         if (externalStore != null) {
             runCatching { externalStore.delete(id) }.onSuccess {
-                notifyChanged()
+                notifyChanged(id)
                 return
             }
         }
@@ -54,7 +54,7 @@ class DiaryStore(private val context: Context) {
             entry.videos.forEach { File(it).delete() }
         }
         writeInternal(all.filterNot { it.id == id })
-        notifyChanged()
+        notifyChanged(id)
     }
 
     /** 用给定笔记整体覆盖当前存储（切换存储位置时使用）。 */
@@ -71,8 +71,10 @@ class DiaryStore(private val context: Context) {
     }
 
     /** 数据写入完成后通知界面刷新（保存是在后台线程完成的）。 */
-    private fun notifyChanged() {
-        context.sendBroadcast(Intent(ACTION_DATA_CHANGED).setPackage(context.packageName))
+    private fun notifyChanged(deletedId: String? = null) {
+        val intent = Intent(ACTION_DATA_CHANGED).setPackage(context.packageName)
+        if (deletedId != null) intent.putExtra(EXTRA_DELETED_ID, deletedId)
+        context.sendBroadcast(intent)
     }
 
     private fun loadInternal(): List<DiaryEntry> {
@@ -97,5 +99,17 @@ class DiaryStore(private val context: Context) {
     companion object {
         /** 笔记数据变更广播：后台写入完成后通知已打开的界面刷新。 */
         const val ACTION_DATA_CHANGED = "com.wu.diary.action.DATA_CHANGED"
+
+        /** 广播里携带的刚删除的笔记 id。 */
+        const val EXTRA_DELETED_ID = "deleted_id"
+
+        /** 删除前先广播，让主界面立即把这条笔记从列表移除，不必等磁盘写完。 */
+        fun notifyDeleted(context: Context, id: String) {
+            context.sendBroadcast(
+                Intent(ACTION_DATA_CHANGED)
+                    .setPackage(context.packageName)
+                    .putExtra(EXTRA_DELETED_ID, id)
+            )
+        }
     }
 }
