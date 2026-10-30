@@ -17,7 +17,8 @@
     <string name="delete_confirm_desc">删除后无法恢复。</string>
     <string name="open_map">打开地图</string>
     <string name="map_unavailable">没有可用的地图应用</string>
-    <string name="location_coordinate">位置坐标(%1$s)</string>
+    <string name="location_record">📍%1$s(%2$s，%3$s)</string>
+    <string name="location_current">当前位置</string>
     <string name="menu">菜单</string>
     <string name="search">搜索</string>
     <string name="search_hint">搜索日记</string>

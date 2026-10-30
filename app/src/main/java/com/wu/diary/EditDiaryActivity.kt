@@ -706,16 +706,19 @@ class EditDiaryActivity : BaseActivity() {
     private fun insertLocation(location: Location) {
         GeoName.resolve(this, location.latitude, location.longitude) { name ->
             if (isFinishing || isDestroyed) return@resolve
-            val coordinates = String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
-            val body = if (name.isNullOrBlank()) coordinates else "$name, $coordinates"
-            val label = getString(R.string.location_coordinate, body)
+            val line = GeoPoint.recordLine(this, name, location.latitude, location.longitude)
             val edit = binding.editContent
-            val start = edit.selectionStart.coerceIn(0, edit.text.length)
-            val end = edit.selectionEnd.coerceIn(0, edit.text.length)
+            val text = edit.text
+            val start = edit.selectionStart.coerceIn(0, text.length)
+            val end = edit.selectionEnd.coerceIn(0, text.length)
             val from = minOf(start, end)
             val to = maxOf(start, end)
-            edit.text.replace(from, to, label)
-            edit.setSelection(from + label.length)
+            // 位置记录单独占一行：光标前后不是换行的地方补上换行。
+            val before = if (from > 0 && text[from - 1] != '\n') "\n" else ""
+            val after = if (to < text.length && text[to] != '\n') "\n" else ""
+            val insert = before + line + after
+            text.replace(from, to, insert)
+            edit.setSelection(from + insert.length)
             Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
         }
     }

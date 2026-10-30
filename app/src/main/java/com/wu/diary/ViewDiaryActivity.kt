@@ -1059,14 +1059,12 @@ class ViewDiaryActivity : BaseActivity() {
         dialog.show()
     }
 
-    /** 笔记还没有坐标：把当前位置和地点名记到笔记末尾，之后点定位图标就能打开地图。 */
+    /** 笔记还没有坐标：把当前位置和地点名单独一行记到笔记末尾，之后点定位图标就能打开地图。 */
     private fun recordLocation(lat: Double, lng: Double) {
         GeoName.resolve(this, lat, lng) { name ->
             if (isFinishing || isDestroyed) return@resolve
             val current = entry ?: return@resolve
-            val coordinates = String.format(Locale.US, "%.6f, %.6f", lat, lng)
-            val body = if (name.isNullOrBlank()) coordinates else "$name, $coordinates"
-            val coordinate = getString(R.string.location_coordinate, body)
+            val coordinate = GeoPoint.recordLine(this, name, lat, lng)
             val content = current.content.trimEnd()
             val updated = current.copy(
                 content = if (content.isEmpty()) coordinate else "$content\n$coordinate",
