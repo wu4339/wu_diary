@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
@@ -21,16 +22,15 @@ fun showDeleteConfirm(activity: Activity, onConfirm: () -> Unit) {
         dialog.dismiss()
         onConfirm()
     }
+    // 卡片宽度比屏幕窄一点。宽度在显示前就定好，避免弹出一瞬间先按默认宽度再跳变。
+    val metrics = activity.resources.displayMetrics
+    val width = metrics.widthPixels - (72 * metrics.density).toInt()
     dialog.window?.apply {
         setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         setDimAmount(0.35f)
-    }
-    dialog.setOnShowListener {
-        // 卡片宽度比屏幕窄一点，位置由系统居中。
-        val metrics = activity.resources.displayMetrics
-        val width = metrics.widthPixels - (72 * metrics.density).toInt()
-        dialog.window?.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
+        setGravity(Gravity.CENTER)
+        setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
     }
     dialog.show()
 }
