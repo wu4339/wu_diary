@@ -47,6 +47,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
@@ -690,25 +691,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         video.setOnPreparedListener { video.start() }
         dialog.setContentView(box)
         dialog.setOnDismissListener { video.stopPlayback() }
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.BLACK))
-            // 与全屏看图一致：铺满整屏并绘制到系统栏下面。
-            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-            WindowCompat.setDecorFitsSystemWindows(this, false)
-            statusBarColor = Color.BLACK
-            navigationBarColor = Color.BLACK
-            WindowInsetsControllerCompat(this, box).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
-            }
-        }
-        dialog.setOnShowListener {
-            dialog.window?.setLayout(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT
-            )
-        }
+        applyFullscreenDialog(dialog)
         dialog.show()
     }
 
@@ -874,26 +857,36 @@ class ViewDiaryActivity : AppCompatActivity() {
         }
         image.setOnClickListener { dialog.dismiss() }
         dialog.setContentView(image)
+        applyFullscreenDialog(dialog)
+        dialog.show()
+    }
+
+    /** 全屏黑底弹窗：铺满整屏并隐藏系统栏，图片/视频真正占满整个屏幕。 */
+    private fun applyFullscreenDialog(dialog: Dialog) {
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.BLACK))
-            // 让内容铺满整屏并绘制到系统栏下面，状态栏/导航栏也就变成纯黑。
             addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
             addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
             WindowCompat.setDecorFitsSystemWindows(this, false)
             statusBarColor = Color.BLACK
             navigationBarColor = Color.BLACK
-            WindowInsetsControllerCompat(this, image).apply {
+        }
+        dialog.setOnShowListener {
+            val window = dialog.window ?: return@setOnShowListener
+            window.setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
+            // 隐藏状态栏与导航栏，避免顶部留一条白色状态栏；
+            // 从屏幕边缘上滑仍可临时唤出系统栏。
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 isAppearanceLightStatusBars = false
                 isAppearanceLightNavigationBars = false
             }
         }
-        dialog.setOnShowListener {
-            dialog.window?.setLayout(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT
-            )
-        }
-        dialog.show()
     }
 
     private fun showMenu() {
