@@ -3,5 +3,5 @@
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
     android:duration="260"
     android:fromXDelta="100%p"
-    android:interpolator="@android:interpolator/decelerate_quart"
+    android:interpolator="@android:interpolator/decelerate_cubic"
     android:toXDelta="0" />
