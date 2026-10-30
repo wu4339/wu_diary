@@ -32,7 +32,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -168,14 +167,6 @@ class MainActivity : AppCompatActivity() {
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
-
-        // 顶栏与日历收起时，底部悬浮按键一起下移淡出。
-        binding.appBar.addOnOffsetChangedListener(
-            AppBarLayout.OnOffsetChangedListener { _, verticalOffset ->
-                appBarOffset = verticalOffset
-                if (!fabFrozen) syncFabBar()
-            }
-        )
 
         // 侧栏打开时吞掉落到列表上的触摸。
         // RecyclerView 自己重写了 onTouchEvent、不理会 isEnabled，图片条滚动会穿透过去，
@@ -462,30 +453,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 返回主界面等过渡期间冻结悬浮按键的显隐，避免顶栏偏移瞬时变化让它闪一下。 */
+    /** 返回主界面等过渡期间冻结悬浮按键的显隐，避免过渡中闪一下。 */
     private var fabFrozen = false
-    private var appBarOffset = 0
 
     private val unfreezeFab = Runnable {
         fabFrozen = false
         syncFabBar()
     }
 
-    /** 按顶栏收起比例同步底部悬浮按键的位置与透明度。 */
+    /** 静止时悬浮按键恢复显示：位置不动，只把透明度拉回来。 */
     private fun syncFabBar() {
         if (fabHiddenByScroll) return
-        val fraction = fabRestFraction()
-        binding.fabBar.alpha = 1f - fraction
-        binding.fabBar.translationY = binding.fabBar.height * fraction
+        binding.fabBar.animate().cancel()
+        binding.fabBar.alpha = 1f
     }
 
-    /** 顶栏收起比例决定悬浮按键静止时的位置与透明度。 */
-    private fun fabRestFraction(): Float {
-        val total = binding.appBar.totalScrollRange.toFloat()
-        return if (total <= 0f) 0f else (-appBarOffset / total).coerceIn(0f, 1f)
-    }
-
-    /** 手势滑动期间隐藏底部悬浮按键，停止滚动后再淡入回来。 */
+    /** 手势滑动期间原地淡出底部悬浮按键，停止滚动后再原地淡入。 */
     private var fabHiddenByScroll = false
 
     private fun hideFabForScroll() {
@@ -493,7 +476,6 @@ class MainActivity : AppCompatActivity() {
         fabHiddenByScroll = true
         binding.fabBar.animate().cancel()
         binding.fabBar.animate()
-            .translationY(binding.fabBar.height.toFloat())
             .alpha(0f)
             .setDuration(160L)
             .start()
@@ -503,10 +485,8 @@ class MainActivity : AppCompatActivity() {
         if (!fabHiddenByScroll) return
         fabHiddenByScroll = false
         binding.fabBar.animate().cancel()
-        // 按顶栏当前的收起比例回到静止位置；顶栏收起时本来就该隐藏。
         binding.fabBar.animate()
-            .translationY(binding.fabBar.height * fabRestFraction())
-            .alpha(1f - fabRestFraction())
+            .alpha(1f)
             .setDuration(200L)
             .start()
     }
