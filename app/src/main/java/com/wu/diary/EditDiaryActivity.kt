@@ -153,6 +153,13 @@ class EditDiaryActivity : AppCompatActivity() {
         setupCursorVisibility()
 
         binding.btnClose.setOnClickListener { finish() }
+        // 快捷输入界面的 home 键：直接回到 App 主界面。
+        binding.btnHome.setOnClickListener {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            )
+        }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
         binding.btnTag.setOnClickListener { editTags() }

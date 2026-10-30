@@ -36,6 +36,21 @@
                     android:scaleType="centerInside"
                     android:src="@drawable/ic_close"
                     app:tint="@color/text_primary" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnHome"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/home_open"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_home"
+                    app:tint="@color/text_primary" />
             </LinearLayout>
 
             <View

@@ -45,6 +45,9 @@ object MarkdownText {
                 repeat(indent.length) { offsets.add(sourceIndex + it) }
 
                 // 圆点替代原来的列表符号，显示字符都映射回符号所在位置。
+                // 列表整体再缩进一个字（全角空格正好一个汉字宽）。
+                builder.append("\u3000")
+                offsets.add(sourceIndex + indent.length)
                 bullets.add(builder.length to depth)
                 builder.append("• ")
                 repeat(2) { offsets.add(sourceIndex + indent.length) }

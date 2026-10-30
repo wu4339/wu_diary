@@ -11,6 +11,7 @@
     <string name="hint_content">今天过得怎么样？</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+    <string name="home_open">回到主界面</string>
     <string name="delete">删除</string>
     <string name="delete_confirm">确定删除这篇日记吗？</string>
     <string name="menu">菜单</string>
