@@ -31,6 +31,9 @@
     <string name="filter_has_link">包含链接</string>
     <string name="wallet">钱包</string>
     <string name="add_image">添加图片</string>
+    <string name="add_video">插入视频</string>
+    <string name="remove_video">删除视频</string>
+    <string name="play_video">播放视频</string>
     <string name="add_list">无序列表</string>
     <string name="font_size">预览字体大小</string>
     <string name="reading_font_size">查看/编辑字体大小</string>

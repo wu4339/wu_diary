@@ -49,7 +49,10 @@ class DiaryStore(private val context: Context) {
             }
         }
         val all = loadInternal()
-        all.find { it.id == id }?.images?.forEach { File(it).delete() }
+        all.find { it.id == id }?.let { entry ->
+            entry.images.forEach { File(it).delete() }
+            entry.videos.forEach { File(it).delete() }
+        }
         writeInternal(all.filterNot { it.id == id })
         notifyChanged()
     }

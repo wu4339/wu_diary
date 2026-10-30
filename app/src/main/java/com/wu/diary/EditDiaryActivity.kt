@@ -45,6 +45,7 @@ import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.TagChips
+import com.wu.diary.util.VideoLoader
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -84,6 +85,7 @@ class EditDiaryActivity : AppCompatActivity() {
     /** 从查看页双击进入时，光标落在双击的位置；-1 表示落在末尾。 */
     private var initialCursor = -1
     private val imagePaths = mutableListOf<String>()
+    private val videoPaths = mutableListOf<String>()
     private val tags = mutableListOf<String>()
     private var locationWaiting = false
 
@@ -98,6 +100,12 @@ class EditDiaryActivity : AppCompatActivity() {
                 }
             }
             renderImages()
+        }
+
+    private val pickVideo =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { importVideo(it)?.let { path -> videoPaths.add(path) } }
+            renderVideos()
         }
 
     private val requestLocation =
@@ -121,6 +129,7 @@ class EditDiaryActivity : AppCompatActivity() {
             existing = store.load().find { it.id == id }
             existing?.let {
                 imagePaths.addAll(it.images)
+                videoPaths.addAll(it.videos)
                 tags.addAll(it.tags)
                 binding.editContent.setText(
                     listOf(it.title, it.content).filter { part -> part.isNotBlank() }
@@ -149,6 +158,7 @@ class EditDiaryActivity : AppCompatActivity() {
         )
 
         renderImages()
+        renderVideos()
         renderEditorTags()
         setupCursorVisibility()
 
@@ -162,6 +172,7 @@ class EditDiaryActivity : AppCompatActivity() {
         }
         binding.btnSave.setOnClickListener { save() }
         binding.btnImage.setOnClickListener { pickImages.launch("image/*") }
+        binding.btnVideo.setOnClickListener { pickVideo.launch("video/*") }
         binding.btnTag.setOnClickListener { editTags() }
         binding.btnEditorTags.setOnClickListener { editTags() }
         binding.btnLocation.setOnClickListener { fetchLocation() }
@@ -302,6 +313,84 @@ class EditDiaryActivity : AppCompatActivity() {
     private fun importImage(uri: Uri): String? = runCatching {
         val dir = File(filesDir, "images").apply { mkdirs() }
         val target = File(dir, "${UUID.randomUUID()}.jpg")
+        contentResolver.openInputStream(uri)?.use { input ->
+            target.outputStream().use { output -> input.copyTo(output) }
+        }
+        target.absolutePath
+    }.getOrNull()
+
+    /** 编辑页的视频缩略图条：封面帧 + 播放角标 + 删除按钮。 */
+    private fun renderVideos() {
+        binding.videoScroll.isVisible = videoPaths.isNotEmpty()
+        binding.videoStrip.removeAllViews()
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        val width = dp(120)
+        val height = dp(68)
+        val gap = dp(8)
+        videoPaths.toList().forEach { path ->
+            val thumb = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(width, height)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(VideoLoader.thumbnail(path, width))
+            }
+            val play = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER)
+                background = ContextCompat.getDrawable(context, R.drawable.bg_play_badge)
+                setImageResource(R.drawable.ic_play)
+                contentDescription = getString(R.string.play_video)
+            }
+            val remove = ImageButton(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    dp(22),
+                    dp(22)
+                ).apply {
+                    gravity = Gravity.TOP or Gravity.END
+                    topMargin = dp(4)
+                    rightMargin = dp(4)
+                }
+                background = ContextCompat.getDrawable(context, R.drawable.bg_x_badge)
+                setImageResource(R.drawable.ic_close)
+                imageTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.text_primary))
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
+                setPadding(dp(5), dp(5), dp(5), dp(5))
+                contentDescription = getString(R.string.remove_video)
+                setOnClickListener { removeVideo(path) }
+            }
+            val cell = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(width, height).apply { rightMargin = gap }
+                addView(thumb)
+                addView(play)
+                addView(remove)
+            }
+            binding.videoStrip.addView(cell)
+        }
+    }
+
+    /** 点击角标移除视频；如果是这次新导入的文件，顺带删掉。 */
+    private fun removeVideo(path: String) {
+        videoPaths.remove(path)
+        if (existing?.videos?.contains(path) != true) File(path).delete()
+        renderVideos()
+    }
+
+    private fun importVideo(uri: Uri): String? = runCatching {
+        val dir = File(filesDir, "videos").apply { mkdirs() }
+        val ext = runCatching {
+            contentResolver.query(
+                uri,
+                arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(0)?.substringAfterLast('.', "")
+                        ?.takeIf { it.length in 2..4 && it.all(Char::isLetterOrDigit) }
+                } else null
+            }
+        }.getOrNull() ?: "mp4"
+        val target = File(dir, "${UUID.randomUUID()}.$ext")
         contentResolver.openInputStream(uri)?.use { input ->
             target.outputStream().use { output -> input.copyTo(output) }
         }
@@ -620,7 +709,7 @@ class EditDiaryActivity : AppCompatActivity() {
 
     private fun save() {
         val content = binding.editContent.text.toString().trim()
-        if (content.isEmpty() && imagePaths.isEmpty()) {
+        if (content.isEmpty() && imagePaths.isEmpty() && videoPaths.isEmpty()) {
             finish()
             return
         }
@@ -631,6 +720,7 @@ class EditDiaryActivity : AppCompatActivity() {
             content = content,
             updatedAt = now,
             images = imagePaths.toList(),
+            videos = videoPaths.toList(),
             tags = tags.toList()
         )
             ?: DiaryEntry(
@@ -639,6 +729,7 @@ class EditDiaryActivity : AppCompatActivity() {
                 createdAt = entryDate,
                 updatedAt = entryDate,
                 images = imagePaths.toList(),
+                videos = videoPaths.toList(),
                 tags = tags.toList()
             )
         // 立即关闭编辑页，存储放到后台线程，避免点击保存后界面停顿。

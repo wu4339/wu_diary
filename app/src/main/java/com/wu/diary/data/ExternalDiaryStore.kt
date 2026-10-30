@@ -44,6 +44,7 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
     fun save(entry: DiaryEntry) {
         val day = dayFormat.format(Date(entry.createdAt))
         copyImages(entry.images)
+        copyImages(entry.videos)
         writeDay(day, loadDay(day).filterNot { it.id == entry.id } + entry)
     }
 
@@ -56,7 +57,7 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
 
     /** 用给定笔记覆盖整个目录（用于切换存储位置时迁移）。 */
     fun replaceAll(entries: List<DiaryEntry>) {
-        copyImages(entries.flatMap { it.images })
+        copyImages(entries.flatMap { it.images + it.videos })
         val grouped = entries.groupBy { dayFormat.format(Date(it.createdAt)) }
         grouped.forEach { (day, dayEntries) -> writeDay(day, dayEntries) }
         markdownFiles().mapNotNull { it.name }
@@ -83,7 +84,8 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
             else "ext-$day-${entry.createdAt}"
             entry.copy(
                 id = id,
-                images = entry.images.filter { it in images }.mapNotNull { cacheImage(it) }
+                images = entry.images.filter { it in images }.mapNotNull { cacheImage(it) },
+                videos = entry.videos.filter { it in images }.mapNotNull { cacheVideo(it) }
             )
         }
     }
@@ -129,6 +131,13 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
             "gif" -> "image/gif"
             "webp" -> "image/webp"
             "heic" -> "image/heic"
+            "mp4" -> "video/mp4"
+            "mov" -> "video/quicktime"
+            "m4v" -> "video/x-m4v"
+            "webm" -> "video/webm"
+            "3gp" -> "video/3gpp"
+            "mkv" -> "video/x-matroska"
+            "avi" -> "video/x-msvideo"
             else -> "image/jpeg"
         }
         val target = dir.createFile(mime, image.name) ?: return
@@ -140,8 +149,13 @@ class ExternalDiaryStore(private val context: Context, private val treeUri: Uri)
     }
 
     /** 外部图片复制到内部缓存后返回本地路径，供 ImageLoader 解码。 */
-    private fun cacheImage(name: String): String? {
-        val cacheDir = File(context.filesDir, "external_images").apply { mkdirs() }
+    private fun cacheImage(name: String): String? = cacheFile(name, "external_images")
+
+    /** 外部视频复制到内部缓存后返回本地路径，供 VideoView 播放。 */
+    private fun cacheVideo(name: String): String? = cacheFile(name, "external_videos")
+
+    private fun cacheFile(name: String, dirName: String): String? {
+        val cacheDir = File(context.filesDir, dirName).apply { mkdirs() }
         val cached = File(cacheDir, name)
         if (cached.exists()) return cached.absolutePath
         val source = imageDir?.findFile(name) ?: return null

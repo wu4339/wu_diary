@@ -136,6 +136,23 @@
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 
+            <HorizontalScrollView
+                android:id="@+id/videoScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:clipToPadding="false"
+                android:paddingHorizontal="24dp"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/videoStrip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
             <EditText
                 android:id="@+id/editContent"
                 android:layout_width="match_parent"
@@ -185,6 +202,17 @@
             android:contentDescription="@string/add_image"
             android:scaleType="centerInside"
             android:src="@drawable/ic_image"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnVideo"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/add_video"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_video"
             app:tint="@color/text_primary" />
 
         <ImageButton

@@ -24,6 +24,8 @@ object BackupManager {
     private const val IMAGE_DIR = "Diary/files"
     /** md 位于 Diary/notes，图片相对引用到 Diary/files。 */
     private const val IMAGE_REF = "../files/"
+    /** zip 里按扩展名区分图片与视频。 */
+    private val VIDEO_EXTS = setOf("mp4", "mov", "m4v", "webm", "3gp", "3gpp", "mkv", "avi")
 
     /** 导出全部笔记到指定 uri，返回导出的笔记数量。 */
     fun export(context: Context, uri: Uri): Int {
@@ -50,6 +52,14 @@ object BackupManager {
                                     zip.closeEntry()
                                 }
                             }
+                            entry.videos.forEach { path ->
+                                val video = File(path)
+                                if (video.exists() && copiedImages.add(video.name)) {
+                                    zip.putNextEntry(ZipEntry("$IMAGE_DIR/${video.name}"))
+                                    video.inputStream().use { it.copyTo(zip) }
+                                    zip.closeEntry()
+                                }
+                            }
                         }
                     }
             }
@@ -61,10 +71,12 @@ object BackupManager {
     fun import(context: Context, uri: Uri): Int {
         val store = DiaryStore(context)
         val imageDir = File(context.filesDir, "images").apply { mkdirs() }
+        val videoDir = File(context.filesDir, "videos").apply { mkdirs() }
         val existingKeys = store.load()
             .map { "${it.createdAt}|${it.content}" }
             .toMutableSet()
         val importedImages = mutableMapOf<String, String>()
+        val importedVideos = mutableMapOf<String, String>()
         val markdowns = mutableListOf<Pair<String, String>>()
 
         val input = context.contentResolver.openInputStream(uri)
@@ -85,9 +97,16 @@ object BackupManager {
                             name.startsWith("$IMAGE_DIR/") || name.startsWith("file/images/") -> {
                                 val baseName = name.substringAfterLast('/')
                                 if (baseName.isNotEmpty()) {
-                                    val target = uniqueImage(imageDir, baseName)
+                                    val isVideo = baseName.substringAfterLast('.', "")
+                                        .lowercase() in VIDEO_EXTS
+                                    val dir = if (isVideo) videoDir else imageDir
+                                    val target = uniqueImage(dir, baseName)
                                     target.outputStream().use { zip.copyTo(it) }
-                                    importedImages[baseName] = target.absolutePath
+                                    if (isVideo) {
+                                        importedVideos[baseName] = target.absolutePath
+                                    } else {
+                                        importedImages[baseName] = target.absolutePath
+                                    }
                                 }
                             }
                         }
@@ -109,6 +128,7 @@ object BackupManager {
                     createdAt = note.createdAt,
                     updatedAt = note.createdAt,
                     images = note.images.mapNotNull { importedImages[it] },
+                    videos = note.videos.mapNotNull { importedVideos[it] },
                     tags = note.tags,
                     hidden = note.hidden
                 )
@@ -135,6 +155,7 @@ object BackupManager {
                 createdAt = note.createdAt,
                 updatedAt = note.createdAt,
                 images = note.images,
+                videos = note.videos,
                 tags = note.tags,
                 hidden = note.hidden
             )
@@ -165,6 +186,12 @@ object BackupManager {
                 append(File(path).name).append(")\n")
             }
             if (entry.images.isNotEmpty()) append("\n")
+            entry.videos.forEach { path ->
+                append("[视频](")
+                append(IMAGE_REF)
+                append(File(path).name).append(")\n")
+            }
+            if (entry.videos.isNotEmpty()) append("\n")
             if (index != entries.lastIndex) append("\n")
         }
     }
@@ -174,6 +201,7 @@ object BackupManager {
         val content: String,
         val tags: List<String>,
         val images: List<String>,
+        val videos: List<String>,
         val hidden: Boolean
     )
 
@@ -231,6 +259,7 @@ object BackupManager {
         val bodyLines = mutableListOf<String>()
         val tags = mutableListOf<String>()
         val images = mutableListOf<String>()
+        val videos = mutableListOf<String>()
         section.drop(1).forEach { line ->
             val trimmed = line.trim()
             val image = Regex("!\\[[^\\]]*]\\(([^)]+)\\)").find(trimmed)
@@ -238,6 +267,14 @@ object BackupManager {
                 val path = image.groupValues[1]
                 if (path.contains("/images/") || path.contains("/files/")) {
                     images.add(path.substringAfterLast('/'))
+                }
+                return@forEach
+            }
+            val video = Regex("\\[视频]\\(([^)]+)\\)").find(trimmed)
+            if (video != null) {
+                val path = video.groupValues[1]
+                if (path.contains("/videos/") || path.contains("/files/")) {
+                    videos.add(path.substringAfterLast('/'))
                 }
                 return@forEach
             }
@@ -258,12 +295,13 @@ object BackupManager {
         }
 
         val content = bodyLines.joinToString("\n").trim()
-        if (content.isEmpty() && images.isEmpty()) return null
+        if (content.isEmpty() && images.isEmpty() && videos.isEmpty()) return null
         return ParsedNote(
             createdAt = dayStart + time * 1000L,
             content = content,
             tags = tags.distinct(),
             images = images,
+            videos = videos,
             hidden = hidden
         )
     }

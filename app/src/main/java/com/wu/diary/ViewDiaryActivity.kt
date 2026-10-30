@@ -38,9 +38,11 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.MediaController
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.VideoView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -62,6 +64,7 @@ import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
+import com.wu.diary.util.VideoLoader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -500,6 +503,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         TagChips.render(binding.tagStrip, current.tags, tagScale)
 
         renderImages(current)
+        renderVideos(current)
         updateNav()
     }
 
@@ -537,7 +541,7 @@ class ViewDiaryActivity : AppCompatActivity() {
         binding.imagePagerBox.isVisible = style == Settings.IMAGE_MEDIUM && hasImages
         val metrics = resources.displayMetrics
         val density = metrics.density
-        val width = (metrics.widthPixels - 56 * density).toInt()
+        val width = (metrics.widthPixels - 52 * density).toInt()
         val height = width * 3 / 4 - (40 * density).toInt()
         when (style) {
             Settings.IMAGE_MEDIUM -> {
@@ -583,6 +587,129 @@ class ViewDiaryActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** 图片下方的视频区域：小图模式横排缩略图，中图/大图模式显示大卡片。 */
+    private fun renderVideos(current: DiaryEntry) {
+        binding.videoStrip.removeAllViews()
+        binding.videoColumn.removeAllViews()
+        val style = Settings(this).imageStyle
+        val hasVideos = current.videos.isNotEmpty()
+        binding.videoScroll.isVisible = style == Settings.IMAGE_SMALL && hasVideos
+        binding.videoColumn.isVisible = style != Settings.IMAGE_SMALL && hasVideos
+        if (!hasVideos) return
+        val metrics = resources.displayMetrics
+        val density = metrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        when (style) {
+            Settings.IMAGE_MEDIUM -> {
+                // 中图模式：视频卡片与图片卡片同尺寸、同圆角，纵向排列。
+                val width = (metrics.widthPixels - 52 * density).toInt()
+                val height = width * 3 / 4 - dp(40)
+                current.videos.forEach { path ->
+                    binding.videoColumn.addView(videoCard(path, width, height, 10))
+                }
+            }
+
+            Settings.IMAGE_LARGE -> {
+                // 大图模式：视频铺满正文宽度，16:9 圆角卡片。
+                val width = (metrics.widthPixels - 48 * density).toInt()
+                current.videos.forEach { path ->
+                    binding.videoColumn.addView(videoCard(path, width, width * 9 / 16, 14))
+                }
+            }
+
+            else -> {
+                // 小图模式：横排 16:9 小缩略图。
+                val width = dp(120)
+                val height = width * 9 / 16
+                val gap = dp(8)
+                current.videos.forEach { path ->
+                    binding.videoStrip.addView(
+                        videoCard(path, width, height, 8).apply {
+                            (layoutParams as ViewGroup.MarginLayoutParams).rightMargin = gap
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /** 生成一张带播放角标的视频封面卡片，圆角与对应图片模式一致。 */
+    private fun videoCard(path: String, widthPx: Int, heightPx: Int, radiusDp: Int): FrameLayout {
+        val density = resources.displayMetrics.density
+        val box = FrameLayout(this).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(widthPx, heightPx)
+            background = GradientDrawable().apply { cornerRadius = radiusDp * density }
+            clipToOutline = true
+        }
+        val thumb = ImageView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageBitmap(VideoLoader.thumbnail(path, widthPx))
+        }
+        val play = ImageView(this).apply {
+            val size = (40 * density).toInt()
+            layoutParams = FrameLayout.LayoutParams(size, size, Gravity.CENTER)
+            background = ContextCompat.getDrawable(context, R.drawable.bg_play_badge)
+            setImageResource(R.drawable.ic_play)
+            setPadding(
+                (10 * density).toInt(),
+                (10 * density).toInt(),
+                (10 * density).toInt(),
+                (10 * density).toInt()
+            )
+            contentDescription = getString(R.string.play_video)
+        }
+        box.addView(thumb)
+        box.addView(play)
+        box.setOnClickListener { openVideo(path) }
+        return box
+    }
+
+    /** 全屏播放视频：系统播放控制条，点击视频外的区域关闭。 */
+    private fun openVideo(path: String) {
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val box = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        val video = VideoView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER
+            )
+        }
+        box.addView(video)
+        box.setOnClickListener { dialog.dismiss() }
+        val controller = MediaController(this)
+        controller.setAnchorView(video)
+        video.setMediaController(controller)
+        video.setVideoPath(path)
+        video.setOnPreparedListener { video.start() }
+        dialog.setContentView(box)
+        dialog.setOnDismissListener { video.stopPlayback() }
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.BLACK))
+            // 与全屏看图一致：铺满整屏并绘制到系统栏下面。
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+            WindowCompat.setDecorFitsSystemWindows(this, false)
+            statusBarColor = Color.BLACK
+            navigationBarColor = Color.BLACK
+            WindowInsetsControllerCompat(this, box).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+        dialog.setOnShowListener {
+            dialog.window?.setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
+        }
+        dialog.show()
     }
 
     /** 页码圆点：当前页深色，其余浅灰；只有一张时不显示。 */
@@ -697,12 +824,14 @@ class ViewDiaryActivity : AppCompatActivity() {
             .start()
     }
 
-    /** 触摸起点是否落在图片区域上（小图 / 中图翻页 / 大图）。 */
+    /** 触摸起点是否落在图片或视频区域上（小图 / 中图翻页 / 大图）。 */
     private fun isInImageStrip(event: MotionEvent): Boolean {
         val target = when {
             binding.imagePagerBox.isVisible -> binding.imagePagerBox
             binding.imageScroll.isVisible -> binding.imageScroll
             binding.imageColumn.isVisible -> binding.imageColumn
+            binding.videoScroll.isVisible -> binding.videoScroll
+            binding.videoColumn.isVisible -> binding.videoColumn
             else -> return false
         }
         val location = IntArray(2)

@@ -12,6 +12,8 @@ data class DiaryEntry(
     val updatedAt: Long = System.currentTimeMillis(),
     /** 本地图片绝对路径列表。 */
     val images: List<String> = emptyList(),
+    /** 本地视频绝对路径列表。 */
+    val videos: List<String> = emptyList(),
     /** 笔记标签。 */
     val tags: List<String> = emptyList(),
     /** 是否已隐藏（只在隐藏空间显示）。 */
@@ -24,6 +26,7 @@ data class DiaryEntry(
         put("createdAt", createdAt)
         put("updatedAt", updatedAt)
         put("images", JSONArray(images))
+        put("videos", JSONArray(videos))
         put("tags", JSONArray(tags))
         put("hidden", hidden)
     }
@@ -37,6 +40,7 @@ data class DiaryEntry(
                 createdAt = o.getLong("createdAt"),
                 updatedAt = o.getLong("updatedAt"),
                 images = readStringList(o.optJSONArray("images")),
+                videos = readStringList(o.optJSONArray("videos")),
                 tags = readStringList(o.optJSONArray("tags")),
                 hidden = o.optBoolean("hidden", false)
             )
