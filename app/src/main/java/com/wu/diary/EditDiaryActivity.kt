@@ -708,7 +708,10 @@ class EditDiaryActivity : BaseActivity() {
     }
 
     private fun insertLocation(location: Location) {
-        val coordinates = String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
+        val coordinates = getString(
+            R.string.location_coordinate,
+            String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
+        )
         val edit = binding.editContent
         val start = edit.selectionStart.coerceIn(0, edit.text.length)
         val end = edit.selectionEnd.coerceIn(0, edit.text.length)
