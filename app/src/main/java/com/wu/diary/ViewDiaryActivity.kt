@@ -504,15 +504,14 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.isVisible = text.isNotEmpty()
 
         TagChips.render(binding.tagStrip, current.tags, tagScale) { editTags() }
-        // 没有标签时显示标签图标，选中标签后图标换成标签色块。
+        // 定位与标签图标固定显示，有标签时色块接在后面。
         binding.tagStrip.isVisible = current.tags.isNotEmpty()
-        binding.btnTags.isVisible = current.tags.isEmpty()
 
-        // 正文里有定位坐标时，日期下面操作行的定位图标可点，用地图 App 打开。
+        // 点定位图标：笔记里有坐标就用地图打开，没有则提示。
         val geo = GeoPoint.find(text)
-        binding.btnViewGeo.isVisible = geo != null
         binding.btnViewGeo.setOnClickListener {
             geo?.let { (lat, lng) -> GeoPoint.openMap(this, lat, lng) }
+                ?: Toast.makeText(this, R.string.no_location, Toast.LENGTH_SHORT).show()
         }
 
         renderImages(current)

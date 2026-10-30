@@ -133,23 +133,23 @@
 
                         <ImageButton
                             android:id="@+id/btnViewGeo"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="44dp"
+                            android:layout_height="28dp"
                             android:background="@drawable/bg_icon_tile"
                             android:contentDescription="@string/open_map"
-                            android:padding="10dp"
+                            android:padding="6dp"
                             android:scaleType="fitCenter"
                             android:src="@drawable/ic_location"
                             app:tint="@color/text_body" />
 
                         <ImageButton
                             android:id="@+id/btnTags"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="44dp"
+                            android:layout_height="28dp"
                             android:layout_marginStart="8dp"
                             android:background="@drawable/bg_icon_tile"
                             android:contentDescription="@string/add_tag"
-                            android:padding="10dp"
+                            android:padding="6dp"
                             android:scaleType="fitCenter"
                             android:src="@drawable/ic_tag"
                             app:tint="@color/text_body" />

@@ -260,14 +260,10 @@ class EditDiaryActivity : BaseActivity() {
         binding.scrollContent.requestChildRectangleOnScreen(edit, rect, false)
     }
 
-    /**
-     * 日期行下面的操作行：没有标签时显示标签图标，选中标签后图标换成标签色块。
-     * 点图标或点任一色块都会打开标签弹窗。
-     */
+    /** 日期行下面的操作行：定位与标签图标固定显示，选中标签后色块也排在同一行。 */
     private fun renderEditorTags() {
         TagChips.render(binding.tagStrip, tags, tagScale) { editTags() }
         binding.tagStrip.isVisible = tags.isNotEmpty()
-        binding.btnEditorTags.isVisible = tags.isEmpty()
     }
 
     private fun renderImages() {
