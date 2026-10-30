@@ -43,7 +43,7 @@ object GeoName {
         // 门牌号：纯数字时补上「号」，拼成「文三路293号xx大厦」。
         add(
             address.subThoroughfare?.let { number ->
-                if (number.all(Char::isDigit)) "$number号" else number
+                if (number.all(Char::isDigit)) "${number}号" else number
             }
         )
         add(address.featureName)
