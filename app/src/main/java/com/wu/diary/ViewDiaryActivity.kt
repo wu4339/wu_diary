@@ -70,6 +70,7 @@ import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
 import org.json.JSONObject
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
@@ -524,7 +525,7 @@ class ViewDiaryActivity : BaseActivity() {
         binding.textContent.movementMethod = LinkMovementMethod.getInstance()
         binding.textContent.isVisible = text.isNotEmpty()
 
-        TagChips.render(binding.tagStrip, current.tags, tagScale) { editTags() }
+        TagChips.render(binding.tagStrip, current.tags, tagScale, onClick = { editTags() }, tile = true)
         // 有标签后标签图标隐藏，位置换成标签色块。
         binding.tagStrip.isVisible = current.tags.isNotEmpty()
         binding.btnTags.isVisible = current.tags.isEmpty()
@@ -1058,22 +1059,24 @@ class ViewDiaryActivity : BaseActivity() {
         dialog.show()
     }
 
-    /** 笔记还没有坐标：把当前位置记到笔记末尾，之后点定位图标就能打开地图。 */
+    /** 笔记还没有坐标：把当前位置和地点名记到笔记末尾，之后点定位图标就能打开地图。 */
     private fun recordLocation(lat: Double, lng: Double) {
-        val current = entry ?: return
-        val coordinate = getString(
-            R.string.location_coordinate,
-            String.format(Locale.US, "%.6f, %.6f", lat, lng)
-        )
-        val content = current.content.trimEnd()
-        val updated = current.copy(
-            content = if (content.isEmpty()) coordinate else "$content\n$coordinate",
-            updatedAt = System.currentTimeMillis()
-        )
-        store.save(updated)
-        entry = updated
-        render()
-        Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+        GeoName.resolve(this, lat, lng) { name ->
+            if (isFinishing || isDestroyed) return@resolve
+            val current = entry ?: return@resolve
+            val coordinates = String.format(Locale.US, "%.6f, %.6f", lat, lng)
+            val body = if (name.isNullOrBlank()) coordinates else "$name, $coordinates"
+            val coordinate = getString(R.string.location_coordinate, body)
+            val content = current.content.trimEnd()
+            val updated = current.copy(
+                content = if (content.isEmpty()) coordinate else "$content\n$coordinate",
+                updatedAt = System.currentTimeMillis()
+            )
+            store.save(updated)
+            entry = updated
+            render()
+            Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** 笔记还没有坐标：取当前位置后记到笔记里。 */

@@ -42,6 +42,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityEditDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.Feedback
+import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.TagChips
@@ -267,7 +268,7 @@ class EditDiaryActivity : BaseActivity() {
 
     /** 日期行下面的操作行：定位图标固定显示；有标签后标签图标隐藏，位置换成标签色块。 */
     private fun renderEditorTags() {
-        TagChips.render(binding.tagStrip, tags, tagScale) { editTags() }
+        TagChips.render(binding.tagStrip, tags, tagScale, onClick = { editTags() }, tile = true)
         binding.tagStrip.isVisible = tags.isNotEmpty()
         binding.btnEditorTags.isVisible = tags.isEmpty()
     }
@@ -703,18 +704,20 @@ class EditDiaryActivity : BaseActivity() {
     }
 
     private fun insertLocation(location: Location) {
-        val coordinates = getString(
-            R.string.location_coordinate,
-            String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
-        )
-        val edit = binding.editContent
-        val start = edit.selectionStart.coerceIn(0, edit.text.length)
-        val end = edit.selectionEnd.coerceIn(0, edit.text.length)
-        val from = minOf(start, end)
-        val to = maxOf(start, end)
-        edit.text.replace(from, to, coordinates)
-        edit.setSelection(from + coordinates.length)
-        Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+        GeoName.resolve(this, location.latitude, location.longitude) { name ->
+            if (isFinishing || isDestroyed) return@resolve
+            val coordinates = String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude)
+            val body = if (name.isNullOrBlank()) coordinates else "$name, $coordinates"
+            val label = getString(R.string.location_coordinate, body)
+            val edit = binding.editContent
+            val start = edit.selectionStart.coerceIn(0, edit.text.length)
+            val end = edit.selectionEnd.coerceIn(0, edit.text.length)
+            val from = minOf(start, end)
+            val to = maxOf(start, end)
+            edit.text.replace(from, to, label)
+            edit.setSelection(from + label.length)
+            Toast.makeText(this, R.string.location_inserted, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun save() {

@@ -15,16 +15,54 @@ object TagChips {
     /** 标签主色（淡紫）。 */
     private const val ACCENT = 0xFF7C6CE6.toInt()
 
-    /** 在容器里重绘全部标签色块；传入 onClick 后点按色块会回调对应标签。 */
+    /** 在容器里重绘全部标签色块；tile=true 时用和定位/标签图标一致的小灰矩形样式。 */
     fun render(
         container: LinearLayout,
         tags: List<String>,
         scale: Float,
-        onClick: ((String) -> Unit)? = null
+        onClick: ((String) -> Unit)? = null,
+        tile: Boolean = false
     ) {
         container.removeAllViews()
         tags.forEach { tag ->
-            container.addView(createChip(container, tag, scale, onClick))
+            container.addView(
+                if (tile) createTileChip(container, tag, scale, onClick)
+                else createChip(container, tag, scale, onClick)
+            )
+        }
+    }
+
+    /** 笔记头部的小灰矩形标签，高度与定位/标签图标一致（18dp），四角 4dp。 */
+    private fun createTileChip(
+        container: LinearLayout,
+        tag: String,
+        scale: Float,
+        onClick: ((String) -> Unit)?
+    ): TextView {
+        val density = container.resources.displayMetrics.density
+        return TextView(container.context).apply {
+            text = "#$tag"
+            gravity = Gravity.CENTER
+            setTextColor(0xFF565656.toInt())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+            includeFontPadding = false
+            minimumHeight = (18 * density).toInt()
+            setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 4f * density
+                setColor(0xFFF2F2F2.toInt())
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = (6 * density).toInt()
+            }
+            if (onClick != null) {
+                isClickable = true
+                setOnClickListener { onClick(tag) }
+            }
         }
     }
 
