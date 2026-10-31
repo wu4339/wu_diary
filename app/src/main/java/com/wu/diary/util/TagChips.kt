@@ -44,7 +44,7 @@ object TagChips {
             text = "#$tag"
             gravity = Gravity.CENTER
             setTextColor(0xFF565656.toInt())
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f * scale)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f * scale)
             includeFontPadding = false
             minimumHeight = (18 * density).toInt()
             setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)

@@ -255,7 +255,7 @@ class DiaryAdapter(
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageBitmap(ImageLoader.load(path, thumb))
                     background = GradientDrawable().apply {
-                        cornerRadius = 3 * metrics.density
+                        cornerRadius = 5 * metrics.density
                     }
                     clipToOutline = true
                 }

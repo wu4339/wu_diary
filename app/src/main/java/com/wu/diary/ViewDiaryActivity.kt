@@ -200,7 +200,8 @@ class ViewDiaryActivity : BaseActivity() {
 
         val settings = Settings(this)
         val scale = settings.readingScale
-        tagScale = scale
+        // 标签色块与主界面预览保持一致的字号，不跟随查看页正文放大。
+        tagScale = settings.previewScale
         binding.textDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, settings.readingFontSp.toFloat())
@@ -634,7 +635,7 @@ class ViewDiaryActivity : BaseActivity() {
                         scaleType = ImageView.ScaleType.CENTER_CROP
                         setImageBitmap(ImageLoader.load(path, size))
                         background = GradientDrawable().apply {
-                            cornerRadius = 3 * density
+                            cornerRadius = 5 * density
                         }
                         clipToOutline = true
                     }

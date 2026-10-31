@@ -139,7 +139,8 @@ class EditDiaryActivity : BaseActivity() {
 
         val settings = Settings(this)
         val scale = settings.readingScale
-        tagScale = scale
+        // 标签色块与主界面预览保持一致的字号，不跟随查看页正文放大。
+        tagScale = settings.previewScale
         binding.textEditorDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f * scale)
         binding.textEditorYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f * scale)
         binding.editContent.setTextSize(

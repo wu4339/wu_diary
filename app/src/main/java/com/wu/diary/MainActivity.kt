@@ -695,9 +695,10 @@ class MainActivity : BaseActivity() {
             .setNegativeButton(R.string.cancel, null)
             .create()
         dialog.show()
-        // 选项只有两行，弹窗收窄一些，避免在大屏上显得空旷。
+        // 与删除确认弹窗保持一致的宽度：屏幕宽度减去两侧 36dp 留白。
+        val metrics = resources.displayMetrics
         dialog.window?.setLayout(
-            (220 * resources.displayMetrics.density).toInt(),
+            metrics.widthPixels - (72 * metrics.density).toInt(),
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
     }
