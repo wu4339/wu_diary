@@ -43,7 +43,7 @@ object TagChips {
         return TextView(container.context).apply {
             text = "#$tag"
             gravity = Gravity.CENTER
-            setTextColor(0xFF565656.toInt())
+            setTextColor(0xFF5B4BC4.toInt())
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f * scale)
             includeFontPadding = false
             minimumHeight = (18 * density).toInt()
