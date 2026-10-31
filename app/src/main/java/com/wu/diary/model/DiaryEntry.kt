@@ -17,7 +17,11 @@ data class DiaryEntry(
     /** 笔记标签。 */
     val tags: List<String> = emptyList(),
     /** 是否已隐藏（只在隐藏空间显示）。 */
-    val hidden: Boolean = false
+    val hidden: Boolean = false,
+    /** 是否在回收站里。 */
+    val trashed: Boolean = false,
+    /** 移入回收站的时间，0 表示未删除。 */
+    val deletedAt: Long = 0L
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -29,6 +33,8 @@ data class DiaryEntry(
         put("videos", JSONArray(videos))
         put("tags", JSONArray(tags))
         put("hidden", hidden)
+        put("trashed", trashed)
+        put("deletedAt", deletedAt)
     }
 
     companion object {
@@ -42,7 +48,9 @@ data class DiaryEntry(
                 images = readStringList(o.optJSONArray("images")),
                 videos = readStringList(o.optJSONArray("videos")),
                 tags = readStringList(o.optJSONArray("tags")),
-                hidden = o.optBoolean("hidden", false)
+                hidden = o.optBoolean("hidden", false),
+                trashed = o.optBoolean("trashed", false),
+                deletedAt = o.optLong("deletedAt", 0L)
             )
         }
 

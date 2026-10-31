@@ -19,13 +19,9 @@ class DiaryStore(private val context: Context) {
             runCatching { ExternalDiaryStore(context, Uri.parse(raw)) }.getOrNull()
         }
 
+    /** 正常笔记（不含回收站里的）。 */
     fun load(): List<DiaryEntry> {
-        val externalStore = external
-        val loaded = if (externalStore != null) {
-            runCatching { externalStore.load() }.getOrNull() ?: loadInternal()
-        } else {
-            loadInternal()
-        }
+        val loaded = loadAll().filter { !it.trashed }
         cachedTags = loaded.flatMap { it.tags }
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -34,19 +30,44 @@ class DiaryStore(private val context: Context) {
         return loaded
     }
 
-    /** 新增或更新（按 id 覆盖），并按更新时间倒序排列。 */
-    fun save(entry: DiaryEntry) {
+    /** 全部笔记，包含回收站里的（存储迁移时使用，避免丢数据）。 */
+    fun loadAll(): List<DiaryEntry> {
         val externalStore = external
-        if (externalStore != null) {
-            runCatching { externalStore.save(entry) }.onSuccess {
-                notifyChanged()
-                return
-            }
+        return if (externalStore != null) {
+            runCatching { externalStore.load() }.getOrNull() ?: loadInternal()
+        } else {
+            loadInternal()
         }
-        saveInternal(entry)
-        notifyChanged()
     }
 
+    /** 回收站里的笔记，最近删除的排在前面。 */
+    fun loadTrash(): List<DiaryEntry> =
+        loadAll().filter { it.trashed }.sortedByDescending { it.deletedAt }
+
+    /** 删除笔记：移入回收站，文件和内容都保留。 */
+    fun trash(id: String) {
+        setTrashed(id, true)
+    }
+
+    /** 从回收站恢复笔记。 */
+    fun restore(id: String) {
+        setTrashed(id, false)
+    }
+
+    private fun setTrashed(id: String, trashed: Boolean) {
+        val current = loadAll().find { it.id == id } ?: return
+        val now = System.currentTimeMillis()
+        val updated = current.copy(
+            trashed = trashed,
+            deletedAt = if (trashed) now else 0L,
+            updatedAt = now
+        )
+        save(updated)
+        // 移入回收站时再广播一次 id，主界面可以立刻把这一行拿掉。
+        if (trashed) notifyChanged(id)
+    }
+
+    /** 彻底删除：从存储里移除，并删掉关联的图片和视频。 */
     fun delete(id: String) {
         val externalStore = external
         if (externalStore != null) {
@@ -62,6 +83,19 @@ class DiaryStore(private val context: Context) {
         }
         writeInternal(all.filterNot { it.id == id })
         notifyChanged(id)
+    }
+
+    /** 新增或更新（按 id 覆盖），并按更新时间倒序排列。 */
+    fun save(entry: DiaryEntry) {
+        val externalStore = external
+        if (externalStore != null) {
+            runCatching { externalStore.save(entry) }.onSuccess {
+                notifyChanged()
+                return
+            }
+        }
+        saveInternal(entry)
+        notifyChanged()
     }
 
     /** 用给定笔记整体覆盖当前存储（切换存储位置时使用）。 */

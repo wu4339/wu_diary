@@ -130,7 +130,8 @@ object BackupManager {
                     images = note.images.mapNotNull { importedImages[it] },
                     videos = note.videos.mapNotNull { importedVideos[it] },
                     tags = note.tags,
-                    hidden = note.hidden
+                    hidden = note.hidden,
+                    trashed = note.trashed
                 )
                 if (existingKeys.add("${entry.createdAt}|${entry.content}")) {
                     store.save(entry)
@@ -157,7 +158,8 @@ object BackupManager {
                 images = note.images,
                 videos = note.videos,
                 tags = note.tags,
-                hidden = note.hidden
+                hidden = note.hidden,
+                trashed = note.trashed
             )
         }
     }
@@ -171,6 +173,7 @@ object BackupManager {
         entries.forEachIndexed { index, entry ->
             append("## ").append(timeFormat.format(Date(entry.createdAt)))
             if (entry.hidden) append(" 隐藏")
+            if (entry.trashed) append(" 回收站")
             append("\n\n")
             val body = listOf(entry.title, entry.content)
                 .filter { it.isNotBlank() }
@@ -202,7 +205,8 @@ object BackupManager {
         val tags: List<String>,
         val images: List<String>,
         val videos: List<String>,
-        val hidden: Boolean
+        val hidden: Boolean,
+        val trashed: Boolean
     )
 
     private fun parseNotes(dayStart: Long, markdown: String): List<ParsedNote> {
@@ -255,6 +259,7 @@ object BackupManager {
             hours * 3600 + minutes * 60 + seconds
         } ?: 0
         val hidden = header.contains("隐藏")
+        val trashed = header.contains("回收站")
 
         val bodyLines = mutableListOf<String>()
         val tags = mutableListOf<String>()
@@ -302,7 +307,8 @@ object BackupManager {
             tags = tags.distinct(),
             images = images,
             videos = videos,
-            hidden = hidden
+            hidden = hidden,
+            trashed = trashed
         )
     }
 

@@ -1254,7 +1254,7 @@ class ViewDiaryActivity : BaseActivity() {
                 // 先退出页面，删除放到后台线程，避免点击确认时卡顿。
                 finish()
                 DiaryStore.notifyDeleted(this, current.id)
-                Thread { store.delete(current.id) }.start()
+                Thread { store.trash(current.id) }.start()
                 return@showDeleteConfirm
             }
             DiaryStore.notifyDeleted(this, current.id)
@@ -1263,7 +1263,7 @@ class ViewDiaryActivity : BaseActivity() {
             val nextId = ids[index]
             // 删除与读取下一篇在同一个后台线程顺序执行，避免读写竞争，也不阻塞界面。
             Thread {
-                store.delete(current.id)
+                store.trash(current.id)
                 val next = store.load().find { it.id == nextId }
                 runOnUiThread {
                     entry = next

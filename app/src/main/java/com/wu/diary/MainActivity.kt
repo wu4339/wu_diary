@@ -179,6 +179,9 @@ class MainActivity : BaseActivity() {
         binding.itemHiddenSpace.setOnClickListener {
             closeDrawerThen { startActivity(Intent(this, HiddenDiaryActivity::class.java)) }
         }
+        binding.itemTrash.setOnClickListener {
+            closeDrawerThen { startActivity(Intent(this, TrashActivity::class.java)) }
+        }
         binding.fabWallet.setOnClickListener { toggleCalendar() }
         binding.btnPrevMonth.setOnClickListener { shiftMonth(-1) }
         binding.btnNextMonth.setOnClickListener { shiftMonth(1) }
@@ -1150,10 +1153,10 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    /** 先从界面移除该笔记（不带动画），再在后台写存储。 */
+    /** 先从界面移除该笔记（不带动画），再在后台写存储（移入回收站）。 */
     private fun removeEntry(entryId: String) {
         dropEntryNow(entryId)
-        Thread { store.delete(entryId) }.start()
+        Thread { store.trash(entryId) }.start()
     }
 
     /** 立即从列表里拿掉某条笔记，不做磁盘读写。 */

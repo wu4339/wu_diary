@@ -134,7 +134,7 @@ class SettingsActivity : BaseActivity() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
         }
-        val current = DiaryStore(this).load()
+        val current = DiaryStore(this).loadAll()
         Toast.makeText(this, R.string.storage_migrating, Toast.LENGTH_SHORT).show()
         Thread {
             val result = runCatching {
@@ -155,7 +155,7 @@ class SettingsActivity : BaseActivity() {
 
     /** 恢复 App 内部存储，并把当前笔记写回内部。 */
     private fun resetStorage() {
-        val current = DiaryStore(this).load()
+        val current = DiaryStore(this).loadAll()
         settings.storageTreeUri = null
         DiaryStore(this).replaceAll(current)
         updateStorageValue()

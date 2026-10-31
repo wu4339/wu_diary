@@ -14,7 +14,7 @@
     <string name="home_open">回到主界面</string>
     <string name="delete">删除</string>
     <string name="delete_confirm">确定删除这篇日记吗？</string>
-    <string name="delete_confirm_desc">删除后无法恢复。</string>
+    <string name="delete_confirm_desc">移入回收站后可以恢复。</string>
     <string name="open_map">打开地图</string>
     <string name="map_unavailable">没有可用的地图应用</string>
     <string name="location_record">📍%1$s(%2$s，%3$s)</string>
@@ -89,8 +89,8 @@
     <string name="display_style_memos">memos</string>
     <string name="display_style_card">卡片式</string>
     <string name="display_style_timeline">时间线</string>
-    <string name="background_color">背景颜色</string>
-    <string name="background_color_desc">页面与列表的背景颜色</string>
+    <string name="background_color">主题色</string>
+    <string name="background_color_desc">页面、侧栏与系统栏的颜色</string>
     <string name="background_color_white">纯白</string>
     <string name="background_color_warm">暗黄</string>
     <string name="image_style">图片显示方式</string>
@@ -121,6 +121,14 @@
     <string name="note_position">%1$d / %2$d</string>
     <string name="clipboard_created">已用剪贴板内容创建笔记</string>
     <string name="hidden_space">隐藏空间</string>
+    <string name="trash">回收站</string>
+    <string name="trash_empty">回收站是空的</string>
+    <string name="trash_restore">恢复</string>
+    <string name="trash_purge">彻底删除</string>
+    <string name="trash_purge_confirm">删除后无法恢复，确定彻底删除这篇笔记吗？</string>
+    <string name="trash_restored">已恢复到笔记</string>
+    <string name="trash_purged">已彻底删除</string>
+    <string name="trash_media_note">[图片 / 视频]</string>
     <string name="hide_note">隐藏笔记</string>
     <string name="unhide_note">取消隐藏</string>
     <string name="copy_note">复制笔记</string>
