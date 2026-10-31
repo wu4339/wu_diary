@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import com.wu.diary.data.Settings
 import com.wu.diary.util.Transitions
 
@@ -20,10 +21,18 @@ open class BaseActivity : AppCompatActivity() {
         skipCloseTransition = true
     }
 
-    /** 页面根布局统一套用设置里的背景颜色。 */
+    /** 页面根布局、系统状态栏与导航栏统一套用设置里的背景颜色。 */
     override fun setContentView(view: View) {
         super.setContentView(view)
-        view.setBackgroundColor(Settings(this).backgroundColor)
+        val color = Settings(this).backgroundColor
+        view.setBackgroundColor(color)
+        window.statusBarColor = color
+        window.navigationBarColor = color
+        // 浅色背景上用深色的状态栏 / 导航栏图标。
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
     }
 
     override fun startActivity(intent: Intent?) {

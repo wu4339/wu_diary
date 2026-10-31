@@ -144,6 +144,8 @@ class MainActivity : BaseActivity() {
         binding.recycler.adapter = adapter
         // 列表背景跟随「背景颜色」设置，短列表或卡片之间的空隙不会露白。
         binding.recycler.setBackgroundColor(settings.backgroundColor)
+        // 左侧栏同样使用当前背景色。
+        binding.drawerPanel.setBackgroundColor(settings.backgroundColor)
         // 滑动列表时收起底部悬浮按键，停下后淡入回来。
         binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recycler: RecyclerView, newState: Int) {
