@@ -29,7 +29,7 @@ class TimelineStripDrawable(
         paint.style = Paint.Style.STROKE
         paint.color = LINE_COLOR
         paint.strokeWidth = 2f * density
-        canvas.drawLine(x, 0f, x, b.height.toFloat(), paint)
+        canvas.drawLine(x, 0f, x, b.height().toFloat(), paint)
 
         if (dotCenterY > 0f) {
             paint.style = Paint.Style.STROKE
