@@ -286,7 +286,7 @@ class DiaryAdapter(
                 (10 * density).toInt()
             )
             binding.textDate.text = row.full
-            binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f * fontScale)
+            binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * fontScale)
             binding.textYear.text = ""
             binding.textYear.isVisible = false
             return
