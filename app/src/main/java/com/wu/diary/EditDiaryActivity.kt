@@ -63,7 +63,7 @@ class EditDiaryActivity : BaseActivity() {
         private const val MAX_IMAGES = 9
 
         /** 定位行底部横线的颜色。 */
-        private val LOCATION_LINE_COLOR = 0xFFCFCFCF.toInt()
+        private val LOCATION_LINE_COLOR = 0xFFBDBDBD.toInt()
 
         fun intent(
             context: Context,
@@ -232,20 +232,17 @@ class EditDiaryActivity : BaseActivity() {
 
     /** 编辑页整体可滚动，输入或键盘弹出时把光标所在行带回可见区域。 */
     private fun setupCursorVisibility() {
-        // 打开已有笔记时先给定位行补上横线。
-        LocationLines.decorate(
-            binding.editContent.text,
-            LOCATION_LINE_COLOR,
-            resources.displayMetrics.density
-        )
+        // 打开已有笔记时先给定位行补上横线与地图链接。
+        binding.editContent.movementMethod = LocationLines.LinkMovementMethod()
+        refreshLocationLines(binding.editContent.text)
         binding.editContent.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
-                // 定位行的底部横线随输入实时更新。
-                s?.let { LocationLines.decorate(it, LOCATION_LINE_COLOR, resources.displayMetrics.density) }
+                // 定位行的底部横线与地图链接随输入实时更新。
+                s?.let { refreshLocationLines(it) }
                 binding.editContent.post { scrollCursorIntoView() }
             }
         })
@@ -256,6 +253,12 @@ class EditDiaryActivity : BaseActivity() {
         binding.scrollContent.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             scrollCursorIntoView()
         }
+    }
+
+    /** 重新给正文里的定位行加横线和地图链接。 */
+    private fun refreshLocationLines(text: Editable) {
+        LocationLines.decorate(text, LOCATION_LINE_COLOR, resources.displayMetrics.density)
+        LocationLines.link(text)
     }
 
     private fun scrollCursorIntoView() {
