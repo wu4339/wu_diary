@@ -579,13 +579,14 @@ class ViewDiaryActivity : BaseActivity() {
         iconPositions.addAll(LocationLines.lineEnds(spannable))
         // 在每个链接后面插入一个空格并放外链图标；从后往前插入，避免前面的位置偏移。
         iconPositions.distinct().sortedDescending().forEach { position ->
-            spannable.insert(position, " ")
+            // 先插一个空格留出间隔，图标再占一格。
+            spannable.insert(position, "  ")
             val icon = ContextCompat.getDrawable(this, R.drawable.ic_external_link)
                 ?: return@forEach
             spannable.setSpan(
                 ImageSpan(icon, ImageSpan.ALIGN_CENTER),
-                position,
                 position + 1,
+                position + 2,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
