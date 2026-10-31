@@ -69,6 +69,7 @@ import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
+import com.wu.diary.util.LocationLines
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagEditor
 import com.wu.diary.util.TagChips
@@ -89,6 +90,9 @@ class ViewDiaryActivity : BaseActivity() {
 
         /** 编辑页保存后跳转时携带的最新笔记内容，首帧直接渲染，避免先显示旧内容再跳变。 */
         const val EXTRA_FOCUS_ENTRY = "focus_entry"
+
+        /** 定位行底部横线的颜色。 */
+        private val LOCATION_LINE_COLOR = 0xFFCFCFCF.toInt()
 
         fun intent(context: Context, ids: List<String>, index: Int, randomReview: Boolean = false): Intent =
             Intent(context, ViewDiaryActivity::class.java)
@@ -581,6 +585,12 @@ class ViewDiaryActivity : BaseActivity() {
                 }
             }, match.start, match.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
+        // 定位行整行加底部横线，地名也一起覆盖。
+        LocationLines.decorate(
+            spannable,
+            LOCATION_LINE_COLOR,
+            resources.displayMetrics.density
+        )
         return spannable
     }
 

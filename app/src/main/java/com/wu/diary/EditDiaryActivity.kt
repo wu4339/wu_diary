@@ -38,6 +38,7 @@ import com.wu.diary.util.Feedback
 import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.LocationLines
 import com.wu.diary.util.TagEditor
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -60,6 +61,9 @@ class EditDiaryActivity : BaseActivity() {
         const val EXTRA_FROM_RANDOM = "from_view_random"
 
         private const val MAX_IMAGES = 9
+
+        /** 定位行底部横线的颜色。 */
+        private val LOCATION_LINE_COLOR = 0xFFCFCFCF.toInt()
 
         fun intent(
             context: Context,
@@ -228,12 +232,20 @@ class EditDiaryActivity : BaseActivity() {
 
     /** 编辑页整体可滚动，输入或键盘弹出时把光标所在行带回可见区域。 */
     private fun setupCursorVisibility() {
+        // 打开已有笔记时先给定位行补上横线。
+        LocationLines.decorate(
+            binding.editContent.text,
+            LOCATION_LINE_COLOR,
+            resources.displayMetrics.density
+        )
         binding.editContent.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
+                // 定位行的底部横线随输入实时更新。
+                s?.let { LocationLines.decorate(it, LOCATION_LINE_COLOR, resources.displayMetrics.density) }
                 binding.editContent.post { scrollCursorIntoView() }
             }
         })

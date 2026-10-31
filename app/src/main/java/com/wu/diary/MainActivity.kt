@@ -25,12 +25,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -70,6 +72,11 @@ class MainActivity : BaseActivity() {
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
     private var drawerSwiped = false
+    /** 手势从顶栏 / 日历区域开始：让日历跟随手指连续滑动。 */
+    private var appBarDragArea = false
+    private var appBarDragging = false
+    private var appBarDragStartY = 0f
+    private var appBarDragLastY = 0f
     private var pullStartX = 0f
     private var pullStartY = 0f
     private var pullDistance = 0f
@@ -280,6 +287,15 @@ class MainActivity : BaseActivity() {
                 pullAllowed = !calendarVisible &&
                     !binding.drawerRoot.isDrawerOpen(binding.drawerPanel) &&
                     !binding.recycler.canScrollVertically(-1)
+                // 记录手势是否从顶栏 / 日历区域开始：这里没有可滚动容器，
+                // 需要自己跟随手指移动 AppBar，日历才会连续滑动而不是整段收起。
+                val appBarLocation = IntArray(2)
+                binding.appBar.getLocationInWindow(appBarLocation)
+                val visibleBottom = appBarLocation[1] + binding.appBar.height + appBarOffset()
+                appBarDragArea = ev.y >= appBarLocation[1] && ev.y <= visibleBottom
+                appBarDragging = false
+                appBarDragStartY = ev.y
+                appBarDragLastY = ev.y
                 unfreezeFabNow()
             }
             MotionEvent.ACTION_MOVE -> {
@@ -305,6 +321,19 @@ class MainActivity : BaseActivity() {
                     reviewRandom()
                     return true
                 }
+                // 从顶栏 / 日历上开始的纵向拖动：直接改 AppBar 偏移，跟随手指连续移动。
+                if (appBarDragArea) {
+                    val totalDy = ev.y - appBarDragStartY
+                    if (!appBarDragging && kotlin.math.abs(totalDy) > 8 * density) {
+                        appBarDragging = true
+                        cancelChildTouch(ev)
+                    }
+                    if (appBarDragging) {
+                        moveAppBar((ev.y - appBarDragLastY).toInt())
+                        appBarDragLastY = ev.y
+                        return true
+                    }
+                }
                 if (pullAllowed && !pullTriggered) {
                     val pullDy = ev.y - pullStartY
                     val pullDx = kotlin.math.abs(ev.x - pullStartX)
@@ -320,6 +349,12 @@ class MainActivity : BaseActivity() {
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (appBarDragging) {
+                    appBarDragging = false
+                    appBarDragArea = false
+                    settleAppBar()
+                    return true
+                }
                 if (drawerSwiped) {
                     drawerSwiped = false
                     return true
@@ -336,15 +371,34 @@ class MainActivity : BaseActivity() {
                         return true
                     }
                 }
-                // 上滑收起顶栏与日历，下滑重新展开（列表本身能滚动时也会自然触发）。
-                val dy = ev.y - swipeDownY
-                val dx = ev.x - swipeDownX
-                if (kotlin.math.abs(dy) > 56 * density && kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.5f) {
-                    binding.appBar.setExpanded(dy > 0, true)
-                }
             }
         }
         return super.dispatchTouchEvent(ev)
+    }
+
+    /** 顶栏收起后的纵向偏移：0 表示完全展开，负数表示已收起的距离。 */
+    private fun appBarOffset(): Int {
+        val behavior = (binding.appBar.layoutParams as? CoordinatorLayout.LayoutParams)?.behavior
+            as? AppBarLayout.Behavior ?: return 0
+        return behavior.topAndBottomOffset
+    }
+
+    /** 拖动过程中直接改 AppBar 偏移，限制在完全展开与完全收起之间。 */
+    private fun moveAppBar(delta: Int) {
+        val behavior = (binding.appBar.layoutParams as? CoordinatorLayout.LayoutParams)?.behavior
+            as? AppBarLayout.Behavior ?: return
+        val range = binding.appBar.totalScrollRange
+        if (range <= 0) return
+        behavior.setTopAndBottomOffset(
+            (behavior.topAndBottomOffset + delta).coerceIn(-range, 0)
+        )
+    }
+
+    /** 松手后平滑过渡到最近的展开 / 收起状态，不再整段跳动。 */
+    private fun settleAppBar() {
+        val range = binding.appBar.totalScrollRange
+        if (range <= 0) return
+        binding.appBar.setExpanded(appBarOffset() > -range / 2, true)
     }
 
     /** 滑出侧栏时给列表补发取消事件，避免列表项把这串触摸当成点击。 */
