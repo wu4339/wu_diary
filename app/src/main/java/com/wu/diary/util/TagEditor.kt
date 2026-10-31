@@ -47,6 +47,18 @@ object TagEditor {
         // 先把弹窗弹出来：可选标签需要读存储，外部目录可能要几百毫秒，放到后台去取。
         dialog.show()
 
+        var chipBlock: View? = null
+        var rendered: List<String> = emptyList()
+        fun renderChips(tags: List<String>) {
+            if (tags == rendered) return
+            rendered = tags
+            chipBlock?.let { container.removeView(it) }
+            chipBlock = addExistingTags(activity, container, input, tags)
+        }
+
+        // 先用上次读到的标签即时显示可选标签，再在后台刷新，不必每次都空等磁盘读取。
+        DiaryStore.cachedTags.takeIf { it.isNotEmpty() }?.let { renderChips(it) }
+
         val appContext = activity.applicationContext
         Thread {
             val existingTags = DiaryStore(appContext)
@@ -58,19 +70,19 @@ object TagEditor {
                 .sorted()
             activity.runOnUiThread {
                 if (!dialog.isShowing || activity.isFinishing) return@runOnUiThread
-                addExistingTags(activity, container, input, existingTags)
+                renderChips(existingTags)
             }
         }.start()
     }
 
-    /** 可选标签区：点一下就把该标签加进 / 移出输入框。 */
+    /** 可选标签区：点一下就把该标签加进 / 移出输入框。返回这一块区域，刷新时整块替换。 */
     private fun addExistingTags(
         activity: Activity,
         container: LinearLayout,
         input: EditText,
         existingTags: List<String>
-    ) {
-        if (existingTags.isEmpty()) return
+    ): View? {
+        if (existingTags.isEmpty()) return null
         val density = activity.resources.displayMetrics.density
         fun dp(value: Int) = (value * density).toInt()
 
@@ -172,6 +184,7 @@ object TagEditor {
         // 等弹窗内容完成布局后用真实宽度排版，行尾不会留下多余空白。
         chipScroll.doOnLayout { layoutChips(it.width) }
         refreshChips()
+        return chipScroll
     }
 
     private fun parseTags(raw: String): List<String> =

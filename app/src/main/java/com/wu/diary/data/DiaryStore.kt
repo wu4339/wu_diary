@@ -21,10 +21,17 @@ class DiaryStore(private val context: Context) {
 
     fun load(): List<DiaryEntry> {
         val externalStore = external
-        if (externalStore != null) {
-            runCatching { externalStore.load() }.getOrNull()?.let { return it }
+        val loaded = if (externalStore != null) {
+            runCatching { externalStore.load() }.getOrNull() ?: loadInternal()
+        } else {
+            loadInternal()
         }
-        return loadInternal()
+        cachedTags = loaded.flatMap { it.tags }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+        return loaded
     }
 
     /** 新增或更新（按 id 覆盖），并按更新时间倒序排列。 */
@@ -102,6 +109,11 @@ class DiaryStore(private val context: Context) {
 
         /** 广播里携带的刚删除的笔记 id。 */
         const val EXTRA_DELETED_ID = "deleted_id"
+
+        /** 最近一次读取到的全部标签，标签弹窗先用它即时展示，避免等待磁盘读取。 */
+        @Volatile
+        var cachedTags: List<String> = emptyList()
+            internal set
 
         /** 删除前先广播，让主界面立即把这条笔记从列表移除，不必等磁盘写完。 */
         fun notifyDeleted(context: Context, id: String) {

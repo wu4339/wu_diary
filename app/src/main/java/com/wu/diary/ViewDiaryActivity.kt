@@ -633,6 +633,10 @@ class ViewDiaryActivity : BaseActivity() {
                         }
                         scaleType = ImageView.ScaleType.CENTER_CROP
                         setImageBitmap(ImageLoader.load(path, size))
+                        background = GradientDrawable().apply {
+                            cornerRadius = 3 * density
+                        }
+                        clipToOutline = true
                     }
                     image.setOnClickListener { openImage(path) }
                     binding.imageStrip.addView(image)

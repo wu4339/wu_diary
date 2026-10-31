@@ -684,7 +684,7 @@ class MainActivity : BaseActivity() {
             getString(R.string.tag_sort_name),
             getString(R.string.tag_sort_count)
         )
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.tag_sort)
             .setSingleChoiceItems(labels, tagSort) { dialog, which ->
                 tagSort = which
@@ -693,7 +693,13 @@ class MainActivity : BaseActivity() {
                 renderTags()
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+        dialog.show()
+        // 选项只有两行，弹窗收窄一些，避免在大屏上显得空旷。
+        dialog.window?.setLayout(
+            (220 * resources.displayMetrics.density).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
     }
 
     /** 长按标签：置顶到侧栏顶部，或取消置顶。 */

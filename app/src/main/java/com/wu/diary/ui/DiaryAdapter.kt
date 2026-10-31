@@ -254,6 +254,10 @@ class DiaryAdapter(
                     layoutParams = LinearLayout.LayoutParams(thumb, thumb).apply { rightMargin = gap }
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageBitmap(ImageLoader.load(path, thumb))
+                    background = GradientDrawable().apply {
+                        cornerRadius = 3 * metrics.density
+                    }
+                    clipToOutline = true
                 }
                 binding.imageStrip.addView(image)
             }
