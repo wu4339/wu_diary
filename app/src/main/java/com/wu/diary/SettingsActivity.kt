@@ -84,6 +84,7 @@ class SettingsActivity : BaseActivity() {
             binding.switchSound.isChecked = settings.soundEnabled
         }
         binding.rowPreviewTags.setOnClickListener { showTagStyleDialog() }
+        binding.rowCommonTags.setOnClickListener { showCommonTagsDialog() }
         binding.switchDoubleTap.isChecked = settings.doubleTapEdit
         binding.rowDoubleTap.setOnClickListener {
             settings.doubleTapEdit = !settings.doubleTapEdit
@@ -106,6 +107,7 @@ class SettingsActivity : BaseActivity() {
         updateBackgroundColorValue()
         updateCardColorValue()
         updateTagStyleValue()
+        updateCommonTagsValue()
         updateImageStyleValue()
         updateTransitionStyleValue()
         updateLineSpacingValue()
@@ -334,6 +336,161 @@ class SettingsActivity : BaseActivity() {
                 settings.cardTone = tones[which]
                 updateCardColorValue()
                 dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateCommonTagsValue() {
+        val tags = settings.commonTags
+        binding.textCommonTagsValue.text = if (tags.isEmpty()) {
+            getString(R.string.common_tags_empty)
+        } else {
+            tags.joinToString("、") { "#$it" }
+        }
+    }
+
+    /** 常用标签设置：从全部标签里挑出常用的，并用箭头调整它们在标签栏里的先后顺序。 */
+    private fun showCommonTagsDialog() {
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        val allTags = DiaryStore(this).load().flatMap { it.tags }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+        val selected = settings.commonTags.toMutableList()
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
+        val selectedArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val selectedScroll = android.widget.ScrollView(this).apply {
+            isVerticalScrollBarEnabled = false
+            addView(selectedArea)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(150)
+            )
+        }
+        val availableArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val availableScroll = android.widget.ScrollView(this).apply {
+            isVerticalScrollBarEnabled = false
+            addView(availableArea)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(170)
+            )
+        }
+        val availableHint = TextView(this).apply {
+            text = getString(R.string.common_tags_pick)
+            setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setPadding(0, dp(14), 0, dp(4))
+        }
+
+        fun actionLabel(text: String, onClick: () -> Unit): TextView = TextView(this).apply {
+            this.text = text
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_primary))
+            setPadding(dp(10), dp(6), dp(10), dp(6))
+            isClickable = true
+            setOnClickListener { onClick() }
+        }
+
+        fun renderSelected() {
+            selectedArea.removeAllViews()
+            if (selected.isEmpty()) {
+                selectedArea.addView(
+                    TextView(this).apply {
+                        text = getString(R.string.common_tags_none)
+                        setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                        setPadding(0, dp(8), 0, dp(8))
+                    }
+                )
+                return
+            }
+            selected.forEachIndexed { index, tag ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                }
+                val label = TextView(this).apply {
+                    text = "#$tag"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                val up = actionLabel("↑") {
+                    if (index > 0) {
+                        java.util.Collections.swap(selected, index, index - 1)
+                        renderSelected()
+                    }
+                }
+                val down = actionLabel("↓") {
+                    if (index < selected.lastIndex) {
+                        java.util.Collections.swap(selected, index, index + 1)
+                        renderSelected()
+                    }
+                }
+                val remove = actionLabel("✕") {
+                    selected.removeAt(index)
+                    renderSelected()
+                    renderAvailable()
+                }
+                row.addView(label)
+                row.addView(up)
+                row.addView(down)
+                row.addView(remove)
+                selectedArea.addView(row)
+            }
+        }
+
+        fun renderAvailable() {
+            availableArea.removeAllViews()
+            val rest = allTags.filterNot { it in selected }
+            if (rest.isEmpty()) {
+                availableArea.addView(
+                    TextView(this).apply {
+                        text = getString(R.string.common_tags_no_more)
+                        setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                        setPadding(0, dp(8), 0, dp(8))
+                    }
+                )
+                return
+            }
+            rest.forEach { tag ->
+                val item = TextView(this).apply {
+                    text = "+ #$tag"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                    setPadding(0, dp(8), 0, dp(8))
+                    isClickable = true
+                    setOnClickListener {
+                        selected.add(tag)
+                        renderSelected()
+                        renderAvailable()
+                    }
+                }
+                availableArea.addView(item)
+            }
+        }
+
+        content.addView(selectedScroll)
+        content.addView(availableHint)
+        content.addView(availableScroll)
+        renderSelected()
+        renderAvailable()
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.common_tags)
+            .setView(content)
+            .setPositiveButton(R.string.save) { _, _ ->
+                settings.commonTags = selected.toList()
+                updateCommonTagsValue()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

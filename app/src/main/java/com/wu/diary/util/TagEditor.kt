@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import com.wu.diary.R
 import com.wu.diary.data.DiaryStore
+import com.wu.diary.data.Settings
 
 /** 标签编辑对话框：可直接输入，也可以点选已有的标签；空格/逗号分隔，最多 10 个。 */
 object TagEditor {
@@ -57,7 +58,10 @@ object TagEditor {
         }
 
         // 先用上次读到的标签即时显示可选标签，再在后台刷新，不必每次都空等磁盘读取。
-        DiaryStore.cachedTags.takeIf { it.isNotEmpty() }?.let { renderChips(it) }
+        // 常用标签按设置里的顺序排在最前面。
+        val common = Settings(activity).commonTags
+        val cached = orderedTags(common, DiaryStore.cachedTags)
+        if (cached.isNotEmpty()) renderChips(cached)
 
         val appContext = activity.applicationContext
         Thread {
@@ -70,9 +74,15 @@ object TagEditor {
                 .sorted()
             activity.runOnUiThread {
                 if (!dialog.isShowing || activity.isFinishing) return@runOnUiThread
-                renderChips(existingTags)
+                renderChips(orderedTags(common, existingTags))
             }
         }.start()
+    }
+
+    /** 常用标签排在最前（按设置的顺序），其余标签依次跟在后面。 */
+    private fun orderedTags(common: List<String>, all: List<String>): List<String> {
+        val head = common.map { it.trim() }.filter { it.isNotEmpty() }
+        return (head + all.filterNot { it in head }).distinct()
     }
 
     /** 可选标签区：点一下就把该标签加进 / 移出输入框。返回这一块区域，刷新时整块替换。 */
@@ -102,7 +112,7 @@ object TagEditor {
             }
         }
 
-        // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
+        // 现有标签按宽度自动换行，最多显示 5 行，更多时上下滑动选择。
         // 宽度铺满弹窗内容区，等布局完成后再按真实宽度排版，避免行尾留下空白。
         val rowHeight = dp(32)
         val chipArea = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
@@ -115,7 +125,7 @@ object TagEditor {
             chipScroll,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                rowHeight * 3
+                rowHeight * 5
             ).apply { topMargin = dp(10) }
         )
 
@@ -161,7 +171,7 @@ object TagEditor {
                 )
             }
             chipScroll.layoutParams = chipScroll.layoutParams.apply {
-                height = rowHeight * minOf(3, chipArea.childCount)
+                height = rowHeight * minOf(5, chipArea.childCount)
             }
         }
 

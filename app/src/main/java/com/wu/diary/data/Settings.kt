@@ -189,6 +189,16 @@ class Settings(context: Context) {
             prefs.edit().putString(KEY_PINNED_TAGS, value.joinToString("\n")).apply()
         }
 
+    /** 常用标签：添加标签弹窗里排在最前面，顺序与这里一致。 */
+    var commonTags: List<String>
+        get() = prefs.getString(KEY_COMMON_TAGS, null)
+            ?.split('\n')
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        set(value) {
+            prefs.edit().putString(KEY_COMMON_TAGS, value.joinToString("\n")).apply()
+        }
+
     companion object {
         private const val KEY_FONT_FAMILY = "font_family"
         private const val KEY_FONT_SP = "font_sp"
@@ -209,6 +219,7 @@ class Settings(context: Context) {
         private const val KEY_CARD_TONE = "card_tone"
         private const val KEY_TAG_SORT = "tag_sort"
         private const val KEY_PINNED_TAGS = "pinned_tags"
+        private const val KEY_COMMON_TAGS = "common_tags"
 
         /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */
         private const val PREVIEW_BASE_SP = 16f

@@ -83,6 +83,12 @@
     <string name="tag_style_top">顶部</string>
     <string name="tag_style_bottom">底部</string>
     <string name="tag_style_hidden">不显示</string>
+    <string name="common_tags">常用标签</string>
+    <string name="common_tags_desc">添加标签时排在最前面的标签</string>
+    <string name="common_tags_empty">未设置</string>
+    <string name="common_tags_none">还没有常用标签</string>
+    <string name="common_tags_pick">点击标签加入常用</string>
+    <string name="common_tags_no_more">没有更多标签</string>
     <string name="display_style">显示风格</string>
     <string name="display_style_desc">笔记列表的显示外观</string>
     <string name="display_style_minimal">极简</string>
