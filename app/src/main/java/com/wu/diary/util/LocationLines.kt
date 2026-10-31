@@ -80,7 +80,7 @@ object LocationLines {
         override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
             if (event.actionMasked != MotionEvent.ACTION_UP) return false
             val layout = widget.layout ?: return false
-            val x = (event.x - widget.totalPaddingLeft + widget.scrollX).toInt()
+            val x = event.x - widget.totalPaddingLeft + widget.scrollX
             val y = (event.y - widget.totalPaddingTop + widget.scrollY).toInt()
             val line = layout.getLineForVertical(y)
             if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) return false
