@@ -83,6 +83,10 @@
     <string name="tag_style_top">顶部</string>
     <string name="tag_style_bottom">底部</string>
     <string name="tag_style_hidden">不显示</string>
+    <string name="display_style">显示风格</string>
+    <string name="display_style_desc">笔记列表的显示外观</string>
+    <string name="display_style_minimal">极简</string>
+    <string name="display_style_memos">memos</string>
     <string name="image_style">图片显示方式</string>
     <string name="image_style_desc">主界面与笔记查看页的图片大小</string>
     <string name="image_style_small">小图</string>

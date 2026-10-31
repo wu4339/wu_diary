@@ -71,6 +71,7 @@ class SettingsActivity : BaseActivity() {
         binding.rowReadingFontSize.setOnClickListener { showReadingFontSizeDialog() }
         binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
+        binding.rowDisplayStyle.setOnClickListener { showDisplayStyleDialog() }
         binding.rowImageStyle.setOnClickListener { showImageStyleDialog() }
         binding.rowTransitionStyle.setOnClickListener { showTransitionStyleDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
@@ -99,6 +100,7 @@ class SettingsActivity : BaseActivity() {
         updateReadingFontValue()
         updateFontFamilyValue()
         updatePreviewValue()
+        updateDisplayStyleValue()
         updateTagStyleValue()
         updateImageStyleValue()
         updateTransitionStyleValue()
@@ -237,6 +239,34 @@ class SettingsActivity : BaseActivity() {
 
     private fun updatePreviewValue() {
         binding.textPreviewValue.text = lineLabel(settings.previewLines)
+    }
+
+    private fun updateDisplayStyleValue() {
+        val labelRes = if (settings.displayStyle == Settings.STYLE_MEMOS) {
+            R.string.display_style_memos
+        } else {
+            R.string.display_style_minimal
+        }
+        binding.textDisplayStyleValue.text = getString(labelRes)
+    }
+
+    /** 显示风格：极简（日期分组列表）/ memos（卡片流），选中即生效。 */
+    private fun showDisplayStyleDialog() {
+        val styles = intArrayOf(Settings.STYLE_MINIMAL, Settings.STYLE_MEMOS)
+        val labels = arrayOf(
+            getString(R.string.display_style_minimal),
+            getString(R.string.display_style_memos)
+        )
+        val checked = styles.indexOf(settings.displayStyle).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.display_style)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.displayStyle = styles[which]
+                updateDisplayStyleValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun updateImageStyleValue() {

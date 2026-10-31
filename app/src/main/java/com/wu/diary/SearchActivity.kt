@@ -65,6 +65,7 @@ class SearchActivity : BaseActivity() {
             tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
+            cardStyle = settings.displayStyle == Settings.STYLE_MEMOS,
             onClick = { entry ->
                 val ids = results.map { it.id }
                 val index = results.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)

@@ -24,6 +24,7 @@ class HiddenDiaryActivity : BaseActivity() {
     private var appliedTagStyle = 0
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var appliedImageStyle = Settings.IMAGE_SMALL
+    private var appliedDisplayStyle = Settings.STYLE_MINIMAL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +39,7 @@ class HiddenDiaryActivity : BaseActivity() {
         appliedTagStyle = settings.tagStyle
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
+        appliedDisplayStyle = settings.displayStyle
 
         adapter = DiaryAdapter(
             typeface = settings.typeface,
@@ -47,6 +49,7 @@ class HiddenDiaryActivity : BaseActivity() {
             tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
+            cardStyle = settings.displayStyle == Settings.STYLE_MEMOS,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -63,7 +66,8 @@ class HiddenDiaryActivity : BaseActivity() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
-            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle
+            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
+            appliedDisplayStyle != settings.displayStyle
         ) {
             recreate()
             return

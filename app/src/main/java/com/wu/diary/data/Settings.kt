@@ -120,6 +120,14 @@ class Settings(context: Context) {
     val mediumImages: Boolean
         get() = imageStyle == IMAGE_MEDIUM
 
+    /** 主界面显示风格：STYLE_MINIMAL 极简（日期分组列表），STYLE_MEMOS 卡片流。 */
+    var displayStyle: Int
+        get() = prefs.getInt(KEY_DISPLAY_STYLE, STYLE_MINIMAL)
+            .coerceIn(STYLE_MINIMAL, STYLE_MEMOS)
+        set(value) {
+            prefs.edit().putInt(KEY_DISPLAY_STYLE, value.coerceIn(STYLE_MINIMAL, STYLE_MEMOS)).apply()
+        }
+
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
         get() = prefs.getString(KEY_STORAGE_URI, null)
@@ -169,6 +177,7 @@ class Settings(context: Context) {
         private const val KEY_IMAGE_STYLE = "image_style"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
         private const val KEY_TRANSITION_STYLE = "transition_style"
+        private const val KEY_DISPLAY_STYLE = "display_style"
         private const val KEY_TAG_SORT = "tag_sort"
         private const val KEY_PINNED_TAGS = "pinned_tags"
 
@@ -195,6 +204,10 @@ class Settings(context: Context) {
         /** 侧栏标签排序：按名称、按数量。 */
         const val TAG_SORT_NAME = 0
         const val TAG_SORT_COUNT = 1
+
+        /** 主界面显示风格：极简（按日期分组的列表）、memos（卡片流）。 */
+        const val STYLE_MINIMAL = 0
+        const val STYLE_MEMOS = 1
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

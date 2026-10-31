@@ -64,6 +64,7 @@ class MainActivity : BaseActivity() {
     private var appliedTagStyle = 0
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var appliedImageStyle = Settings.IMAGE_SMALL
+    private var appliedDisplayStyle = Settings.STYLE_MINIMAL
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
@@ -111,6 +112,7 @@ class MainActivity : BaseActivity() {
         pinnedTags = settings.pinnedTags
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
+        appliedDisplayStyle = settings.displayStyle
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -127,6 +129,7 @@ class MainActivity : BaseActivity() {
             tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
+            cardStyle = settings.displayStyle == Settings.STYLE_MEMOS,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -436,7 +439,8 @@ class MainActivity : BaseActivity() {
         super.onResume()
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
-            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle
+            appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
+            appliedDisplayStyle != settings.displayStyle
         ) {
             recreate()
             return
