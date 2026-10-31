@@ -132,7 +132,7 @@ class MainActivity : BaseActivity() {
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
-            background = settings.backgroundColor,
+            pageBackground = settings.backgroundColor,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)

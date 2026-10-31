@@ -52,7 +52,7 @@ class HiddenDiaryActivity : BaseActivity() {
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
-            background = settings.backgroundColor,
+            pageBackground = settings.backgroundColor,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
