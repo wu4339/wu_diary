@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
