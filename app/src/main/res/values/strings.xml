@@ -104,8 +104,10 @@
     <string name="card_color_gray">浅灰</string>
     <string name="card_color_white">白色</string>
     <string name="card_color_beige">米黄</string>
-    <string name="card_color_dark">深灰</string>
+    <string name="card_color_dark">浅蓝灰</string>
     <string name="card_color_blue">浅蓝</string>
+    <string name="card_color_custom">自定义</string>
+    <string name="card_color_custom_title">自定义卡片颜色</string>
     <string name="image_style">图片显示方式</string>
     <string name="image_style_desc">主界面与笔记查看页的图片大小</string>
     <string name="image_style_small">小图</string>

@@ -1,6 +1,8 @@
 package com.wu.diary
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
@@ -316,36 +318,117 @@ class SettingsActivity : BaseActivity() {
         val labelRes = when (settings.cardTone) {
             Settings.CARD_WHITE -> R.string.card_color_white
             Settings.CARD_BEIGE -> R.string.card_color_beige
-            Settings.CARD_DARK -> R.string.card_color_dark
+            Settings.CARD_BLUE_GRAY -> R.string.card_color_dark
             Settings.CARD_LIGHT_BLUE -> R.string.card_color_blue
+            Settings.CARD_CUSTOM -> R.string.card_color_custom
             else -> R.string.card_color_gray
         }
         binding.textCardColorValue.text = getString(labelRes)
     }
 
-    /** 消息卡片颜色：浅灰 / 白色 / 米黄 / 深灰 / 浅蓝，memos 与卡片式风格生效。 */
+    /** 消息卡片颜色：预设若干颜色，也可以自定义 RGB。 */
     private fun showCardColorDialog() {
         val tones = intArrayOf(
             Settings.CARD_GRAY,
             Settings.CARD_WHITE,
             Settings.CARD_BEIGE,
-            Settings.CARD_DARK,
-            Settings.CARD_LIGHT_BLUE
+            Settings.CARD_BLUE_GRAY,
+            Settings.CARD_LIGHT_BLUE,
+            Settings.CARD_CUSTOM
         )
         val labels = arrayOf(
             getString(R.string.card_color_gray),
             getString(R.string.card_color_white),
             getString(R.string.card_color_beige),
             getString(R.string.card_color_dark),
-            getString(R.string.card_color_blue)
+            getString(R.string.card_color_blue),
+            getString(R.string.card_color_custom)
         )
         val checked = tones.indexOf(settings.cardTone).coerceAtLeast(0)
         AlertDialog.Builder(this)
             .setTitle(R.string.card_color)
             .setSingleChoiceItems(labels, checked) { dialog, which ->
-                settings.cardTone = tones[which]
-                updateCardColorValue()
                 dialog.dismiss()
+                if (tones[which] == Settings.CARD_CUSTOM) {
+                    showCustomCardColorDialog()
+                } else {
+                    settings.cardTone = tones[which]
+                    updateCardColorValue()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /** 自定义卡片颜色：R/G/B 三个滑块，上方实时预览。 */
+    private fun showCustomCardColorDialog() {
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        val current = settings.customCardColor
+        val channels = intArrayOf(Color.red(current), Color.green(current), Color.blue(current))
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
+        val preview = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(48)
+            )
+            background = GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(current)
+            }
+        }
+        container.addView(preview)
+
+        fun refreshPreview() {
+            (preview.background as? GradientDrawable)?.setColor(
+                Color.rgb(channels[0], channels[1], channels[2])
+            )
+        }
+
+        listOf("R" to 0, "G" to 1, "B" to 2).forEach { (name, index) ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, dp(8), 0, 0)
+            }
+            val label = TextView(this).apply {
+                text = "$name ${channels[index]}"
+                setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                width = dp(52)
+            }
+            val bar = SeekBar(this).apply {
+                max = 255
+                progress = channels[index]
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    channels[index] = progress
+                    label.text = "$name $progress"
+                    refreshPreview()
+                }
+
+                override fun onStartTrackingTouch(bar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(bar: SeekBar?) {}
+            })
+            row.addView(label)
+            row.addView(bar)
+            container.addView(row)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.card_color_custom_title)
+            .setView(container)
+            .setPositiveButton(R.string.save) { _, _ ->
+                settings.customCardColor = Color.rgb(channels[0], channels[1], channels[2])
+                settings.cardTone = Settings.CARD_CUSTOM
+                updateCardColorValue()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
