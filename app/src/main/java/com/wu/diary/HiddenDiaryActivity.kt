@@ -26,7 +26,7 @@ class HiddenDiaryActivity : BaseActivity() {
     private var appliedImageStyle = Settings.IMAGE_SMALL
     private var appliedDisplayStyle = Settings.STYLE_MINIMAL
     private var appliedBackgroundTone = Settings.BACKGROUND_WHITE
-    private var appliedCardTone = Settings.CARD_GRAY
+    private var appliedCardColor = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +43,7 @@ class HiddenDiaryActivity : BaseActivity() {
         appliedImageStyle = settings.imageStyle
         appliedDisplayStyle = settings.displayStyle
         appliedBackgroundTone = settings.backgroundTone
-        appliedCardTone = settings.cardTone
+        appliedCardColor = settings.cardColor
 
         adapter = DiaryAdapter(
             typeface = settings.typeface,
@@ -76,7 +76,7 @@ class HiddenDiaryActivity : BaseActivity() {
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
             appliedDisplayStyle != settings.displayStyle ||
             appliedBackgroundTone != settings.backgroundTone ||
-            appliedCardTone != settings.cardTone
+            appliedCardColor != settings.cardColor
         ) {
             recreate()
             return

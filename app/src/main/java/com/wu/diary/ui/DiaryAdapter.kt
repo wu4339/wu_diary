@@ -27,6 +27,7 @@ import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.LinkStyles
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -326,7 +327,8 @@ class DiaryAdapter(
             .joinToString("\n")
         val rendered = MarkdownText.render(body)
         val display = rendered?.text ?: body
-        val styled = highlightBody(display, binding)
+        // 主界面预览里链接同样显示为紫色下划线并带跳转符号。
+        val styled = LinkStyles.decorate(highlightBody(display, binding))
         // 先定好字号与字体再渲染列表，悬挂缩进需要按真实显示宽度测量。
         binding.textBody.typeface = typeface
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)

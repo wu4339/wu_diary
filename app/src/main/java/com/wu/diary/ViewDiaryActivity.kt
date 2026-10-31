@@ -25,12 +25,11 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Layout
 import android.text.Spannable
-import android.text.SpannableStringBuilder
+import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
-import android.text.style.ImageSpan
 import android.text.style.URLSpan
 import android.text.util.Linkify
 import android.util.TypedValue
@@ -71,6 +70,7 @@ import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
+import com.wu.diary.util.LinkStyles
 import com.wu.diary.util.LocationLines
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagEditor
@@ -550,48 +550,9 @@ class ViewDiaryActivity : BaseActivity() {
         updateNav()
     }
 
-    /** 网址与定位行都用紫色下划线 + 外链图标的样式显示，点击时打开对应 App / 地图。 */
-    private fun linkify(text: String): Spannable {
-        val spannable = SpannableStringBuilder(text)
-        Linkify.addLinks(spannable, Linkify.WEB_URLS)
-        val iconPositions = mutableListOf<Int>()
-        spannable.getSpans(0, spannable.length, URLSpan::class.java).forEach { span ->
-            val start = spannable.getSpanStart(span)
-            val end = spannable.getSpanEnd(span)
-            val flags = spannable.getSpanFlags(span)
-            val url = span.url
-            spannable.removeSpan(span)
-            spannable.setSpan(object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    LinkOpener.open(this@ViewDiaryActivity, Uri.parse(url))
-                }
-
-                override fun updateDrawState(ds: TextPaint) {
-                    super.updateDrawState(ds)
-                    ds.color = LocationLines.LINK_COLOR
-                    ds.isUnderlineText = true
-                }
-            }, start, end, flags)
-            iconPositions.add(end)
-        }
-        // 整行定位信息都可点击（地名 + 坐标），样式和网址链接一致。
-        LocationLines.link(spannable)
-        iconPositions.addAll(LocationLines.lineEnds(spannable))
-        // 在每个链接后面插入一个空格并放外链图标；从后往前插入，避免前面的位置偏移。
-        iconPositions.distinct().sortedDescending().forEach { position ->
-            // 先插一个空格留出间隔，图标再占一格。
-            spannable.insert(position, "  ")
-            val icon = ContextCompat.getDrawable(this, R.drawable.ic_external_link)
-                ?: return@forEach
-            spannable.setSpan(
-                ImageSpan(icon, ImageSpan.ALIGN_CENTER),
-                position + 1,
-                position + 2,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-        return spannable
-    }
+    /** 网址与定位行都用紫色下划线 + 跳转符号，点击时打开对应 App / 地图。 */
+    private fun linkify(text: String): Spannable =
+        LinkStyles.decorate(SpannableString(text))
 
     private fun renderImages(current: DiaryEntry) {
         binding.imageStrip.removeAllViews()
