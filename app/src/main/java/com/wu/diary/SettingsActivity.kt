@@ -399,7 +399,10 @@ class SettingsActivity : BaseActivity() {
             setOnClickListener { onClick() }
         }
 
-        fun renderSelected() {
+        lateinit var renderSelected: () -> Unit
+        lateinit var renderAvailable: () -> Unit
+
+        renderSelected = {
             selectedArea.removeAllViews()
             if (selected.isEmpty()) {
                 selectedArea.addView(
@@ -410,8 +413,7 @@ class SettingsActivity : BaseActivity() {
                         setPadding(0, dp(8), 0, dp(8))
                     }
                 )
-                return
-            }
+            } else {
             selected.forEachIndexed { index, tag ->
                 val row = LinearLayout(this).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -446,9 +448,10 @@ class SettingsActivity : BaseActivity() {
                 row.addView(remove)
                 selectedArea.addView(row)
             }
+            }
         }
 
-        fun renderAvailable() {
+        renderAvailable = {
             availableArea.removeAllViews()
             val rest = allTags.filterNot { it in selected }
             if (rest.isEmpty()) {
@@ -460,8 +463,7 @@ class SettingsActivity : BaseActivity() {
                         setPadding(0, dp(8), 0, dp(8))
                     }
                 )
-                return
-            }
+            } else {
             rest.forEach { tag ->
                 val item = TextView(this).apply {
                     text = "+ #$tag"
@@ -476,6 +478,7 @@ class SettingsActivity : BaseActivity() {
                     }
                 }
                 availableArea.addView(item)
+            }
             }
         }
 
