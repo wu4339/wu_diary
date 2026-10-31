@@ -60,8 +60,8 @@ class TimelineStripDrawable(
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     companion object {
-        /** 米色底。 */
-        val BACKGROUND: Int = 0xFFE3DDD2.toInt()
+        /** 列表底色：纯白。 */
+        val BACKGROUND: Int = 0xFFFFFFFF.toInt()
 
         /** 时间轴与圆点的颜色。 */
         val LINE_COLOR: Int = 0xFF1C1C1C.toInt()
