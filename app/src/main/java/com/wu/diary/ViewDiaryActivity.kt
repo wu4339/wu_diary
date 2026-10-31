@@ -693,9 +693,9 @@ class ViewDiaryActivity : BaseActivity() {
             }
 
             else -> {
-                // 小图模式：横排 16:9 小缩略图。
+                // 小图模式：横排 4:3 小缩略图。
                 val width = dp(120)
-                val height = width * 9 / 16
+                val height = width * 4 / 3
                 val gap = dp(8)
                 current.videos.forEach { path ->
                     binding.videoStrip.addView(

@@ -73,6 +73,7 @@ class SettingsActivity : BaseActivity() {
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowDisplayStyle.setOnClickListener { showDisplayStyleDialog() }
         binding.rowBackgroundColor.setOnClickListener { showBackgroundColorDialog() }
+        binding.rowCardColor.setOnClickListener { showCardColorDialog() }
         binding.rowImageStyle.setOnClickListener { showImageStyleDialog() }
         binding.rowTransitionStyle.setOnClickListener { showTransitionStyleDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
@@ -103,6 +104,7 @@ class SettingsActivity : BaseActivity() {
         updatePreviewValue()
         updateDisplayStyleValue()
         updateBackgroundColorValue()
+        updateCardColorValue()
         updateTagStyleValue()
         updateImageStyleValue()
         updateTransitionStyleValue()
@@ -302,6 +304,35 @@ class SettingsActivity : BaseActivity() {
                 settings.backgroundTone = tones[which]
                 binding.root.setBackgroundColor(settings.backgroundColor)
                 updateBackgroundColorValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateCardColorValue() {
+        val labelRes = when (settings.cardTone) {
+            Settings.CARD_WHITE -> R.string.card_color_white
+            Settings.CARD_BEIGE -> R.string.card_color_beige
+            else -> R.string.card_color_gray
+        }
+        binding.textCardColorValue.text = getString(labelRes)
+    }
+
+    /** 消息卡片颜色：浅灰 / 白色 / 米黄，memos 与卡片式风格生效。 */
+    private fun showCardColorDialog() {
+        val tones = intArrayOf(Settings.CARD_GRAY, Settings.CARD_WHITE, Settings.CARD_BEIGE)
+        val labels = arrayOf(
+            getString(R.string.card_color_gray),
+            getString(R.string.card_color_white),
+            getString(R.string.card_color_beige)
+        )
+        val checked = tones.indexOf(settings.cardTone).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.card_color)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.cardTone = tones[which]
+                updateCardColorValue()
                 dialog.dismiss()
             }
             .setNegativeButton(android.R.string.cancel, null)

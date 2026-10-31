@@ -68,6 +68,7 @@ class MainActivity : BaseActivity() {
     private var appliedImageStyle = Settings.IMAGE_SMALL
     private var appliedDisplayStyle = Settings.STYLE_MINIMAL
     private var appliedBackgroundTone = Settings.BACKGROUND_WHITE
+    private var appliedCardTone = Settings.CARD_GRAY
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
@@ -122,6 +123,7 @@ class MainActivity : BaseActivity() {
         appliedImageStyle = settings.imageStyle
         appliedDisplayStyle = settings.displayStyle
         appliedBackgroundTone = settings.backgroundTone
+        appliedCardTone = settings.cardTone
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -140,6 +142,7 @@ class MainActivity : BaseActivity() {
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
             pageBackground = settings.backgroundColor,
+            cardColor = settings.cardColor,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -505,7 +508,8 @@ class MainActivity : BaseActivity() {
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
             appliedDisplayStyle != settings.displayStyle ||
-            appliedBackgroundTone != settings.backgroundTone
+            appliedBackgroundTone != settings.backgroundTone ||
+            appliedCardTone != settings.cardTone
         ) {
             recreate()
             return

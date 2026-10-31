@@ -67,6 +67,7 @@ class SearchActivity : BaseActivity() {
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
             pageBackground = settings.backgroundColor,
+            cardColor = settings.cardColor,
             onClick = { entry ->
                 val ids = results.map { it.id }
                 val index = results.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)

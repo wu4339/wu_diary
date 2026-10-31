@@ -26,6 +26,7 @@ class HiddenDiaryActivity : BaseActivity() {
     private var appliedImageStyle = Settings.IMAGE_SMALL
     private var appliedDisplayStyle = Settings.STYLE_MINIMAL
     private var appliedBackgroundTone = Settings.BACKGROUND_WHITE
+    private var appliedCardTone = Settings.CARD_GRAY
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +43,7 @@ class HiddenDiaryActivity : BaseActivity() {
         appliedImageStyle = settings.imageStyle
         appliedDisplayStyle = settings.displayStyle
         appliedBackgroundTone = settings.backgroundTone
+        appliedCardTone = settings.cardTone
 
         adapter = DiaryAdapter(
             typeface = settings.typeface,
@@ -53,6 +55,7 @@ class HiddenDiaryActivity : BaseActivity() {
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
             pageBackground = settings.backgroundColor,
+            cardColor = settings.cardColor,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -72,7 +75,8 @@ class HiddenDiaryActivity : BaseActivity() {
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
             appliedDisplayStyle != settings.displayStyle ||
-            appliedBackgroundTone != settings.backgroundTone
+            appliedBackgroundTone != settings.backgroundTone ||
+            appliedCardTone != settings.cardTone
         ) {
             recreate()
             return

@@ -44,6 +44,7 @@ class DiaryAdapter(
     private val mediumImages: Boolean,
     private val style: Int = Settings.STYLE_MINIMAL,
     private val pageBackground: Int = TimelineStripDrawable.BACKGROUND,
+    private val cardColor: Int = 0xFFF1F1F4.toInt(),
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -127,7 +128,7 @@ class DiaryAdapter(
         if (cardFrame) {
             root.background = GradientDrawable().apply {
                 cornerRadius = 16 * density
-                setColor(0xFFF1F1F4.toInt())
+                setColor(cardColor)
             }
             margins?.let {
                 val gap = (6 * density).toInt()
@@ -442,7 +443,7 @@ class DiaryAdapter(
                     val width = (78 * metrics.density).toInt()
                     val gap = (8 * metrics.density).toInt()
                     entry.videos.take(3).forEach { path ->
-                        val cell = videoCell(binding.root.context, path, width, width * 9 / 16, 8f)
+                        val cell = videoCell(binding.root.context, path, width, width * 4 / 3, 8f)
                         (cell.layoutParams as ViewGroup.MarginLayoutParams).rightMargin = gap
                         binding.imageStrip.addView(cell)
                     }
