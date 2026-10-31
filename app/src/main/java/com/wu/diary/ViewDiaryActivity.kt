@@ -572,8 +572,13 @@ class ViewDiaryActivity : BaseActivity() {
                 }
             }, start, end, flags)
         }
-        // 坐标文本加下划线，点按用地图打开。
+        // 整行定位信息都可点击（地名 + 坐标），点击打开地图；底部横线由 LocationLines 绘制。
         GeoPoint.findAll(spannable.toString()).forEach { match ->
+            val lineStart = spannable.lastIndexOf('\n', match.start)
+                .let { if (it < 0) 0 else it + 1 }
+            val lineEnd = spannable.indexOf('\n', match.end)
+                .let { if (it < 0) spannable.length else it }
+            if (lineStart >= lineEnd) return@forEach
             spannable.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) {
                     GeoPoint.openMap(this@ViewDiaryActivity, match.lat, match.lng)
@@ -581,9 +586,10 @@ class ViewDiaryActivity : BaseActivity() {
 
                 override fun updateDrawState(ds: TextPaint) {
                     super.updateDrawState(ds)
-                    ds.isUnderlineText = true
+                    // 下划线交给整行底部横线，不额外画文字下划线。
+                    ds.isUnderlineText = false
                 }
-            }, match.start, match.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }, lineStart, lineEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         // 定位行整行加底部横线，地名也一起覆盖。
         LocationLines.decorate(
