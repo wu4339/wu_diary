@@ -8,6 +8,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityHiddenDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
+import com.wu.diary.ui.TimelineStripDrawable
 
 /** 隐藏空间：集中展示所有已隐藏的笔记。 */
 class HiddenDiaryActivity : BaseActivity() {
@@ -59,6 +60,9 @@ class HiddenDiaryActivity : BaseActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
+        if (settings.displayStyle == Settings.STYLE_TIMELINE) {
+            binding.recycler.setBackgroundColor(TimelineStripDrawable.BACKGROUND)
+        }
         binding.btnBack.setOnClickListener { finish() }
     }
 

@@ -13,6 +13,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivitySearchBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
+import com.wu.diary.ui.TimelineStripDrawable
 import com.wu.diary.util.GeoPoint
 
 /** 独立的搜索界面：输入关键词过滤笔记，命中内容高亮，点击进入浏览页。 */
@@ -75,6 +76,9 @@ class SearchActivity : BaseActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
+        if (settings.displayStyle == Settings.STYLE_TIMELINE) {
+            binding.recycler.setBackgroundColor(TimelineStripDrawable.BACKGROUND)
+        }
 
         binding.btnBack.setOnClickListener { finish() }
         binding.editSearch.doAfterTextChanged { text -> showResults(text?.toString().orEmpty()) }

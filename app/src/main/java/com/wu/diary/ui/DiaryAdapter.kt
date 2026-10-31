@@ -47,14 +47,22 @@ class DiaryAdapter(
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    /** 卡片底色：memos 与卡片式都用圆角卡片，极简是原组列表。 */
-    private val cardFrame = style != Settings.STYLE_MINIMAL
+    /** 卡片底色：memos 与卡片式都用圆角卡片，极简和时间线是原组列表。 */
+    private val cardFrame = style == Settings.STYLE_MEMOS || style == Settings.STYLE_CARD
 
     /** 平铺卡片：memos 不显示日期头，每条笔记单独一张卡片。 */
     private val flatCards = style == Settings.STYLE_MEMOS
 
+    /** 时间线：米色底 + 左侧竖线，日期头带圆点。 */
+    private val timeline = style == Settings.STYLE_TIMELINE
+
     private sealed interface Row {
-        data class DateHeader(val day: String, val year: String, val isFirst: Boolean) : Row
+        data class DateHeader(
+            val day: String,
+            val year: String,
+            val full: String,
+            val isFirst: Boolean
+        ) : Row
         data class Entry(val entry: DiaryEntry, val isGroupEnd: Boolean) : Row
     }
 
@@ -62,6 +70,7 @@ class DiaryAdapter(
     private val dayFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val dayTextFormat = SimpleDateFormat("M/d", Locale.getDefault())
     private val yearTextFormat = SimpleDateFormat("yyyy", Locale.getDefault())
+    private val fullDateTextFormat = SimpleDateFormat("yyyy年M月d日", Locale.getDefault())
     private val timeTextFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault())
     private var highlightQuery = ""
 
@@ -108,7 +117,7 @@ class DiaryAdapter(
 
     /**
      * 卡片风格：每条笔记一张浅灰圆角卡片，底部显示时间，右侧按钮打开操作菜单；
-     * 极简风格恢复原来的分组列表外观（透明背景 + 分割线）。
+     * 时间线：米色底 + 左侧竖线；极简风格恢复原来的分组列表外观（透明背景 + 分割线）。
      */
     private fun applyCardChrome(binding: ItemDiaryBinding, density: Float, entry: DiaryEntry) {
         val root = binding.root
@@ -129,7 +138,7 @@ class DiaryAdapter(
                 (16 * density).toInt(),
                 (12 * density).toInt()
             )
-            setChildrenPadding(binding, 0)
+            setChildrenPadding(binding, 0, 0)
             binding.textBody.setTextColor(0xFF1C1C1C.toInt())
             binding.metaRow.isVisible = flatCards
             if (flatCards) {
@@ -137,6 +146,20 @@ class DiaryAdapter(
                 binding.textTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
                 binding.btnMore.setOnClickListener { onLongClick(entry) }
             }
+            binding.divider.isVisible = false
+        } else if (timeline) {
+            root.background = TimelineStripDrawable(
+                background = TimelineStripDrawable.BACKGROUND,
+                density = density
+            )
+            margins?.let {
+                it.setMargins(0, 0, 0, 0)
+                root.layoutParams = it
+            }
+            root.setPadding(0, (18 * density).toInt(), 0, (14 * density).toInt())
+            setChildrenPadding(binding, (48 * density).toInt(), (20 * density).toInt())
+            binding.textBody.setTextColor(0xFF1C1C1C.toInt())
+            binding.metaRow.isVisible = false
             binding.divider.isVisible = false
         } else {
             val out = TypedValue()
@@ -147,19 +170,19 @@ class DiaryAdapter(
                 root.layoutParams = it
             }
             root.setPadding(0, (20 * density).toInt(), 0, 0)
-            setChildrenPadding(binding, (24 * density).toInt())
+            setChildrenPadding(binding, (24 * density).toInt(), (24 * density).toInt())
             binding.textBody.setTextColor(ContextCompat.getColor(root.context, R.color.text_body))
             binding.metaRow.isVisible = false
             binding.divider.isVisible = true
         }
     }
 
-    private fun setChildrenPadding(binding: ItemDiaryBinding, horizontal: Int) {
-        binding.imageStrip.setPadding(horizontal, 0, horizontal, 0)
-        binding.tagScroll.setPadding(horizontal, 0, horizontal, 0)
-        binding.tagScrollBottom.setPadding(horizontal, 0, horizontal, 0)
-        binding.textBody.setPadding(horizontal, 0, horizontal, 0)
-        binding.metaRow.setPadding(horizontal, 0, horizontal, 0)
+    private fun setChildrenPadding(binding: ItemDiaryBinding, left: Int, right: Int) {
+        binding.imageStrip.setPadding(left, 0, right, 0)
+        binding.tagScroll.setPadding(left, 0, right, 0)
+        binding.tagScrollBottom.setPadding(left, 0, right, 0)
+        binding.textBody.setPadding(left, 0, right, 0)
+        binding.metaRow.setPadding(left, 0, right, 0)
     }
 
     /** 把笔记列表展开成带日期头的行序列；卡片风格不显示日期头，每条笔记自成一张卡片。 */
@@ -174,7 +197,14 @@ class DiaryAdapter(
             val date = Date(entry.createdAt)
             val day = dayFormat.format(date)
             if (day != currentDay) {
-                built.add(Row.DateHeader(dayTextFormat.format(date), yearTextFormat.format(date), currentDay == null))
+                built.add(
+                    Row.DateHeader(
+                        day = dayTextFormat.format(date),
+                        year = yearTextFormat.format(date),
+                        full = fullDateTextFormat.format(date),
+                        isFirst = currentDay == null
+                    )
+                )
                 currentDay = day
             }
             built.add(Row.Entry(entry, false))
@@ -217,8 +247,8 @@ class DiaryAdapter(
             DateViewHolder(ItemDateBinding.inflate(inflater, parent, false))
         } else {
             val entryBinding = ItemDiaryBinding.inflate(inflater, parent, false)
-            // 卡片风格用圆角底色 + 水波纹前景，点击时的反馈不会盖住卡片背景。
-            if (cardFrame) {
+            // 卡片/时间线风格用圆角底色或自绘背景 + 水波纹前景，点击反馈不会盖住底色。
+            if (cardFrame || timeline) {
                 entryBinding.root.foreground =
                     RippleDrawable(ColorStateList.valueOf(0x1F000000), null, null)
             }
@@ -236,16 +266,39 @@ class DiaryAdapter(
     }
 
     private fun bindDate(binding: ItemDateBinding, row: Row.DateHeader) {
+        val density = binding.root.resources.displayMetrics.density
+        val horizontal = (24 * density).toInt()
+        if (timeline) {
+            // 时间线：整行米色底 + 左侧竖线，日期头处画空心圆点。
+            binding.root.background = TimelineStripDrawable(
+                background = TimelineStripDrawable.BACKGROUND,
+                density = density,
+                dotCenterY = if (row.isFirst) 34f else 42f
+            )
+            binding.root.setPadding(
+                (48 * density).toInt(),
+                ((if (row.isFirst) 22 else 30) * density).toInt(),
+                (20 * density).toInt(),
+                (10 * density).toInt()
+            )
+            binding.textDate.text = row.full
+            binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * fontScale)
+            binding.textYear.text = ""
+            binding.textYear.isVisible = false
+            return
+        }
+        binding.root.background = null
         binding.textDate.text = row.day
         binding.textYear.text = row.year
+        binding.textYear.isVisible = true
         binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f * fontScale)
         binding.textYear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
         // 日期在“上方的分割线”和“第一条笔记”之间垂直居中（上方约 26dp、下方约 20dp）。
-        val top = binding.root.resources.displayMetrics.density * if (row.isFirst) 16 else 26
+        val top = density * if (row.isFirst) 16 else 26
         binding.root.setPadding(
-            binding.root.paddingLeft,
+            horizontal,
             top.toInt(),
-            binding.root.paddingRight,
+            horizontal,
             binding.root.paddingBottom
         )
     }
@@ -295,8 +348,12 @@ class DiaryAdapter(
         binding.imageStrip.removeAllViews()
         binding.imageStrip.isVisible = entry.images.isNotEmpty() || entry.videos.isNotEmpty()
         val metrics = binding.root.resources.displayMetrics
-        // 卡片风格两侧各多出 16dp 内边距，图片宽度相应收窄。
-        val cardInset = (if (cardFrame) 16 else 0) * metrics.density
+        // 卡片风格两侧各多出 16dp 内边距、时间线多出 20dp，图片宽度相应收窄。
+        val cardInset = when {
+            cardFrame -> 16 * metrics.density
+            timeline -> 20 * metrics.density
+            else -> 0f
+        }
         if (largeImages) {
             // 大图模式：图片按原图比例铺满整行，纵向排列，带圆角。
             binding.imageStrip.orientation = LinearLayout.VERTICAL
