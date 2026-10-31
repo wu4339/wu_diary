@@ -61,7 +61,8 @@ class DiaryAdapter(
             val day: String,
             val year: String,
             val full: String,
-            val isFirst: Boolean
+            val isFirst: Boolean,
+            val isToday: Boolean
         ) : Row
         data class Entry(val entry: DiaryEntry, val isGroupEnd: Boolean) : Row
     }
@@ -193,6 +194,7 @@ class DiaryAdapter(
         }
         val built = mutableListOf<Row>()
         var currentDay: String? = null
+        val todayKey = dayFormat.format(Date())
         entries.sortedByDescending { it.createdAt }.forEach { entry ->
             val date = Date(entry.createdAt)
             val day = dayFormat.format(date)
@@ -202,7 +204,8 @@ class DiaryAdapter(
                         day = dayTextFormat.format(date),
                         year = yearTextFormat.format(date),
                         full = fullDateTextFormat.format(date),
-                        isFirst = currentDay == null
+                        isFirst = currentDay == null,
+                        isToday = day == todayKey
                     )
                 )
                 currentDay = day
@@ -273,7 +276,8 @@ class DiaryAdapter(
             binding.root.background = TimelineStripDrawable(
                 background = TimelineStripDrawable.BACKGROUND,
                 density = density,
-                dotCenterY = if (row.isFirst) 34f else 42f
+                dotCenterY = if (row.isFirst) 34f else 42f,
+                dotFilled = row.isToday
             )
             binding.root.setPadding(
                 (48 * density).toInt(),
@@ -282,7 +286,7 @@ class DiaryAdapter(
                 (10 * density).toInt()
             )
             binding.textDate.text = row.full
-            binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f * fontScale)
+            binding.textDate.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f * fontScale)
             binding.textYear.text = ""
             binding.textYear.isVisible = false
             return

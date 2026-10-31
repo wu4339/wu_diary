@@ -13,7 +13,8 @@ import android.graphics.drawable.Drawable
 class TimelineStripDrawable(
     private val background: Int,
     private val density: Float,
-    private val dotCenterY: Float = 0f
+    private val dotCenterY: Float = 0f,
+    private val dotFilled: Boolean = false
 ) : Drawable() {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -32,10 +33,22 @@ class TimelineStripDrawable(
         canvas.drawLine(x, 0f, x, b.height().toFloat(), paint)
 
         if (dotCenterY > 0f) {
-            paint.style = Paint.Style.STROKE
-            paint.color = LINE_COLOR
-            paint.strokeWidth = 2f * density
-            canvas.drawCircle(x, dotCenterY * density, 6f * density, paint)
+            val radius = 6f * density
+            if (dotFilled) {
+                // 今天：实心圆点，直接盖住竖线。
+                paint.style = Paint.Style.FILL
+                paint.color = LINE_COLOR
+                canvas.drawCircle(x, dotCenterY * density, radius, paint)
+            } else {
+                // 其他日期：先用底色盖掉圆圈内部，竖线就不会穿透空心圆。
+                paint.style = Paint.Style.FILL
+                paint.color = background
+                canvas.drawCircle(x, dotCenterY * density, radius, paint)
+                paint.style = Paint.Style.STROKE
+                paint.color = LINE_COLOR
+                paint.strokeWidth = 2f * density
+                canvas.drawCircle(x, dotCenterY * density, radius, paint)
+            }
         }
     }
 
