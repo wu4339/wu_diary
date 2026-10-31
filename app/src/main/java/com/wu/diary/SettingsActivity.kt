@@ -242,20 +242,25 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun updateDisplayStyleValue() {
-        val labelRes = if (settings.displayStyle == Settings.STYLE_MEMOS) {
-            R.string.display_style_memos
-        } else {
-            R.string.display_style_minimal
+        val labelRes = when (settings.displayStyle) {
+            Settings.STYLE_MEMOS -> R.string.display_style_memos
+            Settings.STYLE_CARD -> R.string.display_style_card
+            else -> R.string.display_style_minimal
         }
         binding.textDisplayStyleValue.text = getString(labelRes)
     }
 
-    /** 显示风格：极简（日期分组列表）/ memos（卡片流），选中即生效。 */
+    /** 显示风格：极简（日期分组列表）/memos（卡片流）/卡片式（日期 + 卡片），选中即生效。 */
     private fun showDisplayStyleDialog() {
-        val styles = intArrayOf(Settings.STYLE_MINIMAL, Settings.STYLE_MEMOS)
+        val styles = intArrayOf(
+            Settings.STYLE_MINIMAL,
+            Settings.STYLE_MEMOS,
+            Settings.STYLE_CARD
+        )
         val labels = arrayOf(
             getString(R.string.display_style_minimal),
-            getString(R.string.display_style_memos)
+            getString(R.string.display_style_memos),
+            getString(R.string.display_style_card)
         )
         val checked = styles.indexOf(settings.displayStyle).coerceAtLeast(0)
         AlertDialog.Builder(this)

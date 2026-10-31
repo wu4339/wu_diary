@@ -41,10 +41,16 @@ class DiaryAdapter(
     private val tagStyle: Int,
     private val largeImages: Boolean,
     private val mediumImages: Boolean,
-    private val cardStyle: Boolean = false,
+    private val style: Int = Settings.STYLE_MINIMAL,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    /** 卡片底色：memos 与卡片式都用圆角卡片，极简是原组列表。 */
+    private val cardFrame = style != Settings.STYLE_MINIMAL
+
+    /** 平铺卡片：memos 不显示日期头，每条笔记单独一张卡片。 */
+    private val flatCards = style == Settings.STYLE_MEMOS
 
     private sealed interface Row {
         data class DateHeader(val day: String, val year: String, val isFirst: Boolean) : Row
@@ -106,7 +112,7 @@ class DiaryAdapter(
     private fun applyCardChrome(binding: ItemDiaryBinding, density: Float, entry: DiaryEntry) {
         val root = binding.root
         val margins = root.layoutParams as? ViewGroup.MarginLayoutParams
-        if (cardStyle) {
+        if (cardFrame) {
             root.background = GradientDrawable().apply {
                 cornerRadius = 16 * density
                 setColor(0xFFF1F1F4.toInt())
@@ -124,10 +130,12 @@ class DiaryAdapter(
             )
             setChildrenPadding(binding, 0)
             binding.textBody.setTextColor(0xFF1C1C1C.toInt())
-            binding.metaRow.isVisible = true
-            binding.textTime.text = timeTextFormat.format(Date(entry.createdAt))
-            binding.textTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
-            binding.btnMore.setOnClickListener { onLongClick(entry) }
+            binding.metaRow.isVisible = flatCards
+            if (flatCards) {
+                binding.textTime.text = timeTextFormat.format(Date(entry.createdAt))
+                binding.textTime.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
+                binding.btnMore.setOnClickListener { onLongClick(entry) }
+            }
             binding.divider.isVisible = false
         } else {
             val out = TypedValue()
@@ -155,7 +163,7 @@ class DiaryAdapter(
 
     /** 把笔记列表展开成带日期头的行序列；卡片风格不显示日期头，每条笔记自成一张卡片。 */
     private fun buildRows(entries: List<DiaryEntry>): List<Row> {
-        if (cardStyle) {
+        if (flatCards) {
             return entries.sortedByDescending { it.createdAt }
                 .map { Row.Entry(it, false) }
         }
@@ -209,7 +217,7 @@ class DiaryAdapter(
         } else {
             val entryBinding = ItemDiaryBinding.inflate(inflater, parent, false)
             // 卡片风格用圆角底色 + 水波纹前景，点击时的反馈不会盖住卡片背景。
-            if (cardStyle) {
+            if (cardFrame) {
                 entryBinding.root.foreground =
                     RippleDrawable(ColorStateList.valueOf(0x1F000000), null, null)
             }
@@ -285,7 +293,7 @@ class DiaryAdapter(
         binding.imageStrip.isVisible = entry.images.isNotEmpty() || entry.videos.isNotEmpty()
         val metrics = binding.root.resources.displayMetrics
         // 卡片风格两侧各多出 16dp 内边距，图片宽度相应收窄。
-        val cardInset = (if (cardStyle) 16 else 0) * metrics.density
+        val cardInset = (if (cardFrame) 16 else 0) * metrics.density
         if (largeImages) {
             // 大图模式：图片按原图比例铺满整行，纵向排列，带圆角。
             binding.imageStrip.orientation = LinearLayout.VERTICAL

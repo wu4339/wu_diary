@@ -129,7 +129,7 @@ class MainActivity : BaseActivity() {
             tagStyle = settings.tagStyle,
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
-            cardStyle = settings.displayStyle == Settings.STYLE_MEMOS,
+            style = settings.displayStyle,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
