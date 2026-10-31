@@ -72,6 +72,7 @@ class SettingsActivity : BaseActivity() {
         binding.rowFontFamily.setOnClickListener { showFontFamilyDialog() }
         binding.rowPreviewLines.setOnClickListener { showPreviewLinesDialog() }
         binding.rowDisplayStyle.setOnClickListener { showDisplayStyleDialog() }
+        binding.rowBackgroundColor.setOnClickListener { showBackgroundColorDialog() }
         binding.rowImageStyle.setOnClickListener { showImageStyleDialog() }
         binding.rowTransitionStyle.setOnClickListener { showTransitionStyleDialog() }
         binding.rowLineSpacing.setOnClickListener { showLineSpacingDialog() }
@@ -101,6 +102,7 @@ class SettingsActivity : BaseActivity() {
         updateFontFamilyValue()
         updatePreviewValue()
         updateDisplayStyleValue()
+        updateBackgroundColorValue()
         updateTagStyleValue()
         updateImageStyleValue()
         updateTransitionStyleValue()
@@ -271,6 +273,35 @@ class SettingsActivity : BaseActivity() {
             .setSingleChoiceItems(labels, checked) { dialog, which ->
                 settings.displayStyle = styles[which]
                 updateDisplayStyleValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateBackgroundColorValue() {
+        val labelRes = if (settings.backgroundTone == Settings.BACKGROUND_WARM) {
+            R.string.background_color_warm
+        } else {
+            R.string.background_color_white
+        }
+        binding.textBackgroundColorValue.text = getString(labelRes)
+    }
+
+    /** 背景颜色：纯白 / 暗黄，选中即生效。 */
+    private fun showBackgroundColorDialog() {
+        val tones = intArrayOf(Settings.BACKGROUND_WHITE, Settings.BACKGROUND_WARM)
+        val labels = arrayOf(
+            getString(R.string.background_color_white),
+            getString(R.string.background_color_warm)
+        )
+        val checked = tones.indexOf(settings.backgroundTone).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.background_color)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                settings.backgroundTone = tones[which]
+                binding.root.setBackgroundColor(settings.backgroundColor)
+                updateBackgroundColorValue()
                 dialog.dismiss()
             }
             .setNegativeButton(android.R.string.cancel, null)

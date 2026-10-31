@@ -43,6 +43,7 @@ class DiaryAdapter(
     private val largeImages: Boolean,
     private val mediumImages: Boolean,
     private val style: Int = Settings.STYLE_MINIMAL,
+    private val pageBackground: Int = TimelineStripDrawable.BACKGROUND,
     private val onClick: (DiaryEntry) -> Unit,
     private val onLongClick: (DiaryEntry) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -150,7 +151,7 @@ class DiaryAdapter(
             binding.divider.isVisible = false
         } else if (timeline) {
             root.background = TimelineStripDrawable(
-                background = TimelineStripDrawable.BACKGROUND,
+                background = pageBackground,
                 density = density
             )
             margins?.let {
@@ -274,7 +275,7 @@ class DiaryAdapter(
         if (timeline) {
             // 时间线：整行米色底 + 左侧竖线，日期头处画空心圆点。
             binding.root.background = TimelineStripDrawable(
-                background = TimelineStripDrawable.BACKGROUND,
+                background = pageBackground,
                 density = density,
                 dotCenterY = if (row.isFirst) 34f else 42f,
                 dotFilled = row.isToday

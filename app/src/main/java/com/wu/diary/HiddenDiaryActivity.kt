@@ -8,7 +8,6 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ActivityHiddenDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
-import com.wu.diary.ui.TimelineStripDrawable
 
 /** 隐藏空间：集中展示所有已隐藏的笔记。 */
 class HiddenDiaryActivity : BaseActivity() {
@@ -26,6 +25,7 @@ class HiddenDiaryActivity : BaseActivity() {
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var appliedImageStyle = Settings.IMAGE_SMALL
     private var appliedDisplayStyle = Settings.STYLE_MINIMAL
+    private var appliedBackgroundTone = Settings.BACKGROUND_WHITE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +41,7 @@ class HiddenDiaryActivity : BaseActivity() {
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
         appliedDisplayStyle = settings.displayStyle
+        appliedBackgroundTone = settings.backgroundTone
 
         adapter = DiaryAdapter(
             typeface = settings.typeface,
@@ -51,6 +52,7 @@ class HiddenDiaryActivity : BaseActivity() {
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
+            background = settings.backgroundColor,
             onClick = { entry ->
                 val ids = entries.map { it.id }
                 val index = entries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -60,9 +62,7 @@ class HiddenDiaryActivity : BaseActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        if (settings.displayStyle == Settings.STYLE_TIMELINE) {
-            binding.recycler.setBackgroundColor(TimelineStripDrawable.BACKGROUND)
-        }
+        binding.recycler.setBackgroundColor(settings.backgroundColor)
         binding.btnBack.setOnClickListener { finish() }
     }
 
@@ -71,7 +71,8 @@ class HiddenDiaryActivity : BaseActivity() {
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
-            appliedDisplayStyle != settings.displayStyle
+            appliedDisplayStyle != settings.displayStyle ||
+            appliedBackgroundTone != settings.backgroundTone
         ) {
             recreate()
             return

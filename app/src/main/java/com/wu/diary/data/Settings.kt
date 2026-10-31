@@ -128,6 +128,18 @@ class Settings(context: Context) {
             prefs.edit().putInt(KEY_DISPLAY_STYLE, value.coerceIn(STYLE_MINIMAL, STYLE_TIMELINE)).apply()
         }
 
+    /** 页面背景色：BACKGROUND_WHITE 纯白、BACKGROUND_WARM 暗黄。 */
+    var backgroundTone: Int
+        get() = prefs.getInt(KEY_BACKGROUND_TONE, BACKGROUND_WHITE)
+            .coerceIn(BACKGROUND_WHITE, BACKGROUND_WARM)
+        set(value) {
+            prefs.edit().putInt(KEY_BACKGROUND_TONE, value.coerceIn(BACKGROUND_WHITE, BACKGROUND_WARM)).apply()
+        }
+
+    /** 当前背景色对应的 ARGB 值。 */
+    val backgroundColor: Int
+        get() = if (backgroundTone == BACKGROUND_WARM) 0xFFF1E5C8.toInt() else 0xFFFFFFFF.toInt()
+
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
         get() = prefs.getString(KEY_STORAGE_URI, null)
@@ -178,6 +190,7 @@ class Settings(context: Context) {
         private const val KEY_STORAGE_URI = "storage_tree_uri"
         private const val KEY_TRANSITION_STYLE = "transition_style"
         private const val KEY_DISPLAY_STYLE = "display_style"
+        private const val KEY_BACKGROUND_TONE = "background_tone"
         private const val KEY_TAG_SORT = "tag_sort"
         private const val KEY_PINNED_TAGS = "pinned_tags"
 
@@ -210,6 +223,10 @@ class Settings(context: Context) {
         const val STYLE_MEMOS = 1
         const val STYLE_CARD = 2
         const val STYLE_TIMELINE = 3
+
+        /** 页面背景颜色：纯白、暗黄。 */
+        const val BACKGROUND_WHITE = 0
+        const val BACKGROUND_WARM = 1
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

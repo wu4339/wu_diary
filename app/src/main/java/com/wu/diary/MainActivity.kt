@@ -38,7 +38,6 @@ import com.wu.diary.databinding.ActivityMainBinding
 import com.wu.diary.databinding.DialogNoteMenuBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.ui.DiaryAdapter
-import com.wu.diary.ui.TimelineStripDrawable
 import com.wu.diary.util.Feedback
 import com.wu.diary.util.TagEditor
 import com.wu.diary.util.showDeleteConfirm
@@ -66,6 +65,7 @@ class MainActivity : BaseActivity() {
     private var appliedFontFamily = Settings.DEFAULT_FONT_FAMILY
     private var appliedImageStyle = Settings.IMAGE_SMALL
     private var appliedDisplayStyle = Settings.STYLE_MINIMAL
+    private var appliedBackgroundTone = Settings.BACKGROUND_WHITE
     private var swipeDownX = 0f
     private var swipeDownY = 0f
     /** 本次手势已经用于滑出侧栏，后续事件不再交给列表。 */
@@ -114,6 +114,7 @@ class MainActivity : BaseActivity() {
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
         appliedDisplayStyle = settings.displayStyle
+        appliedBackgroundTone = settings.backgroundTone
 
         val today = Calendar.getInstance()
         displayYear = today.get(Calendar.YEAR)
@@ -131,6 +132,7 @@ class MainActivity : BaseActivity() {
             largeImages = settings.largeImages,
             mediumImages = settings.mediumImages,
             style = settings.displayStyle,
+            background = settings.backgroundColor,
             onClick = { entry ->
                 val ids = displayedEntries.map { it.id }
                 val index = displayedEntries.indexOfFirst { it.id == entry.id }.coerceAtLeast(0)
@@ -140,10 +142,8 @@ class MainActivity : BaseActivity() {
         )
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
-        // 时间线风格整块列表用米色底，行与行之间不会露白。
-        if (settings.displayStyle == Settings.STYLE_TIMELINE) {
-            binding.recycler.setBackgroundColor(TimelineStripDrawable.BACKGROUND)
-        }
+        // 列表背景跟随「背景颜色」设置，短列表或卡片之间的空隙不会露白。
+        binding.recycler.setBackgroundColor(settings.backgroundColor)
         // 滑动列表时收起底部悬浮按键，停下后淡入回来。
         binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recycler: RecyclerView, newState: Int) {
@@ -445,7 +445,8 @@ class MainActivity : BaseActivity() {
         if (appliedScale != settings.previewScale || appliedLines != settings.previewLines ||
             appliedLineSpacing != settings.lineSpacing || appliedTagStyle != settings.tagStyle ||
             appliedFontFamily != settings.fontFamily || appliedImageStyle != settings.imageStyle ||
-            appliedDisplayStyle != settings.displayStyle
+            appliedDisplayStyle != settings.displayStyle ||
+            appliedBackgroundTone != settings.backgroundTone
         ) {
             recreate()
             return

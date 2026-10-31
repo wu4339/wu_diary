@@ -89,6 +89,10 @@
     <string name="display_style_memos">memos</string>
     <string name="display_style_card">卡片式</string>
     <string name="display_style_timeline">时间线</string>
+    <string name="background_color">背景颜色</string>
+    <string name="background_color_desc">页面与列表的背景颜色</string>
+    <string name="background_color_white">纯白</string>
+    <string name="background_color_warm">暗黄</string>
     <string name="image_style">图片显示方式</string>
     <string name="image_style_desc">主界面与笔记查看页的图片大小</string>
     <string name="image_style_small">小图</string>

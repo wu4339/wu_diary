@@ -2,7 +2,9 @@ package com.wu.diary
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.wu.diary.data.Settings
 import com.wu.diary.util.Transitions
 
 /**
@@ -16,6 +18,12 @@ open class BaseActivity : AppCompatActivity() {
     /** 紧接着的 finish 不播放关闭动画（例如保存后直接跳到另一个页面）。 */
     protected fun skipCloseTransitionOnce() {
         skipCloseTransition = true
+    }
+
+    /** 页面根布局统一套用设置里的背景颜色。 */
+    override fun setContentView(view: View) {
+        super.setContentView(view)
+        view.setBackgroundColor(Settings(this).backgroundColor)
     }
 
     override fun startActivity(intent: Intent?) {
