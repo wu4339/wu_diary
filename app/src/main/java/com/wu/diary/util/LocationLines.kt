@@ -81,7 +81,7 @@ object LocationLines {
             if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) return false
             val offset = layout.getOffsetForHorizontal(line, x)
             val span = buffer.getSpans(offset, offset, ClickableSpan::class.java)
-                .firstOrNull { it is GeoLinkSpan } ?: return false
+                .firstOrNull() ?: return false
             span.onClick(widget)
             return true
         }

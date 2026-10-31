@@ -39,6 +39,7 @@ import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LocationLines
+import com.wu.diary.util.LinkStyles
 import com.wu.diary.util.TagEditor
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -252,8 +253,9 @@ class EditDiaryActivity : BaseActivity() {
         }
     }
 
-    /** 重新给正文里的定位行加地图链接（样式与网址链接一致）。 */
+    /** 重新给正文里的网址和定位行加链接样式（与主界面一致）。 */
     private fun refreshLocationLines(text: Editable) {
+        LinkStyles.linkUrls(text)
         LocationLines.link(text)
     }
 

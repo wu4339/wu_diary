@@ -328,7 +328,7 @@ class DiaryAdapter(
         val rendered = MarkdownText.render(body)
         val display = rendered?.text ?: body
         // 主界面预览里链接同样显示为紫色下划线并带跳转符号。
-        val styled = LinkStyles.decorate(highlightBody(display, binding))
+        val styled = LinkStyles.decorate(binding.root.context, highlightBody(display, binding))
         // 先定好字号与字体再渲染列表，悬挂缩进需要按真实显示宽度测量。
         binding.textBody.typeface = typeface
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)

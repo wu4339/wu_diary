@@ -552,7 +552,7 @@ class ViewDiaryActivity : BaseActivity() {
 
     /** 网址与定位行都用紫色下划线 + 跳转符号，点击时打开对应 App / 地图。 */
     private fun linkify(text: String): Spannable =
-        LinkStyles.decorate(SpannableString(text))
+        LinkStyles.decorate(this, SpannableString(text))
 
     private fun renderImages(current: DiaryEntry) {
         binding.imageStrip.removeAllViews()

@@ -316,12 +316,17 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun updateCardColorValue() {
+        if (settings.cardTone == Settings.CARD_CUSTOM) {
+            val c = settings.customCardColor
+            binding.textCardColorValue.text = getString(R.string.card_color_custom) + " " +
+                "#%02X%02X%02X".format(Color.red(c), Color.green(c), Color.blue(c))
+            return
+        }
         val labelRes = when (settings.cardTone) {
             Settings.CARD_WHITE -> R.string.card_color_white
             Settings.CARD_BEIGE -> R.string.card_color_beige
             Settings.CARD_BLUE_GRAY -> R.string.card_color_dark
             Settings.CARD_LIGHT_BLUE -> R.string.card_color_blue
-            Settings.CARD_CUSTOM -> R.string.card_color_custom
             else -> R.string.card_color_gray
         }
         binding.textCardColorValue.text = getString(labelRes)
@@ -384,10 +389,19 @@ class SettingsActivity : BaseActivity() {
         }
         container.addView(preview)
 
+        val hexText = TextView(this).apply {
+            setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setPadding(0, dp(6), 0, 0)
+            text = hexString(channels)
+        }
+        container.addView(hexText)
+
         fun refreshPreview() {
             (preview.background as? GradientDrawable)?.setColor(
                 Color.rgb(channels[0], channels[1], channels[2])
             )
+            hexText.text = hexString(channels)
         }
 
         listOf("R" to 0, "G" to 1, "B" to 2).forEach { (name, index) ->
@@ -397,10 +411,10 @@ class SettingsActivity : BaseActivity() {
                 setPadding(0, dp(8), 0, 0)
             }
             val label = TextView(this).apply {
-                text = "$name ${channels[index]}"
+                text = "$name %02X".format(channels[index])
                 setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                width = dp(52)
+                width = dp(64)
             }
             val bar = SeekBar(this).apply {
                 max = 255
@@ -410,7 +424,7 @@ class SettingsActivity : BaseActivity() {
             bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
                     channels[index] = progress
-                    label.text = "$name $progress"
+                    label.text = "$name %02X".format(progress)
                     refreshPreview()
                 }
 
@@ -434,6 +448,10 @@ class SettingsActivity : BaseActivity() {
             .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
+
+    /** RGB 三个通道拼成 #RRGGBB 文本。 */
+    private fun hexString(channels: IntArray): String =
+        "#%02X%02X%02X".format(channels[0], channels[1], channels[2])
 
     private fun updateCommonTagsValue() {
         val tags = settings.commonTags
