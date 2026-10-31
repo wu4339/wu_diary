@@ -138,7 +138,7 @@ class Settings(context: Context) {
 
     /** 当前背景色对应的 ARGB 值。 */
     val backgroundColor: Int
-        get() = if (backgroundTone == BACKGROUND_WARM) 0xFFF1E5C8.toInt() else 0xFFFFFFFF.toInt()
+        get() = if (backgroundTone == BACKGROUND_WARM) 0xFFE3DED2.toInt() else 0xFFFFFFFF.toInt()
 
     /** 用户选择的笔记存储目录（SAF tree uri），为空表示使用 App 内部存储。 */
     var storageTreeUri: String?
