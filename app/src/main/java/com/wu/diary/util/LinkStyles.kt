@@ -68,7 +68,11 @@ object LinkStyles {
     }
 
     /** 在每个链接末尾插入空格 + 跳转图标，从后往前插入避免位置偏移。 */
-    private fun insertArrows(context: Context, spannable: Spannable, positions: List<Int>) {
+    private fun insertArrows(
+        context: Context,
+        spannable: SpannableStringBuilder,
+        positions: List<Int>
+    ) {
         val icon = arrowIcon(context)
         positions.distinct().sortedDescending().forEach { position ->
             // 第一个空格留出间隔，第二个空格换成图标。
