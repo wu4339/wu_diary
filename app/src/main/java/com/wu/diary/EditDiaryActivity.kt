@@ -9,7 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Rect
-import android.graphics.Typeface
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -22,20 +21,14 @@ import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import com.wu.diary.data.DiaryStore
 import com.wu.diary.data.Settings
@@ -45,6 +38,7 @@ import com.wu.diary.util.Feedback
 import com.wu.diary.util.GeoName
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
+import com.wu.diary.util.TagEditor
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
 import java.io.File
@@ -407,149 +401,13 @@ class EditDiaryActivity : BaseActivity() {
 
     /** 编辑标签：可直接输入，也可以点选已有的标签；空格/逗号分隔，最多 10 个。 */
     private fun editTags() {
-        val density = resources.displayMetrics.density
-        fun dp(value: Int) = (value * density).toInt()
-
-        val existingTags = store.load()
-            .flatMap { it.tags }
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .sorted()
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), 0)
+        TagEditor.show(this, tags) { updated ->
+            tags.clear()
+            tags.addAll(updated)
+            renderEditorTags()
         }
-        val input = EditText(this).apply {
-            setText(tags.joinToString(" "))
-            hint = getString(R.string.tags_hint)
-            setSingleLine(true)
-            setPadding(dp(4), dp(10), dp(4), dp(10))
-        }
-        container.addView(input)
-
-        if (existingTags.isNotEmpty()) {
-            val chipViews = mutableListOf<Pair<String, TextView>>()
-
-            fun refreshChips() {
-                val current = parseTags(input.text.toString())
-                chipViews.forEach { (tag, view) ->
-                    val selected = tag in current
-                    view.setTextColor(
-                        ContextCompat.getColor(
-                            this@EditDiaryActivity,
-                            if (selected) R.color.text_primary else R.color.text_secondary
-                        )
-                    )
-                    view.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
-                }
-            }
-
-            // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
-            // 宽度铺满弹窗内容区，等布局完成后再按真实宽度排版，避免行尾留下空白。
-            val rowHeight = dp(32)
-            val chipArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            val chipScroll = ScrollView(this).apply {
-                isVerticalScrollBarEnabled = false
-                overScrollMode = View.OVER_SCROLL_NEVER
-                addView(chipArea)
-            }
-            container.addView(
-                chipScroll,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    rowHeight * 3
-                ).apply { topMargin = dp(10) }
-            )
-
-            fun layoutChips(width: Int) {
-                if (width <= 0) return
-                chipArea.removeAllViews()
-                var row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                var used = 0
-                chipViews.forEach { (_, chip) ->
-                    (chip.parent as? ViewGroup)?.removeView(chip)
-                    chip.measure(
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    val chipWidth = chip.measuredWidth + dp(4)
-                    if (used > 0 && used + chipWidth > width) {
-                        chipArea.addView(
-                            row,
-                            LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                rowHeight
-                            )
-                        )
-                        row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                        used = 0
-                    }
-                    row.addView(
-                        chip,
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply { marginEnd = dp(4) }
-                    )
-                    used += chipWidth
-                }
-                if (row.childCount > 0) {
-                    chipArea.addView(
-                        row,
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            rowHeight
-                        )
-                    )
-                }
-                chipScroll.layoutParams = chipScroll.layoutParams.apply {
-                    height = rowHeight * minOf(3, chipArea.childCount)
-                }
-            }
-
-            existingTags.forEach { tag ->
-                val chip = TextView(this).apply {
-                    text = "#$tag"
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                    setPadding(dp(6), dp(4), dp(6), dp(4))
-                    isClickable = true
-                    setOnClickListener {
-                        val current = parseTags(input.text.toString()).toMutableList()
-                        if (tag in current) current.remove(tag) else current.add(tag)
-                        input.setText(current.joinToString(" "))
-                        input.setSelection(input.text.length)
-                        refreshChips()
-                    }
-                }
-                chipViews.add(tag to chip)
-            }
-            // 等弹窗内容完成布局后用真实宽度排版，行尾不会留下多余空白。
-            chipScroll.doOnLayout { layoutChips(it.width) }
-            refreshChips()
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.tag_dialog_title)
-            .setView(container)
-            .setPositiveButton(R.string.save) { _, _ ->
-                // 添加标签与保存笔记使用同一个提示音。
-                Feedback.saved(this)
-                tags.clear()
-                tags.addAll(parseTags(input.text.toString()))
-                renderEditorTags()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
     }
 
-    private fun parseTags(raw: String): List<String> =
-        raw.split(Regex("[\\s,，、]+"))
-            .map { it.trim().removePrefix("#") }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .take(10)
 
     /** 剪切光标所在的整个段落：复制到剪贴板并从正文中删除。 */
     private fun cutParagraph() {

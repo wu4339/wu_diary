@@ -137,6 +137,23 @@ class Settings(context: Context) {
                 .apply()
         }
 
+    /** 侧栏标签的排序方式：TAG_SORT_NAME 按名称、TAG_SORT_COUNT 按笔记数量。 */
+    var tagSort: Int
+        get() = prefs.getInt(KEY_TAG_SORT, TAG_SORT_NAME).coerceIn(TAG_SORT_NAME, TAG_SORT_COUNT)
+        set(value) {
+            prefs.edit().putInt(KEY_TAG_SORT, value.coerceIn(TAG_SORT_NAME, TAG_SORT_COUNT)).apply()
+        }
+
+    /** 侧栏里置顶的标签，按加入顺序排列。 */
+    var pinnedTags: List<String>
+        get() = prefs.getString(KEY_PINNED_TAGS, null)
+            ?.split('\n')
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        set(value) {
+            prefs.edit().putString(KEY_PINNED_TAGS, value.joinToString("\n")).apply()
+        }
+
     companion object {
         private const val KEY_FONT_FAMILY = "font_family"
         private const val KEY_FONT_SP = "font_sp"
@@ -152,6 +169,8 @@ class Settings(context: Context) {
         private const val KEY_IMAGE_STYLE = "image_style"
         private const val KEY_STORAGE_URI = "storage_tree_uri"
         private const val KEY_TRANSITION_STYLE = "transition_style"
+        private const val KEY_TAG_SORT = "tag_sort"
+        private const val KEY_PINNED_TAGS = "pinned_tags"
 
         /** 列表预览正文的基准字号（sp），其它文字按比例缩放。 */
         private const val PREVIEW_BASE_SP = 16f
@@ -172,6 +191,10 @@ class Settings(context: Context) {
         const val TAG_TOP = 0
         const val TAG_BOTTOM = 1
         const val TAG_HIDDEN = 2
+
+        /** 侧栏标签排序：按名称、按数量。 */
+        const val TAG_SORT_NAME = 0
+        const val TAG_SORT_COUNT = 1
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

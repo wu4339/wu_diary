@@ -456,15 +456,38 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="20dp"
             android:layout_marginBottom="6dp"
-            android:text="@string/tags_section"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tags_section"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/btnTagSort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/tag_sort"
+                android:padding="4dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"

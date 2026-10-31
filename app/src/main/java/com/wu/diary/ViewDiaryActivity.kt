@@ -14,7 +14,6 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.location.Location
@@ -43,22 +42,18 @@ import android.view.Window
 import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.MediaController
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
@@ -75,6 +70,7 @@ import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.LinkOpener
 import com.wu.diary.util.MarkdownText
+import com.wu.diary.util.TagEditor
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
 import com.wu.diary.util.showDeleteConfirm
@@ -895,29 +891,92 @@ class ViewDiaryActivity : BaseActivity() {
         }
     }
 
-    /** 全屏查看图片，点击任意位置关闭。 */
+    /** 全屏查看图片：同一篇笔记有多张图时可左右滑动切换，点任意位置关闭。 */
     private fun openImage(path: String) {
+        val images = entry?.images?.takeIf { it.isNotEmpty() } ?: listOf(path)
+        val start = images.indexOf(path).coerceAtLeast(0)
         val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         val screenSize = maxOf(
             resources.displayMetrics.widthPixels,
             resources.displayMetrics.heightPixels
         )
-        val image = ImageView(this).apply {
+        val density = resources.displayMetrics.density
+
+        val pager = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@ViewDiaryActivity, RecyclerView.HORIZONTAL, false)
+            PagerSnapHelper().attachToRecyclerView(this)
+            overScrollMode = View.OVER_SCROLL_NEVER
             setBackgroundColor(Color.BLACK)
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            setImageBitmap(
-                ImageLoader.load(path, screenSize) ?: BitmapFactory.decodeFile(path)
-            )
         }
-        image.setOnClickListener { dialog.dismiss() }
-        dialog.setContentView(image)
+
+        fun pagePosition(): Int {
+            val lm = pager.layoutManager as? LinearLayoutManager ?: return 0
+            val center = (pager.left + pager.right) / 2
+            var best = 0
+            var bestDistance = Int.MAX_VALUE
+            for (i in lm.findFirstVisibleItemPosition()..lm.findLastVisibleItemPosition()) {
+                val view = lm.findViewByPosition(i) ?: continue
+                val distance = abs((view.left + view.right) / 2 - center)
+                if (distance < bestDistance) {
+                    bestDistance = distance
+                    best = i
+                }
+            }
+            return best
+        }
+
+        val counter = TextView(this).apply {
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            text = "${start + 1}/${images.size}"
+            visibility = if (images.size > 1) View.VISIBLE else View.GONE
+        }
+        pager.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (images.size <= 1) return
+                counter.text = "${pagePosition() + 1}/${images.size}"
+            }
+        })
+
+        pager.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount(): Int = images.size
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                val image = ImageView(this@ViewDiaryActivity).apply {
+                    layoutParams = RecyclerView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setBackgroundColor(Color.BLACK)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setOnClickListener { dialog.dismiss() }
+                }
+                return object : RecyclerView.ViewHolder(image) {}
+            }
+
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                val image = holder.itemView as ImageView
+                val imagePath = images[position]
+                image.setImageBitmap(
+                    ImageLoader.load(imagePath, screenSize) ?: BitmapFactory.decodeFile(imagePath)
+                )
+            }
+        }
+
+        val content = FrameLayout(this).apply { addView(pager) }
+        content.addView(
+            counter,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            ).apply { bottomMargin = (40 * density).toInt() }
+        )
+        dialog.setContentView(content)
         dialog.setOnDismissListener { exitImmersiveFullscreen() }
         applyFullscreenDialog(dialog)
         dialog.show()
+        pager.scrollToPosition(start)
     }
 
     /** 全屏黑底弹窗：铺满整屏并隐藏系统栏，图片/视频真正占满整个屏幕。 */
@@ -1165,153 +1224,17 @@ class ViewDiaryActivity : BaseActivity() {
     /** 查看页里直接给当前笔记加/删标签，保存后立即刷新标签行。 */
     private fun editTags() {
         val current = entry ?: return
-        val density = resources.displayMetrics.density
-        fun dp(value: Int) = (value * density).toInt()
-
-        val existingTags = store.load()
-            .flatMap { it.tags }
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .sorted()
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), 0)
+        TagEditor.show(this, current.tags) { updated ->
+            val updatedEntry = entry?.copy(
+                tags = updated,
+                updatedAt = System.currentTimeMillis()
+            ) ?: return@show
+            store.save(updatedEntry)
+            entry = updatedEntry
+            render()
         }
-        val input = EditText(this).apply {
-            setText(current.tags.joinToString(" "))
-            hint = getString(R.string.tags_hint)
-            setSingleLine(true)
-            setPadding(dp(4), dp(10), dp(4), dp(10))
-        }
-        container.addView(input)
-
-        if (existingTags.isNotEmpty()) {
-            val chipViews = mutableListOf<Pair<String, TextView>>()
-
-            fun refreshChips() {
-                val selectedTags = parseTags(input.text.toString())
-                chipViews.forEach { (tag, view) ->
-                    val selected = tag in selectedTags
-                    view.setTextColor(
-                        ContextCompat.getColor(
-                            this@ViewDiaryActivity,
-                            if (selected) R.color.text_primary else R.color.text_secondary
-                        )
-                    )
-                    view.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
-                }
-            }
-
-            // 现有标签按宽度自动换行，最多显示 3 行，更多时上下滑动选择。
-            // 宽度铺满弹窗内容区，等布局完成后再按真实宽度排版，避免行尾留下空白。
-            val rowHeight = dp(32)
-            val chipArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            val chipScroll = ScrollView(this).apply {
-                isVerticalScrollBarEnabled = false
-                overScrollMode = View.OVER_SCROLL_NEVER
-                addView(chipArea)
-            }
-            container.addView(
-                chipScroll,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    rowHeight * 3
-                ).apply { topMargin = dp(10) }
-            )
-
-            fun layoutChips(width: Int) {
-                if (width <= 0) return
-                chipArea.removeAllViews()
-                var row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                var used = 0
-                chipViews.forEach { (_, chip) ->
-                    (chip.parent as? ViewGroup)?.removeView(chip)
-                    chip.measure(
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    val chipWidth = chip.measuredWidth + dp(4)
-                    if (used > 0 && used + chipWidth > width) {
-                        chipArea.addView(
-                            row,
-                            LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                rowHeight
-                            )
-                        )
-                        row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                        used = 0
-                    }
-                    row.addView(
-                        chip,
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply { marginEnd = dp(4) }
-                    )
-                    used += chipWidth
-                }
-                if (row.childCount > 0) {
-                    chipArea.addView(
-                        row,
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            rowHeight
-                        )
-                    )
-                }
-                chipScroll.layoutParams = chipScroll.layoutParams.apply {
-                    height = rowHeight * minOf(3, chipArea.childCount)
-                }
-            }
-
-            existingTags.forEach { tag ->
-                val chip = TextView(this).apply {
-                    text = "#$tag"
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                    setPadding(dp(6), dp(4), dp(6), dp(4))
-                    isClickable = true
-                    setOnClickListener {
-                        val selectedTags = parseTags(input.text.toString()).toMutableList()
-                        if (tag in selectedTags) selectedTags.remove(tag) else selectedTags.add(tag)
-                        input.setText(selectedTags.joinToString(" "))
-                        input.setSelection(input.text.length)
-                        refreshChips()
-                    }
-                }
-                chipViews.add(tag to chip)
-            }
-            // 等弹窗内容完成布局后用真实宽度排版，行尾不会留下多余空白。
-            chipScroll.doOnLayout { layoutChips(it.width) }
-            refreshChips()
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.tag_dialog_title)
-            .setView(container)
-            .setPositiveButton(R.string.save) { _, _ ->
-                // 添加标签与保存笔记使用同一个提示音。
-                Feedback.saved(this)
-                val updated = current.copy(
-                    tags = parseTags(input.text.toString()),
-                    updatedAt = System.currentTimeMillis()
-                )
-                store.save(updated)
-                entry = updated
-                render()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
     }
 
-    private fun parseTags(raw: String): List<String> =
-        raw.split(Regex("[\\s,，、]+"))
-            .map { it.trim().removePrefix("#") }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .take(10)
 
     private fun confirmDelete() {
         val current = entry ?: return

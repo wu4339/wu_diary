@@ -98,6 +98,11 @@
     <string name="tags_hint">用空格或逗号分隔多个标签</string>
     <string name="tags_section">标签</string>
     <string name="tags_empty">暂无标签</string>
+    <string name="tag_sort">标签排序</string>
+    <string name="tag_sort_name">按名称</string>
+    <string name="tag_sort_count">按数量</string>
+    <string name="tag_pin">置顶</string>
+    <string name="tag_unpin">取消置顶</string>
     <string name="clipboard_title">用剪贴板内容新建笔记？</string>
     <string name="clipboard_create">新建笔记</string>
     <string name="clipboard_empty">剪贴板里没有文字</string>

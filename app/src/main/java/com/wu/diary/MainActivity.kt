@@ -79,6 +79,10 @@ class MainActivity : BaseActivity() {
     /** 当前只显示某个标签的笔记；为空表示不过滤。 */
     private var activeTag: String? = null
 
+    /** 侧栏标签的排序方式与置顶标签。 */
+    private var tagSort = Settings.TAG_SORT_NAME
+    private var pinnedTags: List<String> = emptyList()
+
     /** 后台保存完成后通知刷新，避免刚编辑完回到列表时读到写入中的文件。 */
     private val dataChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -103,6 +107,8 @@ class MainActivity : BaseActivity() {
         appliedLines = settings.previewLines
         appliedLineSpacing = settings.lineSpacing
         appliedTagStyle = settings.tagStyle
+        tagSort = settings.tagSort
+        pinnedTags = settings.pinnedTags
         appliedFontFamily = settings.fontFamily
         appliedImageStyle = settings.imageStyle
 
@@ -188,6 +194,8 @@ class MainActivity : BaseActivity() {
         binding.btnSearch.setOnClickListener {
             closeDrawerThen { startActivity(Intent(this, SearchActivity::class.java)) }
         }
+
+        binding.btnTagSort.setOnClickListener { showTagSortDialog() }
 
         binding.tagFilterBar.setOnClickListener {
             activeTag = null
@@ -578,13 +586,18 @@ class MainActivity : BaseActivity() {
         }, 230)
     }
 
-    /** 侧栏标签列表：汇总所有笔记的标签。 */
+    /** 侧栏标签列表：置顶标签排在最前，其余按所选方式排序。 */
     private fun renderTags() {
         val container = binding.tagList
         container.removeAllViews()
         val density = resources.displayMetrics.density
-        val tags = allEntries.flatMap { it.tags }.distinct().sorted()
-        if (tags.isEmpty()) {
+        binding.btnTagSort.text = getString(
+            if (tagSort == Settings.TAG_SORT_COUNT) R.string.tag_sort_count
+            else R.string.tag_sort_name
+        )
+
+        val allTags = allEntries.flatMap { it.tags }.distinct()
+        if (allTags.isEmpty()) {
             container.addView(
                 TextView(this).apply {
                     text = getString(R.string.tags_empty)
@@ -600,12 +613,25 @@ class MainActivity : BaseActivity() {
             )
             return
         }
+        val counts = allTags.associateWith { tag -> allEntries.count { tag in it.tags } }
+        val pinned = pinnedTags.filter { it in allTags }
+        val rest = allTags.filterNot { it in pinned }
+        val sortedRest = when (tagSort) {
+            Settings.TAG_SORT_COUNT -> rest.sortedWith(
+                compareByDescending<String> { counts[it] ?: 0 }.thenBy { it }
+            )
+            else -> rest.sorted()
+        }
+        val tags = pinned + sortedRest
+
         tags.forEach { tag ->
-            val count = allEntries.count { tag in it.tags }
+            val count = counts[tag] ?: 0
+            val pinnedTag = tag in pinned
             container.addView(
                 TextView(this).apply {
-                    text = SpannableString("#$tag  $count").apply {
-                        val suffixStart = "#$tag  ".length
+                    val label = if (pinnedTag) "📌 #$tag  $count" else "#$tag  $count"
+                    text = SpannableString(label).apply {
+                        val suffixStart = label.length - count.toString().length - 2
                         setSpan(
                             ForegroundColorSpan(
                                 ContextCompat.getColor(context, R.color.text_secondary)
@@ -643,9 +669,46 @@ class MainActivity : BaseActivity() {
                     isClickable = true
                     isFocusable = true
                     setOnClickListener { selectTag(tag) }
+                    setOnLongClickListener {
+                        showTagActions(tag, pinnedTag)
+                        true
+                    }
                 }
             )
         }
+    }
+
+    /** 侧栏标签排序：按名称 / 按数量，选择后立即重新排列。 */
+    private fun showTagSortDialog() {
+        val labels = arrayOf(
+            getString(R.string.tag_sort_name),
+            getString(R.string.tag_sort_count)
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.tag_sort)
+            .setSingleChoiceItems(labels, tagSort) { dialog, which ->
+                tagSort = which
+                settings.tagSort = which
+                dialog.dismiss()
+                renderTags()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /** 长按标签：置顶到侧栏顶部，或取消置顶。 */
+    private fun showTagActions(tag: String, pinned: Boolean) {
+        AlertDialog.Builder(this)
+            .setTitle("#$tag")
+            .setPositiveButton(
+                if (pinned) R.string.tag_unpin else R.string.tag_pin
+            ) { _, _ ->
+                pinnedTags = if (pinned) pinnedTags - tag else pinnedTags + tag
+                settings.pinnedTags = pinnedTags
+                renderTags()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     /** 点击标签：关闭侧栏只显示该标签的笔记；再次点击同一标签取消筛选。 */
