@@ -30,6 +30,7 @@
     <string name="filter">筛选</string>
     <string name="advanced_search">高级搜索</string>
     <string name="filter_has_image">包含图片</string>
+    <string name="filter_has_video">包含视频</string>
     <string name="filter_has_location">包含定位</string>
     <string name="filter_has_tag">有标签</string>
     <string name="filter_no_tag">无标签</string>
@@ -113,6 +114,9 @@
     <string name="hide_note">隐藏笔记</string>
     <string name="unhide_note">取消隐藏</string>
     <string name="copy_note">复制笔记</string>
+    <string name="append_note">一键追加</string>
+    <string name="append_done">已追加到笔记</string>
+    <string name="append_empty">剪贴板没有内容</string>
     <string name="note_copied">已复制笔记</string>
     <string name="note_hidden">已隐藏笔记</string>
     <string name="note_unhidden">已取消隐藏</string>

@@ -26,6 +26,7 @@ class SearchActivity : BaseActivity() {
     private var results: List<DiaryEntry> = emptyList()
 
     private var hasImageFilter = false
+    private var hasVideoFilter = false
     private var hasLocationFilter = false
     private var hasTagFilter = false
     private var noTagFilter = false
@@ -38,6 +39,7 @@ class SearchActivity : BaseActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data ?: return@registerForActivityResult
             hasImageFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_IMAGE, false)
+            hasVideoFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_VIDEO, false)
             hasLocationFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_LOCATION, false)
             hasTagFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_HAS_TAG, false)
             noTagFilter = data.getBooleanExtra(SearchFilterActivity.EXTRA_NO_TAG, false)
@@ -80,6 +82,7 @@ class SearchActivity : BaseActivity() {
                 SearchFilterActivity.intent(
                     this,
                     hasImageFilter,
+                    hasVideoFilter,
                     hasLocationFilter,
                     hasTagFilter,
                     noTagFilter,
@@ -102,8 +105,8 @@ class SearchActivity : BaseActivity() {
 
     /** 有筛选条件时图标加深，提示当前已启用高级搜索。 */
     private fun updateFilterIcon() {
-        val active = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter ||
-            hasLinkFilter
+        val active = hasImageFilter || hasVideoFilter || hasLocationFilter || hasTagFilter ||
+            noTagFilter || hasLinkFilter
         ImageViewCompat.setImageTintList(
             binding.btnFilter,
             ColorStateList.valueOf(
@@ -117,6 +120,7 @@ class SearchActivity : BaseActivity() {
 
     private fun matchFilters(entry: DiaryEntry): Boolean {
         if (hasImageFilter && entry.images.isEmpty()) return false
+        if (hasVideoFilter && entry.videos.isEmpty()) return false
         if (hasLocationFilter && GeoPoint.findAll(entry.content).isEmpty()) return false
         if (hasTagFilter && entry.tags.isEmpty()) return false
         if (noTagFilter && entry.tags.isNotEmpty()) return false
@@ -126,8 +130,8 @@ class SearchActivity : BaseActivity() {
 
     private fun showResults(query: String) {
         val keyword = query.trim()
-        val filterActive = hasImageFilter || hasLocationFilter || hasTagFilter || noTagFilter ||
-            hasLinkFilter
+        val filterActive = hasImageFilter || hasVideoFilter || hasLocationFilter || hasTagFilter ||
+            noTagFilter || hasLinkFilter
         // 既没有关键词也没有筛选条件时保持空白，不预先列出全部笔记。
         val blank = keyword.isEmpty() && !filterActive
         results = if (blank) {

@@ -961,6 +961,10 @@ class MainActivity : BaseActivity() {
             sheet.dismiss()
             copyEntry(entry)
         }
+        menu.itemAppend.setOnClickListener {
+            sheet.dismiss()
+            appendFromClipboard(entry)
+        }
         menu.itemTag.setOnClickListener {
             sheet.dismiss()
             editEntryTags(entry)
@@ -986,6 +990,29 @@ class MainActivity : BaseActivity() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("wu_diary", text))
         Toast.makeText(this, R.string.note_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    /** 把剪贴板内容追加到笔记末尾，与原有内容之间空一行。 */
+    private fun appendFromClipboard(entry: DiaryEntry) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+        val text = if (clip != null && clip.itemCount > 0) {
+            clip.getItemAt(0).coerceToText(this)?.toString().orEmpty().trim()
+        } else {
+            ""
+        }
+        if (text.isEmpty()) {
+            Toast.makeText(this, R.string.append_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val content = if (entry.content.isBlank()) text else entry.content.trimEnd() + "\n\n" + text
+        val updated = entry.copy(content = content, updatedAt = System.currentTimeMillis())
+        // 先更新列表再后台写存储，和改标签的处理一致。
+        allEntries = allEntries.map { if (it.id == updated.id) updated else it }
+        applyList()
+        val appContext = applicationContext
+        Thread { DiaryStore(appContext).save(updated) }.start()
+        Toast.makeText(this, R.string.append_done, Toast.LENGTH_SHORT).show()
     }
 
     /** 主界面直接改某篇笔记的标签：先更新列表，再后台写存储。 */
