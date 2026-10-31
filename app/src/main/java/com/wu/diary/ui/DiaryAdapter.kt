@@ -2,6 +2,7 @@ package com.wu.diary.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.text.SpannableString
@@ -142,7 +143,15 @@ class DiaryAdapter(
                 (12 * density).toInt()
             )
             setChildrenPadding(binding, 0, 0)
-            binding.textBody.setTextColor(0xFF1C1C1C.toInt())
+            // 深色卡片用浅色文字，保证可读性。
+            val darkCard = Color.luminance(cardColor) < 0.5f
+            binding.textBody.setTextColor(
+                if (darkCard) 0xFFFFFFFF.toInt() else 0xFF1C1C1C.toInt()
+            )
+            binding.textTime.setTextColor(
+                if (darkCard) 0xFFD8D8D8.toInt()
+                else ContextCompat.getColor(root.context, R.color.text_secondary)
+            )
             binding.metaRow.isVisible = flatCards
             if (flatCards) {
                 binding.textTime.text = timeTextFormat.format(Date(entry.createdAt))

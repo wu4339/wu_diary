@@ -140,11 +140,11 @@ class Settings(context: Context) {
     val backgroundColor: Int
         get() = if (backgroundTone == BACKGROUND_WARM) 0xFFDBD1C7.toInt() else 0xFFFFFFFF.toInt()
 
-    /** 主界面笔记卡片颜色：CARD_GRAY 浅灰、CARD_WHITE 白色、CARD_BEIGE 米黄。 */
+    /** 主界面笔记卡片颜色：浅灰、白色、米黄、深灰、浅蓝。 */
     var cardTone: Int
-        get() = prefs.getInt(KEY_CARD_TONE, CARD_GRAY).coerceIn(CARD_GRAY, CARD_BEIGE)
+        get() = prefs.getInt(KEY_CARD_TONE, CARD_GRAY).coerceIn(CARD_GRAY, CARD_LIGHT_BLUE)
         set(value) {
-            prefs.edit().putInt(KEY_CARD_TONE, value.coerceIn(CARD_GRAY, CARD_BEIGE)).apply()
+            prefs.edit().putInt(KEY_CARD_TONE, value.coerceIn(CARD_GRAY, CARD_LIGHT_BLUE)).apply()
         }
 
     /** 当前卡片颜色对应的 ARGB 值。 */
@@ -152,6 +152,8 @@ class Settings(context: Context) {
         get() = when (cardTone) {
             CARD_WHITE -> 0xFFFFFFFF.toInt()
             CARD_BEIGE -> 0xFFF5EDD9.toInt()
+            CARD_DARK -> 0xFF4A4A4A.toInt()
+            CARD_LIGHT_BLUE -> 0xFFDFEBFA.toInt()
             else -> 0xFFF1F1F4.toInt()
         }
 
@@ -255,10 +257,12 @@ class Settings(context: Context) {
         const val BACKGROUND_WHITE = 0
         const val BACKGROUND_WARM = 1
 
-        /** 笔记卡片颜色：浅灰、白色、米黄。 */
+        /** 笔记卡片颜色：浅灰、白色、米黄、深灰、浅蓝。 */
         const val CARD_GRAY = 0
         const val CARD_WHITE = 1
         const val CARD_BEIGE = 2
+        const val CARD_DARK = 3
+        const val CARD_LIGHT_BLUE = 4
 
         /** 可选字体：系统默认（无衬线）、衬线、等宽、圆润。 */
         val FONT_FAMILIES = arrayOf("sans-serif", "serif", "monospace", "casual")

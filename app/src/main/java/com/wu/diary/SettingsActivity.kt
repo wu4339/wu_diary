@@ -316,18 +316,28 @@ class SettingsActivity : BaseActivity() {
         val labelRes = when (settings.cardTone) {
             Settings.CARD_WHITE -> R.string.card_color_white
             Settings.CARD_BEIGE -> R.string.card_color_beige
+            Settings.CARD_DARK -> R.string.card_color_dark
+            Settings.CARD_LIGHT_BLUE -> R.string.card_color_blue
             else -> R.string.card_color_gray
         }
         binding.textCardColorValue.text = getString(labelRes)
     }
 
-    /** 消息卡片颜色：浅灰 / 白色 / 米黄，memos 与卡片式风格生效。 */
+    /** 消息卡片颜色：浅灰 / 白色 / 米黄 / 深灰 / 浅蓝，memos 与卡片式风格生效。 */
     private fun showCardColorDialog() {
-        val tones = intArrayOf(Settings.CARD_GRAY, Settings.CARD_WHITE, Settings.CARD_BEIGE)
+        val tones = intArrayOf(
+            Settings.CARD_GRAY,
+            Settings.CARD_WHITE,
+            Settings.CARD_BEIGE,
+            Settings.CARD_DARK,
+            Settings.CARD_LIGHT_BLUE
+        )
         val labels = arrayOf(
             getString(R.string.card_color_gray),
             getString(R.string.card_color_white),
-            getString(R.string.card_color_beige)
+            getString(R.string.card_color_beige),
+            getString(R.string.card_color_dark),
+            getString(R.string.card_color_blue)
         )
         val checked = tones.indexOf(settings.cardTone).coerceAtLeast(0)
         AlertDialog.Builder(this)
