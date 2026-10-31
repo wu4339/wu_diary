@@ -1,34 +1,21 @@
 package com.wu.diary.util
 
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.text.Spannable
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.BaseMovementMethod
 import android.text.style.ClickableSpan
-import android.text.style.LineBackgroundSpan
 import android.view.MotionEvent
 import android.view.View
 import android.widget.TextView
 
 /**
- * 定位行：整行（含地名）底部画一条横线，并且可以点击打开地图。
+ * 定位行链接：整行（含地名）使用和网址一致的紫色下划线样式，点击打开地图。
  */
 object LocationLines {
 
-    /** 给包含坐标的行加底部横线；重复调用会先清掉旧的，方便编辑时刷新。 */
-    fun decorate(text: Spannable, color: Int, thickness: Float) {
-        text.getSpans(0, text.length, LocationLineSpan::class.java).forEach { text.removeSpan(it) }
-        geoLineRanges(text).forEach { (start, end, _, _) ->
-            text.setSpan(
-                LocationLineSpan(color, thickness),
-                start,
-                end,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-    }
+    /** 链接颜色（紫色），与网址链接保持一致。 */
+    val LINK_COLOR = 0xFF7C5CE6.toInt()
 
     /** 整行定位信息可点击：点地名或坐标都打开地图。 */
     fun link(text: Spannable) {
@@ -43,8 +30,16 @@ object LocationLines {
         }
     }
 
-    /** 每一条定位信息所在行的范围，以及对应的坐标。 */
-    private fun geoLineRanges(text: Spannable): List<GeoLine> {
+    /** 每条定位信息所在行的末尾位置，用于在链接后面插入外链小图标。 */
+    fun lineEnds(text: CharSequence): List<Int> =
+        GeoPoint.findAll(text.toString())
+            .map { match ->
+                val end = text.indexOf('\n', match.end)
+                if (end < 0) text.length else end
+            }
+            .distinct()
+
+    private fun geoLineRanges(text: CharSequence): List<GeoLine> {
         return GeoPoint.findAll(text.toString())
             .mapNotNull { match ->
                 val start = text.lastIndexOf('\n', match.start).let { if (it < 0) 0 else it + 1 }
@@ -66,8 +61,8 @@ object LocationLines {
 
         override fun updateDrawState(ds: TextPaint) {
             super.updateDrawState(ds)
-            // 下划线交给整行底部横线，不额外画文字下划线。
-            ds.isUnderlineText = false
+            ds.color = LINK_COLOR
+            ds.isUnderlineText = true
         }
     }
 
@@ -89,32 +84,6 @@ object LocationLines {
                 .firstOrNull { it is GeoLinkSpan } ?: return false
             span.onClick(widget)
             return true
-        }
-    }
-
-    private class LocationLineSpan(
-        private val color: Int,
-        private val thickness: Float
-    ) : LineBackgroundSpan {
-
-        private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-
-        override fun drawBackground(
-            canvas: Canvas,
-            paint: Paint,
-            left: Int,
-            right: Int,
-            top: Int,
-            baseline: Int,
-            bottom: Int,
-            text: CharSequence,
-            start: Int,
-            end: Int,
-            lineNumber: Int
-        ) {
-            linePaint.color = color
-            val y = bottom - thickness
-            canvas.drawRect(left.toFloat(), y, right.toFloat(), bottom.toFloat(), linePaint)
         }
     }
 }

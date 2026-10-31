@@ -24,11 +24,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Layout
-import android.text.SpannableString
+import android.text.Spannable
+import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.text.style.ImageSpan
 import android.text.style.URLSpan
 import android.text.util.Linkify
 import android.util.TypedValue
@@ -90,9 +92,6 @@ class ViewDiaryActivity : BaseActivity() {
 
         /** 编辑页保存后跳转时携带的最新笔记内容，首帧直接渲染，避免先显示旧内容再跳变。 */
         const val EXTRA_FOCUS_ENTRY = "focus_entry"
-
-        /** 定位行底部横线的颜色。 */
-        private val LOCATION_LINE_COLOR = 0xFFBDBDBD.toInt()
 
         fun intent(context: Context, ids: List<String>, index: Int, randomReview: Boolean = false): Intent =
             Intent(context, ViewDiaryActivity::class.java)
@@ -551,10 +550,11 @@ class ViewDiaryActivity : BaseActivity() {
         updateNav()
     }
 
-    /** 识别正文里的网址，并换成点击时优先用对应 App 打开的 span；坐标同样加下划线可点击。 */
-    private fun linkify(text: String): SpannableString {
-        val spannable = SpannableString(text)
+    /** 网址与定位行都用紫色下划线 + 外链图标的样式显示，点击时打开对应 App / 地图。 */
+    private fun linkify(text: String): Spannable {
+        val spannable = SpannableStringBuilder(text)
         Linkify.addLinks(spannable, Linkify.WEB_URLS)
+        val iconPositions = mutableListOf<Int>()
         spannable.getSpans(0, spannable.length, URLSpan::class.java).forEach { span ->
             val start = spannable.getSpanStart(span)
             val end = spannable.getSpanEnd(span)
@@ -568,17 +568,27 @@ class ViewDiaryActivity : BaseActivity() {
 
                 override fun updateDrawState(ds: TextPaint) {
                     super.updateDrawState(ds)
-                    ds.isUnderlineText = false
+                    ds.color = LocationLines.LINK_COLOR
+                    ds.isUnderlineText = true
                 }
             }, start, end, flags)
+            iconPositions.add(end)
         }
-        // 整行定位信息都可点击（地名 + 坐标），点击打开地图；底部横线由 LocationLines 绘制。
+        // 整行定位信息都可点击（地名 + 坐标），样式和网址链接一致。
         LocationLines.link(spannable)
-        LocationLines.decorate(
-            spannable,
-            LOCATION_LINE_COLOR,
-            resources.displayMetrics.density
-        )
+        iconPositions.addAll(LocationLines.lineEnds(spannable))
+        // 在每个链接后面插入一个空格并放外链图标；从后往前插入，避免前面的位置偏移。
+        iconPositions.distinct().sortedDescending().forEach { position ->
+            spannable.insert(position, " ")
+            val icon = ContextCompat.getDrawable(this, R.drawable.ic_external_link)
+                ?: return@forEach
+            spannable.setSpan(
+                ImageSpan(icon, ImageSpan.ALIGN_CENTER),
+                position,
+                position + 1,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
         return spannable
     }
 

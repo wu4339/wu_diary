@@ -62,9 +62,6 @@ class EditDiaryActivity : BaseActivity() {
 
         private const val MAX_IMAGES = 9
 
-        /** 定位行底部横线的颜色。 */
-        private val LOCATION_LINE_COLOR = 0xFFBDBDBD.toInt()
-
         fun intent(
             context: Context,
             entryId: String?,
@@ -255,9 +252,8 @@ class EditDiaryActivity : BaseActivity() {
         }
     }
 
-    /** 重新给正文里的定位行加横线和地图链接。 */
+    /** 重新给正文里的定位行加地图链接（样式与网址链接一致）。 */
     private fun refreshLocationLines(text: Editable) {
-        LocationLines.decorate(text, LOCATION_LINE_COLOR, resources.displayMetrics.density)
         LocationLines.link(text)
     }
 

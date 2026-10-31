@@ -26,7 +26,6 @@ import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
 import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
-import com.wu.diary.util.LocationLines
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
 import com.wu.diary.util.VideoLoader
@@ -319,8 +318,6 @@ class DiaryAdapter(
         val rendered = MarkdownText.render(body)
         val display = rendered?.text ?: body
         val styled = highlightBody(display, binding)
-        // 主界面预览里，定位信息所在行同样画一条底部横线。
-        LocationLines.decorate(styled, 0xFFBDBDBD.toInt(), density)
         // 先定好字号与字体再渲染列表，悬挂缩进需要按真实显示宽度测量。
         binding.textBody.typeface = typeface
         binding.textBody.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
