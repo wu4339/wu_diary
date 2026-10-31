@@ -78,7 +78,7 @@ object LinkStyles {
             // 第一个空格留出间隔，第二个空格换成图标。
             spannable.insert(position, "  ")
             spannable.setSpan(
-                ImageSpan(icon, ImageSpan.ALIGN_CENTER),
+                ImageSpan(icon, ImageSpan.ALIGN_BASELINE),
                 position + 1,
                 position + 2,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE

@@ -5,8 +5,12 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputType
+import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -366,12 +370,11 @@ class SettingsActivity : BaseActivity() {
             .show()
     }
 
-    /** 自定义卡片颜色：R/G/B 三个滑块，上方实时预览。 */
+    /** 自定义卡片颜色：直接输入十六进制色值（#RRGGBB），输入过程中实时预览。 */
     private fun showCustomCardColorDialog() {
         val density = resources.displayMetrics.density
         fun dp(value: Int) = (value * density).toInt()
         val current = settings.customCardColor
-        val channels = intArrayOf(Color.red(current), Color.green(current), Color.blue(current))
 
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -389,64 +392,54 @@ class SettingsActivity : BaseActivity() {
         }
         container.addView(preview)
 
-        val hexText = TextView(this).apply {
-            setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            setPadding(0, dp(6), 0, 0)
-            text = hexString(channels)
+        val input = EditText(this).apply {
+            setText(hexString(intArrayOf(Color.red(current), Color.green(current), Color.blue(current))))
+            setSelection(text.length)
+            hint = "#RRGGBB"
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setPadding(0, dp(10), 0, dp(4))
         }
-        container.addView(hexText)
-
-        fun refreshPreview() {
-            (preview.background as? GradientDrawable)?.setColor(
-                Color.rgb(channels[0], channels[1], channels[2])
-            )
-            hexText.text = hexString(channels)
-        }
-
-        listOf("R" to 0, "G" to 1, "B" to 2).forEach { (name, index) ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(0, dp(8), 0, 0)
-            }
-            val label = TextView(this).apply {
-                text = "$name %02X".format(channels[index])
-                setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.text_secondary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                width = dp(64)
-            }
-            val bar = SeekBar(this).apply {
-                max = 255
-                progress = channels[index]
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    channels[index] = progress
-                    label.text = "$name %02X".format(progress)
-                    refreshPreview()
+        input.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                parseHexColor(s?.toString().orEmpty())?.let { color ->
+                    (preview.background as? GradientDrawable)?.setColor(color)
                 }
+            }
+        })
+        container.addView(input)
 
-                override fun onStartTrackingTouch(bar: SeekBar?) {}
-
-                override fun onStopTrackingTouch(bar: SeekBar?) {}
-            })
-            row.addView(label)
-            row.addView(bar)
-            container.addView(row)
-        }
-
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.card_color_custom_title)
             .setView(container)
-            .setPositiveButton(R.string.save) { _, _ ->
-                settings.customCardColor = Color.rgb(channels[0], channels[1], channels[2])
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+        // 保存前校验格式：非法时保留弹窗，避免直接写入错误颜色。
+        dialog.setOnShowListener {
+            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                val color = parseHexColor(input.text.toString())
+                if (color == null) {
+                    Toast.makeText(this, R.string.card_color_invalid, Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                settings.customCardColor = color
                 settings.cardTone = Settings.CARD_CUSTOM
                 updateCardColorValue()
+                dialog.dismiss()
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        }
+        dialog.show()
+    }
+
+    /** 解析 #RRGGBB / RRGGBB，非法时返回 null。 */
+    private fun parseHexColor(text: String): Int? {
+        val hex = text.trim().removePrefix("#")
+        if (hex.length != 6) return null
+        val value = hex.toIntOrNull(16) ?: return null
+        return 0xFF000000.toInt() or value
     }
 
     /** RGB 三个通道拼成 #RRGGBB 文本。 */
