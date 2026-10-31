@@ -24,6 +24,7 @@ import com.wu.diary.data.Settings
 import com.wu.diary.databinding.ItemDateBinding
 import com.wu.diary.databinding.ItemDiaryBinding
 import com.wu.diary.model.DiaryEntry
+import com.wu.diary.util.GeoPoint
 import com.wu.diary.util.ImageLoader
 import com.wu.diary.util.MarkdownText
 import com.wu.diary.util.TagChips
@@ -275,15 +276,17 @@ class DiaryAdapter(
         binding.textBody.hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
 
         // 预览标签与查看/编辑页一致，使用带光晕的标签色块；位置跟随设置。
-        val showEntryTags = tagStyle != Settings.TAG_HIDDEN && entry.tags.isNotEmpty()
-        binding.tagScroll.isVisible = showEntryTags && tagStyle == Settings.TAG_TOP
-        binding.tagScrollBottom.isVisible = showEntryTags && tagStyle == Settings.TAG_BOTTOM
-        if (showEntryTags) {
-            if (tagStyle == Settings.TAG_TOP) {
-                TagChips.render(binding.tagStrip, entry.tags, fontScale)
-            } else {
-                TagChips.render(binding.tagStripBottom, entry.tags, fontScale)
-            }
+        // 有地理坐标的笔记在标签前面加一个定位符号，显示位置与标签保持一致。
+        val hasGeo = GeoPoint.findAll(entry.content).isNotEmpty()
+        val hasMeta = entry.tags.isNotEmpty() || hasGeo
+        val showMeta = tagStyle != Settings.TAG_HIDDEN && hasMeta
+        binding.tagScroll.isVisible = showMeta && tagStyle == Settings.TAG_TOP
+        binding.tagScrollBottom.isVisible = showMeta && tagStyle == Settings.TAG_BOTTOM
+        binding.tagStrip.removeAllViews()
+        binding.tagStripBottom.removeAllViews()
+        if (showMeta) {
+            val strip = if (tagStyle == Settings.TAG_TOP) binding.tagStrip else binding.tagStripBottom
+            renderPreviewMeta(strip, entry, hasGeo)
         }
 
         // 每天最后一篇笔记下方的分割线贯通整屏，作为日期与日期之间的分隔。
@@ -387,6 +390,27 @@ class DiaryAdapter(
 
         binding.root.setOnClickListener { onClick(entry) }
         binding.root.setOnLongClickListener { onLongClick(entry); true }
+    }
+
+    /** 标签行：先画定位符号（有坐标时），再画标签色块。 */
+    private fun renderPreviewMeta(container: LinearLayout, entry: DiaryEntry, hasGeo: Boolean) {
+        TagChips.render(container, entry.tags, fontScale)
+        if (!hasGeo) return
+        val density = container.resources.displayMetrics.density
+        val icon = ImageView(container.context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                (16 * density).toInt(),
+                (16 * density).toInt()
+            ).apply {
+                marginEnd = (6 * density).toInt()
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            setImageResource(R.drawable.ic_location)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setColorFilter(0xFF8C8C8C.toInt())
+            contentDescription = container.context.getString(R.string.filter_has_location)
+        }
+        container.addView(icon, 0)
     }
 
     /** 预览用的视频封面卡片：封面帧 + 居中播放角标，圆角与对应图片模式一致。 */
